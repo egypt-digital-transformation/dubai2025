@@ -43,17 +43,7 @@
                 "output": "/"
               },
               {
-                "glob": "OneSignalSDKWorker.js",
-                "input": "src/",
-                "output": "/"
-              },
-              {
-                "glob": "OneSignalSDKUpdaterWorker.js",
-                "input": "src/",
-                "output": "/"
-              },
-              {
-                "glob": "OneSignalSDK.sw.js",
+                "glob": "firebase-messaging-sw.js",
                 "input": "src/",
                 "output": "/"
               }
@@ -147,17 +137,7 @@
               "src/favicon.ico",
               "src/assets",
               {
-                "glob": "OneSignalSDKWorker.js",
-                "input": "src/",
-                "output": "/"
-              },
-              {
-                "glob": "OneSignalSDKUpdaterWorker.js",
-                "input": "src/",
-                "output": "/"
-              },
-              {
-                "glob": "OneSignalSDK.sw.js",
+                "glob": "firebase-messaging-sw.js",
                 "input": "src/",
                 "output": "/"
               }

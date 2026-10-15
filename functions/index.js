@@ -2,34 +2,47 @@ import { onSchedule } from "firebase-functions/v2/scheduler";
 import { onRequest } from "firebase-functions/v2/https";
 import { initializeApp } from "firebase-admin/app";
 import { getFirestore, Timestamp } from "firebase-admin/firestore";
-import axios from "axios";
+import { getMessaging } from "firebase-admin/messaging";
 
 // Initialize Firebase Admin
 initializeApp();
 const db = getFirestore();
 
-// OneSignal configuration
-const ONESIGNAL_APP_ID = "e4848b1f-7e63-4dce-a616-0cdf07c79b4e";
-const ONESIGNAL_REST_API_KEY = "os_v2_app_4sciwh36mng45jqwbtpqpr43jzrtplxe6xuujsfxlebnzhj2m4xucvlee6h5yy4e4sndvpv3mmzzmwlvlpi36csnotyzlfxkbpdyjhq";
+/**
+ * Helper to send a notification via Firebase Cloud Messaging (FCM)
+ * @param {string} token - FCM registration device token
+ * @param {string} title - Notification title
+ * @param {string} body - Notification body
+ * @param {object} data - Optional payload data key-value pairs
+ */
+async function sendFcmNotification(token, title, body, data = {}) {
+  // Convert any data object values to strings (FCM data payload requirement: map<string, string>)
+  const stringData = {};
+  for (const [key, value] of Object.entries(data)) {
+    stringData[key] = typeof value === "string" ? value : JSON.stringify(value);
+  }
 
-// Helper to send a notification via OneSignal
-async function sendOneSignalNotification(playerId, title, content, data = {}) {
-  const notificationData = {
-    app_id: ONESIGNAL_APP_ID,
-    include_player_ids: [playerId],
-    headings: { en: title },
-    contents: { en: content },
-    data,
+  const message = {
+    token,
+    notification: {
+      title,
+      body,
+    },
+    data: stringData,
+    webpush: {
+      notification: {
+        title,
+        body,
+        icon: "/assets/icon/favicon.png",
+        badge: "/assets/icon/favicon.png",
+      },
+      fcmOptions: {
+        link: "/",
+      },
+    },
   };
 
-  const response = await axios.post("https://onesignal.com/api/v1/notifications", notificationData, {
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Basic ${ONESIGNAL_REST_API_KEY}`,
-    },
-  });
-
-  return response.data.id;
+  return await getMessaging().send(message);
 }
 
 // 🔔 Send reminders every minute
@@ -54,7 +67,8 @@ export const sendSessionReminders = onSchedule(
 
       for (const userDoc of usersSnapshot.docs) {
         const user = userDoc.data();
-        if (!user.oneSignalPlayerId) continue;
+        const fcmToken = user.fcmToken;
+        if (!fcmToken) continue;
 
         const agendaRef = db.collection(`users/${userDoc.id}/agenda`);
         const agendaSnapshot = await agendaRef
@@ -72,22 +86,22 @@ export const sendSessionReminders = onSchedule(
           const sessionId = sessionDoc.id;
 
           try {
-            const notificationId = await sendOneSignalNotification(
-              user.oneSignalPlayerId,
+            const messageId = await sendFcmNotification(
+              fcmToken,
               "Session Starting Soon!",
               `Your "${session.title}" starts in 5 minutes.`,
-              { sessionId }
+              { sessionId, title: session.title || "" }
             );
 
             await sessionDoc.ref.update({
               reminderSent: true,
               reminderSentAt: Timestamp.now(),
-              oneSignalNotificationId: notificationId,
+              fcmMessageId: messageId,
             });
 
-            console.log(`✅ Sent reminder for ${session.title} to ${user.email}`);
+            console.log(`✅ Sent FCM reminder for "${session.title}" to ${user.email}`);
           } catch (err) {
-            console.error(`❌ Failed to send reminder for session ${sessionId}:`, err);
+            console.error(`❌ Failed to send FCM reminder for session ${sessionId} to ${user.email}:`, err);
           }
         }
       }
@@ -124,19 +138,20 @@ export const sendSessionRemindersManual = onRequest(
 
       for (const userDoc of usersSnapshot.docs) {
         const user = userDoc.data();
+        const fcmToken = user.fcmToken;
         const userResult = {
           userId: userDoc.id,
           email: user.email,
-          hasPlayerId: !!user.oneSignalPlayerId,
-          playerId: user.oneSignalPlayerId || null,
+          hasFcmToken: !!fcmToken,
+          fcmToken: fcmToken || null,
           sessionsFound: 0,
           notificationsSent: 0,
           errors: [],
         };
 
-        // Skip users without OneSignal Player ID
-        if (!user.oneSignalPlayerId) {
-          userResult.errors.push("No OneSignal Player ID found");
+        // Skip users without FCM Token
+        if (!fcmToken) {
+          userResult.errors.push("No FCM device token found for this user");
           results.push(userResult);
           continue;
         }
@@ -159,25 +174,25 @@ export const sendSessionRemindersManual = onRequest(
             const sessionId = sessionDoc.id;
 
             try {
-              // Send notification
-              const notificationId = await sendOneSignalNotification(
-                user.oneSignalPlayerId,
+              // Send FCM notification
+              const messageId = await sendFcmNotification(
+                fcmToken,
                 "Session Starting Soon!",
                 `Your "${session.title}" starts in 5 minutes.`,
-                { sessionId, title: session.title }
+                { sessionId, title: session.title || "" }
               );
 
               // Update session document
               await sessionDoc.ref.update({
                 reminderSent: true,
                 reminderSentAt: Timestamp.now(),
-                oneSignalNotificationId: notificationId,
+                fcmMessageId: messageId,
               });
 
               userResult.notificationsSent++;
-              console.log(`[MANUAL] ✅ Sent reminder for "${session.title}" to ${user.email}`);
+              console.log(`[MANUAL] ✅ Sent FCM reminder for "${session.title}" to ${user.email}`);
             } catch (err) {
-              const errorMsg = `Failed to send notification for session "${session.title}": ${err.message}`;
+              const errorMsg = `Failed to send FCM notification for session "${session.title}": ${err.message}`;
               userResult.errors.push(errorMsg);
               console.error(`[MANUAL] ❌ ${errorMsg}`);
             }
@@ -193,7 +208,7 @@ export const sendSessionRemindersManual = onRequest(
       console.log(`[MANUAL] Finished. Sent ${totalNotifications} notifications for ${totalSessions} sessions`);
 
       res.status(200).json({
-        message: "Manual reminder check complete",
+        message: "Manual FCM reminder check complete",
         timestamp: new Date().toISOString(),
         checkWindow: {
           start: fiveMinutesFromNow.toDate(),
@@ -203,7 +218,7 @@ export const sendSessionRemindersManual = onRequest(
           totalUsers: results.length,
           totalSessions: totalSessions,
           totalNotificationsSent: totalNotifications,
-          usersWithoutPlayerId: results.filter(r => !r.hasPlayerId).length,
+          usersWithoutFcmToken: results.filter(r => !r.hasFcmToken).length,
         },
         results,
       });

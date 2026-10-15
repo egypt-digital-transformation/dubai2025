@@ -5,14 +5,14 @@ import data from './assets/data/agenda.json' ;
 
 // Your Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyAXnLsICQenDbqAuHBduK5eRyV1o7WIBCA",
+  apiKey: "AIzaSyBamzLLaALQlR0nkN5nlIttLt-XmdFF1J0",
   authDomain: "mea-egypt-ahlanapp-prd.firebaseapp.com",
   projectId: "mea-egypt-ahlanapp-prd",
   storageBucket: "mea-egypt-ahlanapp-prd.firebasestorage.app",
   messagingSenderId: "107201585408",
-  appId: "1:107201585408:web:2b42931613ef33fda693e5",
-  measurementId: "G-LCLHRYDEXY"
-}
+  appId: "1:107201585408:web:45f4aaa5690d72e5a693e5",
+  measurementId: "G-MNX0Y34XMN"
+};
 
 
 
