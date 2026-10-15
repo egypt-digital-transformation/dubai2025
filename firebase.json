@@ -1,5 +1,6 @@
 {
   "hosting": {
+    "site": "mea-egypt-ahlanapp-prd",
     "public": "www",
     "ignore": [
       "firebase.json",
@@ -46,7 +47,7 @@
         "firebase-debug.*.log",
         "*.local"
       ],
-      "predeploy": [ ]
+      "predeploy": []
     }
   ]
 }

@@ -232,11 +232,15 @@
             </div>
           </div>
 
-          <div class="action-card" (click)="openHSEInduction()">
+          <div class="action-card" (click)="openSafetyInductionModal()">
             <div class="action-content">
-              <div class="action-icon hse"><ion-icon name="shield-checkmark-outline"></ion-icon></div>
-              <div class="action-title">HSE Induction</div>
-              <div class="action-desc">Safety briefing</div>
+              <div class="action-icon hse">
+                <img src="assets/safety.png" alt="" aria-hidden="true" />
+              </div>
+              <div class="action-title">Safety Induction</div>
+              <div class="action-desc">
+                {{ completedInductionsCount }} of {{ totalInductionsRequired }} completed
+              </div>
             </div>
           </div>
         </div>

@@ -1,0 +1,123 @@
+.modal-content {
+  --padding-top: 14px;
+  --padding-bottom: 14px;
+  --padding-start: 14px;
+  --padding-end: 14px;
+}
+
+.modal-subtitle {
+  margin: 0 2px 10px;
+  color: #5f6d84;
+  font-size: 0.86rem;
+  line-height: 1.35;
+}
+
+.induction-sites {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.site-card {
+  padding: 12px;
+  border: 1px solid #dde3ec;
+  border-radius: 10px;
+  background: #ffffff;
+  transition: box-shadow 0.2s ease;
+
+  &.completed {
+    border-color: #c9d7ea;
+    background: #fbfcfe;
+  }
+
+  &:hover {
+    box-shadow: 0 2px 10px rgba(28, 45, 78, 0.08);
+  }
+}
+
+.site-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+
+  .site-icon {
+    font-size: 22px;
+    display: flex;
+    align-items: center;
+    color: #2f7edb;
+  }
+
+  h3 {
+    margin: 0;
+    flex: 1;
+    color: #1f2a44;
+    font-size: 1.08rem;
+    font-weight: 600;
+  }
+}
+
+.status-badge {
+  font-size: 0.75rem;
+  padding: 4px 9px;
+  background: #eef2f7;
+  border-radius: 20px;
+  color: #6a778c;
+  font-weight: 500;
+  white-space: nowrap;
+
+  &.completed {
+    background: #e7f1ff;
+    color: #2f7edb;
+  }
+}
+
+.site-action-btn {
+  width: 100%;
+  min-height: 42px;
+  padding: 9px 10px;
+  border: 1px solid #2f7edb;
+  border-radius: 8px;
+  background: #2f7edb;
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+
+  &:hover {
+    background: #266dbe;
+  }
+
+  &.completed {
+    background: #f4f7fb;
+    color: #1f2a44;
+    border-color: #d2dae6;
+  }
+}
+
+::ng-deep .safety-induction-modal {
+  --width: 90%;
+  --max-width: 400px;
+  --max-height: 330px;
+  --border-radius: 16px;
+
+  ion-toolbar {
+    --background: #ffffff;
+    --color: #1f2a44;
+    border-bottom: 1px solid #e4e9f1;
+
+    ion-title {
+      font-weight: 600;
+      font-size: 1.05rem;
+    }
+  }
+
+  ion-content {
+    --background: #ffffff;
+  }
+
+  @media (max-width: 420px) {
+    --width: calc(100% - 16px);
+  }
+}

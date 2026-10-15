@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, NgZone, OnInit, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
 import { CommonModule, DatePipe } from '@angular/common';
 import { addDoc } from '@angular/fire/firestore';
@@ -15,7 +15,24 @@ import {
   IonCardHeader,
   IonCardContent, IonTextarea, IonInput } from '@ionic/angular/standalone';
 import { Auth, signOut, onAuthStateChanged } from '@angular/fire/auth';
+import { ModalController } from '@ionic/angular/standalone';
 import { DataService } from '../services/data.service';
+import { environment } from '../../environments/environment';
+import { getApps, initializeApp } from 'firebase/app';
+import {
+  collection as firebaseCollection,
+  DocumentData,
+  getFirestore,
+  onSnapshot,
+  query as firebaseQuery,
+  Unsubscribe,
+  where,
+} from 'firebase/firestore';
+import {
+  SafetyInductionModalComponent,
+  SafetyInductionSite,
+  SafetyInductions,
+} from '../hse-induction/safety-induction-modal.component';
 
 import {
   Firestore,
@@ -103,6 +120,18 @@ throw new Error('Method not implemented.');
   public showQR = false;
   public displayName: string | null = null;
   public isAdmin = false;
+  readonly safetyInductions: SafetyInductions = {
+    sokhnaplant: {
+      completed: false,
+      link: 'https://mea-hseegyptonboarding-prod.web.app/sokhnaplant',
+    },
+    rmx: {
+      completed: false,
+      link: 'https://mea-hseegyptonboarding-prod.web.app/RMX',
+    },
+  };
+  readonly totalInductionsRequired = 2;
+  completedInductionsCount = 0;
 private adminEmails = [
   'emily.elias@holcim.com',
   'hadeer.hamada@holcim.com'
@@ -135,12 +164,15 @@ async submitAnnouncement() {
 
   private destroy$ = new Subject<void>();
   private readonly TICK_MS = 1000;
+  private safetyInductionUnsubscribe?: Unsubscribe;
 
   constructor(
     private router: Router,
     private firestore: Firestore,
     private auth: Auth,
-    private data: DataService
+    private data: DataService,
+    private modalController: ModalController,
+    private zone: NgZone
   ) {}
 
   ngOnInit() {
@@ -174,7 +206,8 @@ this.showQR = false;
 
     authState$.pipe(takeUntil(this.destroy$)).subscribe((user: any) => {
       this.displayName = user?.displayName ? this.formatDisplayName(user.displayName) : null;
-          this.isAdmin = !!user?.email && this.adminEmails.includes(user.email);
+      this.isAdmin = !!user?.email && this.adminEmails.includes(user.email);
+      this.listenToSafetyInductionStatus(user?.email ?? null);
 
     });
 
@@ -209,8 +242,72 @@ this.showQR = false;
   }
 
   ngOnDestroy() {
+    this.safetyInductionUnsubscribe?.();
     this.destroy$.next();
     this.destroy$.complete();
+  }
+
+  private listenToSafetyInductionStatus(email: string | null): void {
+    this.safetyInductionUnsubscribe?.();
+    this.safetyInductionUnsubscribe = undefined;
+
+    if (!email) {
+      this.updateSafetyInductionStatus();
+      return;
+    }
+
+    const normalizedEmail = email.toLowerCase();
+    const emailVariants = Array.from(new Set([email, normalizedEmail]));
+    const hseApp =
+      getApps().find((app) => app.name === 'HSEApp') ??
+      initializeApp(environment.hsefirebaseConfig, 'HSEApp');
+    const hseFirestore = getFirestore(hseApp);
+    const userProgressQuery = firebaseQuery(
+      firebaseCollection(hseFirestore, 'userProgress'),
+      where('email', 'in', emailVariants)
+    );
+
+    this.safetyInductionUnsubscribe = onSnapshot(
+      userProgressQuery,
+      (snapshot) => {
+        this.zone.run(() => this.updateSafetyInductionStatus(snapshot.docs[0]?.data()));
+      },
+      (error) => {
+        console.error('[SafetyInduction] Failed to load induction progress:', error);
+        this.zone.run(() => this.updateSafetyInductionStatus());
+      }
+    );
+  }
+
+  private updateSafetyInductionStatus(docData?: DocumentData): void {
+    const sokhnaPlantData = docData?.['sokhnaPlant'] ?? docData?.['sokhnaplant'];
+    const rmxData = docData?.['RMX'] ?? docData?.['rmx'];
+
+    this.safetyInductions.sokhnaplant.completed =
+      sokhnaPlantData?.['questionnairePassed'] === true;
+    this.safetyInductions.rmx.completed =
+      rmxData?.['questionnairePassed'] === true;
+    this.completedInductionsCount = Object.values(this.safetyInductions)
+      .filter((induction) => induction.completed).length;
+  }
+
+  async openSafetyInductionModal(): Promise<void> {
+    const modal = await this.modalController.create({
+      component: SafetyInductionModalComponent,
+      componentProps: {
+        safetyInductions: this.safetyInductions,
+        completedCount: this.completedInductionsCount,
+        totalRequired: this.totalInductionsRequired,
+      },
+      cssClass: 'safety-induction-modal',
+    });
+
+    await modal.present();
+    const { data } = await modal.onDidDismiss<{ site?: SafetyInductionSite }>();
+
+    if (data?.site) {
+      window.open(this.safetyInductions[data.site].link, '_blank');
+    }
   }
 
   // ---------- Utilities / Helpers ----------
@@ -482,10 +579,6 @@ async closeQRCode() {
       .catch((err) => console.error('[SSO] Logout error:', err));
   }
 
-  openHSEInduction() {
-    this.router.navigate(['/hse-induction']);
-
-  }
   async addAnnouncement(title: string, description: string, priority: string = 'normal') {
   const ref = collection(this.firestore, 'announcements');
   await addDoc(ref, {

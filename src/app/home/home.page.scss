@@ -467,6 +467,13 @@ background: linear-gradient(135deg, #4bb05b 0%, #4bb05b 100%);
       &.hse {background: linear-gradient(135deg, #4bb05b 0%, #4bb05b 100%); 
       }
 
+      &.hse img {
+        width: 1.5rem;
+        height: 1.5rem;
+        object-fit: contain;
+        filter: brightness(0) invert(1);
+      }
+
       ion-icon {
         font-size: 1.5rem;
         color: white;
