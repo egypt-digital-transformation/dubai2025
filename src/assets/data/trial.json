@@ -51,8 +51,8 @@
       "description": "Delegates check in and collect their welcome kits and badges.",
       "category": "logistics",
       "day": "1",
-      "startTime": "2025-11-04T14:00:00",
-      "endTime": "2025-11-04T18:00:00",
+      "startTime": "2026-11-04T14:00:00",
+      "endTime": "2026-11-04T18:00:00",
       "location": "Hotel Lobby",
       "isGeneral": true,
       "color": "#7c9abb",
@@ -68,8 +68,8 @@
       "description": "Kick-off cocktail event bringing together participants from across the AMEA region.",
       "category": "social",
       "day": "1",
-      "startTime": "2025-11-04T18:30:00",
-      "endTime": "2025-11-04T20:00:00",
+      "startTime": "2026-11-04T18:30:00",
+      "endTime": "2026-11-04T20:00:00",
       "location": "Baraha Terrace",
       "isGeneral": true,
       "color": "#f4a261",
@@ -85,8 +85,8 @@
       "description": "Formal dinner with assigned seating and entertainment to celebrate regional achievements.",
       "category": "social",
       "day": "1",
-      "startTime": "2025-11-04T20:30:00",
-      "endTime": "2025-11-04T22:30:00",
+      "startTime": "2026-11-04T20:30:00",
+      "endTime": "2026-11-04T22:30:00",
       "location": "Ballroom A",
       "isGeneral": true,
       "color": "#8e44ad",
@@ -102,8 +102,8 @@
       "description": "Plenary session covering country strategies and growth ambitions across Egypt, Australia, Algeria, Morocco, and UAE.",
       "category": "keynote",
       "day": "2",
-      "startTime": "2025-11-05T09:10:00",
-      "endTime": "2025-11-05T11:00:00",
+      "startTime": "2026-11-05T09:10:00",
+      "endTime": "2026-11-05T11:00:00",
       "location": "Baraha Ballroom 3",
       "isGeneral": true,
       "color": "#4bb05b",
@@ -119,8 +119,8 @@
       "description": "Morning coffee break.",
       "category": "social",
       "day": "2",
-      "startTime": "2025-11-05T11:00:00",
-      "endTime": "2025-11-05T11:15:00",
+      "startTime": "2026-11-05T11:00:00",
+      "endTime": "2026-11-05T11:15:00",
       "location": "Baraha Ballroom 3",
       "isGeneral": true,
       "color": "#94c12e",
@@ -146,12 +146,12 @@
         "userID": null
       },
       "rotationalSchedule": {
-        "group1": { "startTime": "2025-11-05T11:15:00", "endTime": "2025-11-05T11:35:00" },
-        "group2": { "startTime": "2025-11-05T11:35:00", "endTime": "2025-11-05T11:55:00" },
-        "group3": { "startTime": "2025-11-05T11:55:00", "endTime": "2025-11-05T12:15:00" },
-        "group4": { "startTime": "2025-11-05T12:15:00", "endTime": "2025-11-05T12:35:00" },
-        "group5": { "startTime": "2025-11-05T12:35:00", "endTime": "2025-11-05T12:55:00" },
-        "group6": { "startTime": "2025-11-05T12:55:00", "endTime": "2025-11-05T13:15:00" }
+        "group1": { "startTime": "2026-11-05T11:15:00", "endTime": "2026-11-05T11:35:00" },
+        "group2": { "startTime": "2026-11-05T11:35:00", "endTime": "2026-11-05T11:55:00" },
+        "group3": { "startTime": "2026-11-05T11:55:00", "endTime": "2026-11-05T12:15:00" },
+        "group4": { "startTime": "2026-11-05T12:15:00", "endTime": "2026-11-05T12:35:00" },
+        "group5": { "startTime": "2026-11-05T12:35:00", "endTime": "2026-11-05T12:55:00" },
+        "group6": { "startTime": "2026-11-05T12:55:00", "endTime": "2026-11-05T13:15:00" }
       }
     },
     {
@@ -159,8 +159,8 @@
       "description": "Full-day guided visit showcasing R&D, sustainability innovations, and new circular solutions. Participants attending the site visit will not join rotational workshops.",
       "category": "site visit",
       "day": "3",
-      "startTime": "2025-11-06T08:30:00",
-      "endTime": "2025-11-06T15:00:00",
+      "startTime": "2026-11-06T08:30:00",
+      "endTime": "2026-11-06T15:00:00",
       "location": "Holcim Innovation Center, Dubai",
       "isGeneral": false,
       "color": "#006d77",
@@ -186,12 +186,12 @@
         "userID": null
       },
       "rotationalSchedule": {
-        "group1": { "startTime": "2025-11-06T09:00:00", "endTime": "2025-11-06T09:40:00" },
-        "group2": { "startTime": "2025-11-06T09:40:00", "endTime": "2025-11-06T10:20:00" },
-        "group3": { "startTime": "2025-11-06T10:20:00", "endTime": "2025-11-06T11:00:00" },
-        "group4": { "startTime": "2025-11-06T11:00:00", "endTime": "2025-11-06T11:40:00" },
-        "group5": { "startTime": "2025-11-06T11:40:00", "endTime": "2025-11-06T12:20:00" },
-        "group6": { "startTime": "2025-11-06T12:20:00", "endTime": "2025-11-06T13:00:00" }
+        "group1": { "startTime": "2026-11-06T09:00:00", "endTime": "2026-11-06T09:40:00" },
+        "group2": { "startTime": "2026-11-06T09:40:00", "endTime": "2026-11-06T10:20:00" },
+        "group3": { "startTime": "2026-11-06T10:20:00", "endTime": "2026-11-06T11:00:00" },
+        "group4": { "startTime": "2026-11-06T11:00:00", "endTime": "2026-11-06T11:40:00" },
+        "group5": { "startTime": "2026-11-06T11:40:00", "endTime": "2026-11-06T12:20:00" },
+        "group6": { "startTime": "2026-11-06T12:20:00", "endTime": "2026-11-06T13:00:00" }
       }
     },
     {
@@ -209,12 +209,12 @@
         "userID": null
       },
       "rotationalSchedule": {
-        "group1": { "startTime": "2025-11-06T09:00:00", "endTime": "2025-11-06T09:40:00" },
-        "group2": { "startTime": "2025-11-06T09:40:00", "endTime": "2025-11-06T10:20:00" },
-        "group3": { "startTime": "2025-11-06T10:20:00", "endTime": "2025-11-06T11:00:00" },
-        "group4": { "startTime": "2025-11-06T11:00:00", "endTime": "2025-11-06T11:40:00" },
-        "group5": { "startTime": "2025-11-06T11:40:00", "endTime": "2025-11-06T12:20:00" },
-        "group6": { "startTime": "2025-11-06T12:20:00", "endTime": "2025-11-06T13:00:00" }
+        "group1": { "startTime": "2026-11-06T09:00:00", "endTime": "2026-11-06T09:40:00" },
+        "group2": { "startTime": "2026-11-06T09:40:00", "endTime": "2026-11-06T10:20:00" },
+        "group3": { "startTime": "2026-11-06T10:20:00", "endTime": "2026-11-06T11:00:00" },
+        "group4": { "startTime": "2026-11-06T11:00:00", "endTime": "2026-11-06T11:40:00" },
+        "group5": { "startTime": "2026-11-06T11:40:00", "endTime": "2026-11-06T12:20:00" },
+        "group6": { "startTime": "2026-11-06T12:20:00", "endTime": "2026-11-06T13:00:00" }
       }
     },
     {
@@ -222,8 +222,8 @@
       "description": "Wrap-up session with closing reflections and networking lunch.",
       "category": "social",
       "day": "3",
-      "startTime": "2025-11-06T13:15:00",
-      "endTime": "2025-11-06T14:30:00",
+      "startTime": "2026-11-06T13:15:00",
+      "endTime": "2026-11-06T14:30:00",
       "location": "Baraha Ballroom 3",
       "isGeneral": true,
       "color": "#e29578",

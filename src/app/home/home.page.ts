@@ -104,9 +104,8 @@ throw new Error('Method not implemented.');
   public displayName: string | null = null;
   public isAdmin = false;
 private adminEmails = [
-   'feda.abdelghany@lafarge.com',
-  'emily.elias@lafarge.com',
-  'gulan.sherko@lafarge.com'
+  'emily.elias@holcim.com',
+  'hadeer.hamada@holcim.com'
 ];
 
 
