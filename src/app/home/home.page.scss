@@ -428,6 +428,18 @@ ion-content {
     cursor: pointer;
     transition: all 0.2s ease;
 
+    &.admin-action-card {
+      width: 100%;
+      color: inherit;
+      font: inherit;
+    }
+
+    &.activities-action-card {
+      width: 100%;
+      color: inherit;
+      font: inherit;
+    }
+
     &:active {
       transform: scale(0.95);
       box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.1);
@@ -469,6 +481,14 @@ background: linear-gradient(135deg, #4bb05b 0%, #4bb05b 100%);
       }
 
       &.hse {background: linear-gradient(135deg, #4bb05b 0%, #4bb05b 100%); 
+      }
+
+      &.admin {
+        background: linear-gradient(135deg, #0b2d5c 0%, #1d4370 100%);
+      }
+
+      &.activities {
+        background: linear-gradient(135deg, #6b5dd3 0%, #4c43aa 100%);
       }
 
       &.hse img {

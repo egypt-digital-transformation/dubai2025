@@ -251,6 +251,33 @@
               </div>
             </div>
           </div>
+
+          <button
+            type="button"
+            class="action-card activities-action-card"
+            (click)="openActivities()"
+            aria-label="Open quizzes and polls"
+          >
+            <span class="action-content">
+              <span class="action-icon activities"><ion-icon name="clipboard-outline"></ion-icon></span>
+              <span class="action-title">Quizzes &amp; Polls</span>
+              <span class="action-desc">Answer event questions</span>
+            </span>
+          </button>
+
+          <button
+            *ngIf="isAdmin"
+            type="button"
+            class="action-card admin-action-card"
+            (click)="openAdminPanel()"
+            aria-label="Open admin panel"
+          >
+            <span class="action-content">
+              <span class="action-icon admin"><ion-icon name="stats-chart-outline"></ion-icon></span>
+              <span class="action-title">Admin Panel</span>
+              <span class="action-desc">Analytics &amp; notifications</span>
+            </span>
+          </button>
         </div>
 
         <!-- My Agenda -->
@@ -445,6 +472,9 @@
 
       <!-- Body -->
       <div class="modal-body">
+        <ion-text color="danger" *ngIf="announcementError">
+          <p>{{ announcementError }}</p>
+        </ion-text>
         <ion-input
           label-placement="floating"
           fill="outline"

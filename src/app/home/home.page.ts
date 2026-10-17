@@ -1,8 +1,9 @@
-import { Component, NgZone, OnInit, OnDestroy } from '@angular/core';
+import { Component, inject, NgZone, OnInit, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
 import { CommonModule, DatePipe } from '@angular/common';
-import { addDoc } from '@angular/fire/firestore';
 import { FormsModule } from '@angular/forms';
+import { addIcons } from 'ionicons';
+import { clipboardOutline, statsChartOutline } from 'ionicons/icons';
 
 
 import {
@@ -13,10 +14,11 @@ import {
   IonCardTitle,
   IonCard,
   IonCardHeader,
-  IonCardContent, IonTextarea, IonInput } from '@ionic/angular/standalone';
+  IonCardContent, IonTextarea, IonInput, IonText } from '@ionic/angular/standalone';
 import { Auth, signOut, onAuthStateChanged } from '@angular/fire/auth';
 import { ModalController } from '@ionic/angular/standalone';
 import { DataService } from '../services/data.service';
+import { AdminService } from '../services/admin.service';
 import { environment } from '../../environments/environment';
 import { getApps, initializeApp } from 'firebase/app';
 import {
@@ -99,6 +101,7 @@ type MessageType = 'today' | 'over' | 'before' | null;
     IonModal,
     IonContent,
     IonIcon,
+    IonText,
     CommonModule,
     DatePipe,
     RouterModule,
@@ -106,8 +109,11 @@ type MessageType = 'today' | 'over' | 'before' | null;
   ],
 })
 export class HomePage implements OnInit, OnDestroy {
+  private readonly adminService = inject(AdminService);
+
 newAnnouncementTitle: any;
 newAnnouncementDesc: any;
+announcementError = '';
 openPhotos() {
 throw new Error('Method not implemented.');
 }
@@ -132,12 +138,6 @@ throw new Error('Method not implemented.');
   };
   readonly totalInductionsRequired = 2;
   completedInductionsCount = 0;
-private adminEmails = [
-  'emily.elias@holcim.com',
-  'hadeer.hamada@holcim.com'
-];
-
-
 
 showAddModal = false;
 newAnnouncementPriority = 'normal';
@@ -145,21 +145,25 @@ newAnnouncementPriority = 'normal';
 
 
 async submitAnnouncement() {
-  if (!this.newAnnouncementTitle.trim() || !this.newAnnouncementDesc.trim()) return;
+  const title = this.newAnnouncementTitle?.trim();
+  const description = this.newAnnouncementDesc?.trim();
+  if (!title || !description) return;
 
-  const ref = collection(this.firestore, 'announcements');
-  await addDoc(ref, {
-    title: this.newAnnouncementTitle.trim(),
-    description: this.newAnnouncementDesc.trim(),
-    priority: this.newAnnouncementPriority,
-    active: true,
-    timestamp: new Date(),
-  });
-
-  this.newAnnouncementTitle = '';
-  this.newAnnouncementDesc = '';
-  this.newAnnouncementPriority = 'normal';
-  this.closeAddModal();
+  this.announcementError = '';
+  try {
+    await this.adminService.createAnnouncement(
+      title,
+      description,
+      this.newAnnouncementPriority
+    );
+    this.newAnnouncementTitle = '';
+    this.newAnnouncementDesc = '';
+    this.newAnnouncementPriority = 'normal';
+    this.closeAddModal();
+  } catch (error) {
+    console.error('[HomePage] Failed to publish announcement:', error);
+    this.announcementError = 'Could not publish the announcement. Please try again.';
+  }
 }
 
   private destroy$ = new Subject<void>();
@@ -173,7 +177,9 @@ async submitAnnouncement() {
     private data: DataService,
     private modalController: ModalController,
     private zone: NgZone
-  ) {}
+  ) {
+    addIcons({ clipboardOutline, statsChartOutline });
+  }
 
   ngOnInit() {
 
@@ -206,7 +212,16 @@ this.showQR = false;
 
     authState$.pipe(takeUntil(this.destroy$)).subscribe((user: any) => {
       this.displayName = user?.displayName ? this.formatDisplayName(user.displayName) : null;
-      this.isAdmin = !!user?.email && this.adminEmails.includes(user.email);
+      this.isAdmin = false;
+      if (user?.email) {
+        void this.adminService.isAdmin(user.email).then((isAdmin) => {
+          if (this.auth.currentUser?.uid === user.uid) {
+            this.zone.run(() => (this.isAdmin = isAdmin));
+          }
+        }).catch((error) => {
+          console.error('[HomePage] Failed to check admin access:', error);
+        });
+      }
       this.listenToSafetyInductionStatus(user?.email ?? null);
 
     });
@@ -533,8 +548,17 @@ this.showQR = false;
     this.router.navigateByUrl('/tabs/projects');
   }
 
+  openAdminPanel() {
+    this.router.navigateByUrl('/admin');
+  }
+
+  openActivities() {
+    this.router.navigateByUrl('/activities');
+  }
+
 openAddModal() {
   if (this.showQR) this.closeQRCode();
+  this.announcementError = '';
   this.showAddModal = true;
 }
 
@@ -584,14 +608,7 @@ async closeQRCode() {
   }
 
   async addAnnouncement(title: string, description: string, priority: string = 'normal') {
-  const ref = collection(this.firestore, 'announcements');
-  await addDoc(ref, {
-    title,
-    description,
-    priority,
-    active: true,
-    timestamp: new Date()
-  });
+    await this.adminService.createAnnouncement(title, description, priority);
 }
 
 }

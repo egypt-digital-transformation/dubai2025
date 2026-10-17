@@ -1,0 +1,415 @@
+<ion-content [fullscreen]="true" class="admin-content">
+  <main class="admin-page">
+    <header class="admin-header">
+      <div class="admin-heading">
+        <ion-button
+          fill="clear"
+          class="back-button"
+          (click)="returnToApp()"
+        >
+          <ion-icon slot="start" name="arrow-back-outline"></ion-icon>
+          Back to app
+        </ion-button>
+        <div>
+          <p class="eyebrow">AHLAN COMPANION</p>
+          <h1>Admin panel</h1>
+          <p class="subtitle">Adoption, attendee activity and targeted notifications</p>
+        </div>
+      </div>
+      <ion-button fill="outline" (click)="loadDashboard()" [disabled]="isLoading">
+        <ion-icon slot="start" name="refresh-outline"></ion-icon>
+        Refresh
+      </ion-button>
+    </header>
+
+    <ion-note *ngIf="errorMessage" color="danger" class="message error-message">
+      {{ errorMessage }}
+    </ion-note>
+    <ion-note *ngIf="noticeMessage" color="success" class="message success-message">
+      {{ noticeMessage }}
+    </ion-note>
+
+    <div *ngIf="isLoading && !dashboard" class="loading-state" role="status">
+      Loading admin data…
+    </div>
+
+    <section class="panel-card">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">CAMPAIGNS</p>
+          <h2>Targeted push notifications</h2>
+        </div>
+      </div>
+      <ion-note *ngIf="!dashboard" color="medium" class="campaign-note">
+        Audience details are unavailable until the admin dashboard service responds.
+      </ion-note>
+      <form class="notification-form" (ngSubmit)="sendNotification()">
+        <ion-input
+          label="Notification title"
+          labelPlacement="stacked"
+          fill="outline"
+          maxlength="100"
+          [(ngModel)]="notificationTitle"
+          name="notificationTitle"
+          required
+        ></ion-input>
+        <ion-textarea
+          label="Message"
+          labelPlacement="stacked"
+          fill="outline"
+          maxlength="1000"
+          autoGrow="true"
+          [(ngModel)]="notificationBody"
+          name="notificationBody"
+          required
+        ></ion-textarea>
+        <ion-select
+          label="Audience"
+          labelPlacement="stacked"
+          fill="outline"
+          [(ngModel)]="audienceKind"
+          name="audienceKind"
+          [disabled]="!dashboard"
+        >
+          <ion-select-option value="all">All attendees</ion-select-option>
+          <ion-select-option value="user">One attendee</ion-select-option>
+          <ion-select-option value="segment">A group or track</ion-select-option>
+        </ion-select>
+
+        <ion-select
+          *ngIf="audienceKind === 'user'"
+          label="Attendee"
+          labelPlacement="stacked"
+          fill="outline"
+          [(ngModel)]="selectedUserId"
+          name="selectedUserId"
+          [disabled]="!dashboard"
+        >
+          <ion-select-option *ngFor="let attendee of attendees" [value]="attendee.id">
+            {{ attendee.name || attendee.email }}{{ attendee.hasPushToken ? '' : ' (no push token)' }}
+          </ion-select-option>
+        </ion-select>
+        <ion-select
+          *ngIf="audienceKind === 'segment'"
+          label="Group / track"
+          labelPlacement="stacked"
+          fill="outline"
+          [(ngModel)]="selectedSegmentKey"
+          name="selectedSegmentKey"
+          [disabled]="!dashboard"
+        >
+          <ion-select-option *ngFor="let segment of segments" [value]="segment.key">
+            {{ segment.label }}
+          </ion-select-option>
+        </ion-select>
+
+        <div class="send-row">
+          <p *ngIf="selectedRecipientCount !== null">
+            {{ selectedRecipientCount }} attendee(s) match ·
+            {{ pushReadyRecipientCount }} push-enabled
+          </p>
+          <ion-button
+            type="submit"
+            [disabled]="!dashboard || isSending || !notificationTitle.trim() || !notificationBody.trim()"
+          >
+            <ion-spinner *ngIf="isSending" name="crescent"></ion-spinner>
+            <ng-container *ngIf="!isSending">
+              <ion-icon slot="start" name="send-outline"></ion-icon>
+              Send notification
+            </ng-container>
+          </ion-button>
+        </div>
+      </form>
+    </section>
+
+    <section class="panel-card">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">ATTENDEE ENGAGEMENT</p>
+          <h2>Create a quiz or poll</h2>
+        </div>
+      </div>
+      <ion-note *ngIf="activityNotice" color="success" class="message success-message">
+        {{ activityNotice }}
+      </ion-note>
+      <ion-note *ngIf="activityError" color="danger" class="message error-message">
+        {{ activityError }}
+      </ion-note>
+      <form class="notification-form" (ngSubmit)="createInteractiveActivity()">
+        <ion-select
+          label="Activity type"
+          labelPlacement="stacked"
+          fill="outline"
+          [(ngModel)]="activityKind"
+          name="activityKind"
+        >
+          <ion-select-option value="quiz">Quiz (one correct answer)</ion-select-option>
+          <ion-select-option value="poll">Poll (no correct answer)</ion-select-option>
+        </ion-select>
+        <ion-input
+          label="Title"
+          labelPlacement="stacked"
+          fill="outline"
+          maxlength="120"
+          [(ngModel)]="activityTitle"
+          name="activityTitle"
+          required
+        ></ion-input>
+        <ion-textarea
+          label="Question"
+          labelPlacement="stacked"
+          fill="outline"
+          maxlength="500"
+          [(ngModel)]="activityQuestion"
+          name="activityQuestion"
+          required
+        ></ion-textarea>
+        <div class="activity-options">
+          <div class="activity-option" *ngFor="let option of activityOptions; let i = index">
+            <ion-input
+              [label]="'Option ' + (i + 1)"
+              labelPlacement="stacked"
+              fill="outline"
+              maxlength="120"
+              [(ngModel)]="activityOptions[i]"
+              [name]="'activityOption' + i"
+              required
+            ></ion-input>
+            <ion-button
+              *ngIf="activityKind === 'quiz'"
+              type="button"
+              fill="clear"
+              [color]="correctOptionIndex === i ? 'success' : 'medium'"
+              (click)="correctOptionIndex = i"
+              [attr.aria-label]="'Mark option ' + (i + 1) + ' as correct answer'"
+            >
+              {{ correctOptionIndex === i ? 'Correct answer' : 'Mark correct' }}
+            </ion-button>
+            <ion-button
+              *ngIf="activityOptions.length > 2"
+              type="button"
+              fill="clear"
+              color="danger"
+              (click)="removeActivityOption(i)"
+              [attr.aria-label]="'Remove option ' + (i + 1)"
+            >
+              Remove
+            </ion-button>
+          </div>
+          <ion-button
+            type="button"
+            fill="outline"
+            (click)="addActivityOption()"
+            [disabled]="activityOptions.length >= 6"
+          >
+            <ion-icon slot="start" name="add-outline"></ion-icon>
+            Add option
+          </ion-button>
+        </div>
+        <ion-select
+          label="Audience"
+          labelPlacement="stacked"
+          fill="outline"
+          [(ngModel)]="activityAudienceKind"
+          name="activityAudienceKind"
+        >
+          <ion-select-option value="all">All attendees</ion-select-option>
+          <ion-select-option value="user">One attendee</ion-select-option>
+          <ion-select-option value="segment">A group or track</ion-select-option>
+        </ion-select>
+        <ion-select
+          *ngIf="activityAudienceKind === 'user'"
+          label="Attendee"
+          labelPlacement="stacked"
+          fill="outline"
+          [(ngModel)]="activitySelectedUserId"
+          name="activitySelectedUserId"
+          [disabled]="!dashboard"
+        >
+          <ion-select-option *ngFor="let attendee of attendees" [value]="attendee.id">
+            {{ attendee.name || attendee.email }}
+          </ion-select-option>
+        </ion-select>
+        <ion-select
+          *ngIf="activityAudienceKind === 'segment'"
+          label="Group / track"
+          labelPlacement="stacked"
+          fill="outline"
+          [(ngModel)]="activitySelectedSegmentKey"
+          name="activitySelectedSegmentKey"
+          [disabled]="!dashboard"
+        >
+          <ion-select-option *ngFor="let segment of segments" [value]="segment.key">
+            {{ segment.label }}
+          </ion-select-option>
+        </ion-select>
+        <ion-note *ngIf="activityAudienceKind !== 'all' && !dashboard" color="medium">
+          Load dashboard data before selecting an attendee or segment.
+        </ion-note>
+        <div class="send-row">
+          <p>Attendees can submit one response. Results are shown in this admin panel.</p>
+          <ion-button
+            type="submit"
+            [disabled]="isCreatingActivity || !activityTitle.trim() || !activityQuestion.trim()"
+          >
+            <ion-spinner *ngIf="isCreatingActivity" name="crescent"></ion-spinner>
+            <ng-container *ngIf="!isCreatingActivity">
+              <ion-icon slot="start" name="send-outline"></ion-icon>
+              Publish {{ activityKind }}
+            </ng-container>
+          </ion-button>
+        </div>
+      </form>
+    </section>
+
+    <section class="panel-card">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">RESPONSES</p>
+          <h2>Published quizzes and polls</h2>
+        </div>
+        <ion-button fill="outline" (click)="loadAdminActivities()">Refresh results</ion-button>
+      </div>
+      <p *ngIf="activityLoadError" class="metric-caption">{{ activityLoadError }}</p>
+      <div *ngIf="!activityLoadError && !adminActivities.length" class="empty-state">
+        No quizzes or polls have been published.
+      </div>
+      <article class="activity-result" *ngFor="let activity of adminActivities">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">{{ activity.kind | uppercase }} · {{ activity.responseCount }} responses</p>
+            <h3>{{ activity.title }}</h3>
+            <p>{{ activity.question }}</p>
+          </div>
+          <ion-button
+            fill="outline"
+            (click)="toggleActivityResults(activity.id)"
+          >
+            {{ showActivityResults[activity.id] ? 'Hide results' : 'Show results' }}
+          </ion-button>
+        </div>
+        <div class="activity-result-counts" *ngIf="showActivityResults[activity.id]">
+          <p *ngFor="let option of activity.options; let i = index">
+            {{ option }} — {{ activity.optionCounts[i] }} response(s)
+          </p>
+          <p *ngIf="activity.kind === 'quiz'">
+            Correct answers: {{ activity.correctCount }} of {{ activity.responseCount }}
+          </p>
+        </div>
+      </article>
+    </section>
+
+    <ng-container *ngIf="dashboard as data">
+      <section class="metric-grid" aria-label="App analytics">
+        <article class="metric-card">
+          <span class="metric-label">Active now</span>
+          <strong>{{ data.activeLoggedIn }}</strong>
+          <span class="metric-caption">Seen in the last 15 minutes</span>
+        </article>
+        <article class="metric-card">
+          <span class="metric-label">Logged in</span>
+          <strong>{{ data.totalLoggedIn }}</strong>
+          <span class="metric-caption">Unique users observed signing in</span>
+        </article>
+        <article class="metric-card">
+          <span class="metric-label">Added to home screen</span>
+          <strong>{{ data.installedUsers }}</strong>
+          <span class="metric-caption">Install detected on this account</span>
+        </article>
+        <article class="metric-card">
+          <span class="metric-label">Push-enabled</span>
+          <strong>{{ data.pushReadyUsers }}</strong>
+          <span class="metric-caption">Of {{ data.totalAttendees }} delegate profiles</span>
+        </article>
+      </section>
+      <p class="refresh-caption">
+        Updated {{ data.refreshedAt | date:'mediumTime' }} · Refreshes every 30 seconds
+      </p>
+
+      <section class="panel-card">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">DELEGATES</p>
+            <h2>Attendee activity</h2>
+          </div>
+          <span class="count-pill">{{ data.attendees.length }} profiles</span>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Attendee</th>
+                <th scope="col">Email</th>
+                <th scope="col">Logged in</th>
+                <th scope="col">Active</th>
+                <th scope="col">Installed</th>
+                <th scope="col">Push</th>
+                <th scope="col">Group / track</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let attendee of data.attendees">
+                <td>{{ attendee.name || '—' }}</td>
+                <td>{{ attendee.email }}</td>
+                <td>{{ attendee.loggedIn ? 'Yes' : 'No' }}</td>
+                <td><span class="status-dot" [class.online]="attendee.active"></span>{{ attendee.active ? 'Active' : '—' }}</td>
+                <td>{{ attendee.installed ? 'Yes' : 'No' }}</td>
+                <td>{{ attendee.hasPushToken ? 'Ready' : 'Not enabled' }}</td>
+                <td>
+                  <span *ngIf="attendee.day2Group">D2 {{ attendee.day2Group }}</span>
+                  <span *ngIf="attendee.day3Type"> · D3 {{ attendee.day3Type }}</span>
+                  <span *ngIf="!attendee.day2Group && !attendee.day3Type">—</span>
+                </td>
+              </tr>
+              <tr *ngIf="!data.attendees.length">
+                <td colspan="7" class="empty-state">No attendee profiles were found.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel-card">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">DELIVERY &amp; ENGAGEMENT</p>
+            <h2>Recent campaigns</h2>
+          </div>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Sent</th>
+                <th scope="col">Title</th>
+                <th scope="col">Audience</th>
+                <th scope="col">Accepted</th>
+                <th scope="col">Failed</th>
+                <th scope="col">Opened</th>
+                <th scope="col">Open rate</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let campaign of data.campaigns">
+                <td>{{ campaign.createdAt | date:'short' }}</td>
+                <td>{{ campaign.title }}</td>
+                <td>{{ campaign.targetLabel }}</td>
+                <td>{{ campaign.acceptedCount }}</td>
+                <td>{{ campaign.failedCount }}</td>
+                <td>{{ campaign.openedCount }}</td>
+                <td>{{ openRate(campaign) }}%</td>
+              </tr>
+              <tr *ngIf="!data.campaigns.length">
+                <td colspan="7" class="empty-state">No push campaigns have been sent.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="metric-caption campaign-note">
+          “Accepted” means Firebase accepted the send request. Opens count unique recipients
+          who return to the app through that notification.
+        </p>
+      </section>
+    </ng-container>
+  </main>
+</ion-content>

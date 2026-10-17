@@ -1,16 +1,8 @@
 import { Injectable, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { ToastController } from '@ionic/angular/standalone';
-import {
-  Firestore,
-  collection,
-  doc,
-  getDocs,
-  query,
-  setDoc,
-  where,
-} from '@angular/fire/firestore';
 import { AuthService } from './auth.service';
+import { AdminService } from './admin.service';
 import { environment } from '../../environments/environment';
 import { BehaviorSubject, filter } from 'rxjs';
 import {
@@ -28,8 +20,8 @@ import {
 export class FcmService {
   private router = inject(Router);
   private toastCtrl = inject(ToastController);
-  private firestore = inject(Firestore);
   private authService = inject(AuthService);
+  private adminService = inject(AdminService);
 
   private messagingInstance: Messaging | null = null;
   private isInitialized = false;
@@ -174,7 +166,15 @@ export class FcmService {
     if (targetUrl) {
       buttons.unshift({
         text: 'View',
-        handler: () => {
+        handler: async () => {
+          const campaignId = payload.data?.['campaignId'];
+          if (campaignId) {
+            try {
+              await this.adminService.recordNotificationOpen(campaignId);
+            } catch (error) {
+              console.error('[FCM] Failed to record notification open:', error);
+            }
+          }
           if (targetUrl.startsWith('http')) {
             window.open(targetUrl, '_blank');
           } else {
@@ -202,36 +202,15 @@ export class FcmService {
   async saveTokenToFirestore(token: string) {
     const currentUser = this.authService.currentUser;
     if (!currentUser?.email) {
-      console.warn('[Firestore] No authenticated user email found, skipping FCM token save');
+      console.warn('[FCM] No authenticated user email found, skipping push-token registration');
       return;
     }
 
-    console.log(`[Firestore] Saving FCM Token for ${currentUser.email}`);
-
     try {
-      const usersRef = collection(this.firestore, 'users');
-      const q = query(usersRef, where('email', '==', currentUser.email.toLowerCase()));
-      const snapshot = await getDocs(q);
-
-      if (snapshot.empty) {
-        console.warn(`[Firestore] ⚠️ No Firestore user found for ${currentUser.email}`);
-        return;
-      }
-
-      const userDoc = snapshot.docs[0];
-      const userRef = doc(this.firestore, `users/${userDoc.id}`);
-      await setDoc(
-        userRef,
-        {
-          fcmToken: token,
-          fcmTokenUpdatedAt: new Date().toISOString(),
-        },
-        { merge: true }
-      );
-
-      console.log(`✅ [Firestore] FCM Token saved for ${currentUser.email}`);
+      await this.adminService.registerPushToken(token);
+      console.log(`[FCM] Push token registered for ${currentUser.email}`);
     } catch (error) {
-      console.error('[Firestore] ❌ Error saving FCM token:', error);
+      console.error('[FCM] Failed to register push token:', error);
     }
   }
 }

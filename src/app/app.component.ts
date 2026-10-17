@@ -4,10 +4,12 @@ import { PwaService } from './services/pwa.service';
 import { AuthService } from './services/auth.service';
 import { AgendaService } from './services/agenda.service';
 import { FcmService } from './services/fcm.service';
+import { AdminService } from './services/admin.service';
 import { IonApp, IonRouterOutlet, Platform } from '@ionic/angular/standalone';
 import { CommonModule } from '@angular/common';
-import { filter } from 'rxjs';
+import { EMPTY, filter, interval, startWith, switchMap, tap } from 'rxjs';
 import { Auth } from '@angular/fire/auth';
+import { NavigationEnd } from '@angular/router';
 
 @Component({
   selector: 'app-root',
@@ -23,11 +25,14 @@ export class AppComponent implements OnInit {
   private platform = inject(Platform);
   private agendaService = inject(AgendaService);
   private fcmService = inject(FcmService);
+  private adminService = inject(AdminService);
   private auth = inject(Auth);
 
   isIos = false;
   showInstallBanner = false;
   deferredPrompt: any;
+  private installedApp = false;
+  private readonly openedCampaigns = new Set<string>();
 
   async ngOnInit() {
     console.log('[APP] Initializing...');
@@ -46,6 +51,29 @@ export class AppComponent implements OnInit {
     // ✅ Handle PWA install banners
     this.checkInstallSupport();
     this.handleBeforeInstallPrompt();
+    this.installedApp = this.isInstalledExperience();
+    window.addEventListener('appinstalled', () => {
+      this.installedApp = true;
+      this.recordAppActivity();
+    });
+
+    this.authService.user$
+      .pipe(
+        switchMap((user) =>
+          user?.email
+            ? interval(5 * 60 * 1000).pipe(
+                startWith(0),
+                tap(() => this.recordAppActivity())
+              )
+            : EMPTY
+        )
+      )
+      .subscribe();
+
+    this.router.events
+      .pipe(filter((event) => event instanceof NavigationEnd))
+      .subscribe(() => this.trackNotificationCampaignOpen());
+    this.trackNotificationCampaignOpen();
 
     // ✅ Generate the user's agenda once per login session
     this.authService.user$
@@ -82,6 +110,43 @@ export class AppComponent implements OnInit {
       event.preventDefault();
       this.deferredPrompt = event;
       this.showInstallBanner = true;
+    });
+  }
+
+  private isInstalledExperience(): boolean {
+    const navigatorWithStandalone = window.navigator as Navigator & {
+      standalone?: boolean;
+    };
+    return (
+      navigatorWithStandalone.standalone === true ||
+      window.matchMedia('(display-mode: standalone)').matches
+    );
+  }
+
+  private recordAppActivity(): void {
+    void this.adminService
+      .recordAppActivity(this.installedApp || this.isInstalledExperience())
+      .catch((error) => {
+        console.error('[APP] Failed to record app activity:', error);
+      });
+  }
+
+  private trackNotificationCampaignOpen(): void {
+    const campaignId = new URL(window.location.href).searchParams.get(
+      'notificationCampaign'
+    );
+    if (
+      !campaignId ||
+      this.openedCampaigns.has(campaignId) ||
+      !this.auth.currentUser
+    ) {
+      return;
+    }
+
+    this.openedCampaigns.add(campaignId);
+    void this.adminService.recordNotificationOpen(campaignId).catch((error) => {
+      this.openedCampaigns.delete(campaignId);
+      console.error('[APP] Failed to record notification open:', error);
     });
   }
 

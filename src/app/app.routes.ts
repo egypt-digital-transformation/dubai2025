@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { AuthGuard } from './guards/auth.guard';
 import { DataPrefetchGuard } from './guards/data-prefetch.guard';
+import { AdminGuard } from './guards/admin.guard';
 
 export const routes: Routes = [
   {
@@ -30,6 +31,17 @@ export const routes: Routes = [
     path: 'hse-induction',
     canActivate: [AuthGuard, DataPrefetchGuard],
     loadComponent: () => import('./hse-induction/hse-induction.page').then(m => m.HseInductionPage),
+  },
+  {
+    path: 'admin',
+    canActivate: [AuthGuard, AdminGuard],
+    loadComponent: () => import('./admin/admin.page').then(m => m.AdminPage),
+  },
+  {
+    path: 'activities',
+    canActivate: [AuthGuard],
+    loadComponent: () =>
+      import('./activities/activities.page').then(m => m.ActivitiesPage),
   },
   {
     path: 'tips',

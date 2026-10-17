@@ -1,0 +1,71 @@
+<ion-content [fullscreen]="true" class="activities-content">
+  <main class="activities-page">
+    <header class="activities-header">
+      <div>
+        <ion-button fill="clear" (click)="returnToApp()" aria-label="Back to app">
+          <ion-icon slot="start" name="arrow-back-outline"></ion-icon>
+          Back to app
+        </ion-button>
+        <p class="eyebrow">AHLAN COMPANION</p>
+        <h1>Quizzes &amp; Polls</h1>
+        <p class="subtitle">Share your answer with the event team.</p>
+      </div>
+      <ion-button fill="outline" (click)="loadActivities()" [disabled]="isLoading">
+        <ion-icon slot="start" name="refresh-outline"></ion-icon>
+        Refresh
+      </ion-button>
+    </header>
+
+    <ion-note *ngIf="errorMessage" color="danger" class="activity-message">
+      {{ errorMessage }}
+    </ion-note>
+    <div *ngIf="isLoading" class="activity-state" role="status">
+      Loading activities…
+    </div>
+    <div *ngIf="!isLoading && !errorMessage && !activities.length" class="activity-state">
+      No quizzes or polls are available for you right now.
+    </div>
+
+    <section class="activity-card" *ngFor="let activity of activities">
+      <p class="eyebrow">{{ activity.kind === 'quiz' ? 'QUIZ' : 'POLL' }}</p>
+      <h2>{{ activity.title }}</h2>
+      <p class="activity-question">{{ activity.question }}</p>
+
+      <ng-container *ngIf="activity.submitted; else responseForm">
+        <ion-note color="success">You have already responded.</ion-note>
+      </ng-container>
+      <ng-template #responseForm>
+        <form (ngSubmit)="submit(activity)">
+          <ion-radio-group
+            [(ngModel)]="selectedOptions[activity.id]"
+            [name]="'answer-' + activity.id"
+          >
+            <ion-item *ngFor="let option of activity.options; let i = index">
+              <ion-radio [value]="i" labelPlacement="end">{{ option }}</ion-radio>
+            </ion-item>
+          </ion-radio-group>
+          <ion-button
+            type="submit"
+            class="submit-answer"
+            [disabled]="submittingActivityId === activity.id"
+          >
+            <ion-spinner
+              *ngIf="submittingActivityId === activity.id"
+              name="crescent"
+            ></ion-spinner>
+            <ng-container *ngIf="submittingActivityId !== activity.id">
+              Submit answer
+            </ng-container>
+          </ion-button>
+        </form>
+      </ng-template>
+      <ion-note
+        *ngIf="feedback[activity.id]"
+        [color]="activity.submitted ? 'success' : 'danger'"
+        class="activity-message"
+      >
+        {{ feedback[activity.id] }}
+      </ion-note>
+    </section>
+  </main>
+</ion-content>
