@@ -1,0 +1,145 @@
+<ion-content [fullscreen]="true" class="portfolio-content">
+  <div class="portfolio-page">
+    <header class="masthead">
+      <div class="masthead-inner">
+        <div class="brand-lockup">
+          <span class="brand-name">HOLCIM</span>
+          <span class="brand-divider"></span>
+          <span class="brand-region">AMEA</span>
+        </div>
+        <span class="masthead-note">PROJECT PORTFOLIO</span>
+      </div>
+    </header>
+
+    <main>
+      <section class="opening-section">
+        <div class="opening-copy">
+          <p class="eyebrow"><span></span> EGYPT &amp; AMEA</p>
+          <h1>Building what<br />moves us forward.</h1>
+          <p class="opening-description">
+            A selection of landmarks and infrastructure shaped with ambition,
+            engineering, and a more sustainable approach to construction.
+          </p>
+        </div>
+
+        <figure class="feature-image">
+          <div class="image-placeholder feature-placeholder">
+            <span>EGYPT</span>
+            <small>Photography unavailable</small>
+          </div>
+          <img
+            [src]="egyptProjects[0].heroImage"
+            [alt]="egyptProjects[0].name + ', ' + egyptProjects[0].subtitle"
+            class="portfolio-image"
+            fetchpriority="high"
+            (error)="onImageError($event)"
+          />
+          <div class="feature-shade"></div>
+          <figcaption class="feature-caption">
+            <span class="feature-kicker">FEATURED LANDMARK · EGYPT</span>
+            <h2>{{ egyptProjects[0].name }}</h2>
+            <p>{{ egyptProjects[0].subtitle }}</p>
+            <div class="feature-metrics">
+              <span>
+                <strong>{{ egyptProjects[0].stats.height }}</strong>
+                <small>HEIGHT</small>
+              </span>
+              <span class="metric-divider"></span>
+              <span>
+                <strong>{{ egyptProjects[0].stats.co2Reduction }}</strong>
+                <small>CO₂ REDUCTION</small>
+              </span>
+            </div>
+          </figcaption>
+          <span class="image-index">01</span>
+        </figure>
+      </section>
+
+      <section class="portfolio-section egypt-section">
+        <div class="section-heading">
+          <div class="section-number">01 <span></span> EGYPT</div>
+          <div>
+            <h2>Building icons of Egypt</h2>
+            <p>Landmarks advancing a new chapter in Egyptian development.</p>
+          </div>
+        </div>
+
+        <div class="project-grid egypt-grid">
+          <article class="project-card" *ngFor="let project of egyptProjects.slice(1); let i = index">
+            <figure class="card-image">
+              <div class="image-placeholder">
+                <span>{{ project.country }}</span>
+                <small>Photography unavailable</small>
+              </div>
+              <img
+                [src]="project.heroImage"
+                [alt]="project.name + ', ' + project.subtitle"
+                class="portfolio-image"
+                loading="lazy"
+                (error)="onImageError($event)"
+              />
+              <span class="card-index">0{{ i + 2 }}</span>
+            </figure>
+            <div class="card-copy">
+              <p class="project-location">{{ project.subtitle }} · {{ project.country }}</p>
+              <div class="card-title-row">
+                <h3>{{ project.name }}</h3>
+                <div class="card-metric" *ngIf="project.stats.co2Reduction">
+                  <strong>{{ project.stats.co2Reduction }}</strong>
+                  <small>CO₂ REDUCTION</small>
+                </div>
+              </div>
+              <p class="project-highlight">{{ project.engineeringHighlight }}</p>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="portfolio-section amea-section">
+        <div class="section-heading">
+          <div class="section-number">02 <span></span> AMEA</div>
+          <div>
+            <h2>Across the region</h2>
+            <p>Distinctive projects contributing to the cities of tomorrow.</p>
+          </div>
+        </div>
+
+        <div class="project-grid amea-grid">
+          <article class="project-card" *ngFor="let project of ameaProjects; let i = index">
+            <figure class="card-image">
+              <div class="image-placeholder">
+                <span>{{ project.country }}</span>
+                <small>Photography unavailable</small>
+              </div>
+              <img
+                [src]="project.heroImage"
+                [alt]="project.name + ', ' + project.subtitle"
+                class="portfolio-image"
+                loading="lazy"
+                (error)="onImageError($event)"
+              />
+              <span class="card-index">0{{ i + 1 }}</span>
+            </figure>
+            <div class="card-copy">
+              <p class="project-location">{{ project.subtitle }}</p>
+              <div class="card-title-row">
+                <h3>{{ project.name }}</h3>
+                <div class="card-metric" *ngIf="project.stats.co2Reduction">
+                  <strong>{{ project.stats.co2Reduction }}</strong>
+                  <small>CO₂ REDUCTION</small>
+                </div>
+              </div>
+              <p class="project-highlight">{{ project.engineeringHighlight }}</p>
+            </div>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <footer class="portfolio-footer">
+      <div class="footer-rule"></div>
+      <span>HOLCIM · BUILDING PROGRESS FOR PEOPLE AND THE PLANET</span>
+      <span class="footer-mark">AMEA</span>
+    </footer>
+  </div>
+</ion-content>

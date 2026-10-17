@@ -1,0 +1,95 @@
+<div class="project-detail-overlay" (click)="close()" (keydown.escape)="close()">
+  <section
+    class="project-detail-panel"
+    role="dialog"
+    aria-modal="true"
+    [attr.aria-label]="project.name"
+    (click)="$event.stopPropagation()"
+  >
+    <ion-header class="detail-header">
+      <ion-toolbar>
+        <ion-title>{{ project.name }}</ion-title>
+        <ion-buttons slot="end">
+          <ion-button
+            class="modal-close"
+            fill="clear"
+            aria-label="Close project details"
+            title="Close project details"
+            (click)="close()"
+          >
+            <ion-icon slot="icon-only" name="close-outline"></ion-icon>
+          </ion-button>
+        </ion-buttons>
+      </ion-toolbar>
+    </ion-header>
+
+    <ion-content [scrollY]="true" class="detail-content">
+  <!-- Hero Image -->
+  <div class="hero-section">
+    <img [src]="project.heroImage" [alt]="project.name" class="hero-img" />
+    <div class="hero-overlay"></div>
+
+    <!-- Hero Text -->
+    <div class="hero-text">
+      <div class="hero-tags">
+        <span class="hero-tag" *ngFor="let tag of project.tags">{{ tag }}</span>
+      </div>
+      <h1 class="hero-title">{{ project.name }}</h1>
+      <p class="hero-subtitle">
+        <ion-icon name="location-outline"></ion-icon>
+        {{ project.subtitle }}, {{ project.country }}
+      </p>
+    </div>
+  </div>
+
+  <!-- Content Body -->
+  <div class="detail-body">
+    <!-- Stats Grid -->
+    <div class="stats-grid">
+      <div class="stat-card" *ngFor="let stat of getDisplayStats()">
+        <div class="stat-icon-wrap">
+          <ion-icon [name]="stat.icon"></ion-icon>
+        </div>
+        <div class="stat-value">{{ stat.value }}</div>
+        <div class="stat-label">{{ stat.label }}</div>
+      </div>
+    </div>
+
+    <!-- Holcim Products -->
+    <div class="section">
+      <h3 class="section-title">
+        <ion-icon name="shield-checkmark-outline"></ion-icon>
+        Holcim Solutions
+      </h3>
+      <div class="products-list">
+        <div class="product-card" *ngFor="let product of project.products"
+             [style.borderLeftColor]="product.color || '#2E7D32'">
+          <div class="product-name">{{ product.name }}</div>
+          <div class="product-desc">{{ product.percentage || product.description }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Description -->
+    <div class="section">
+      <h3 class="section-title">
+        <ion-icon name="document-text-outline"></ion-icon>
+        Project Overview
+      </h3>
+      <p class="description-text">{{ project.description }}</p>
+    </div>
+
+    <!-- Carbon Impact Banner -->
+    <div class="carbon-banner" *ngIf="project.stats.co2Reduction">
+      <div class="carbon-icon">
+        <ion-icon name="leaf-outline"></ion-icon>
+      </div>
+      <div class="carbon-content">
+        <div class="carbon-value">{{ project.stats.co2Reduction }}</div>
+        <div class="carbon-label">CO₂ Reduction with Holcim solutions</div>
+      </div>
+    </div>
+  </div>
+    </ion-content>
+  </section>
+</div>

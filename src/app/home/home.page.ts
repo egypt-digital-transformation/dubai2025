@@ -529,6 +529,10 @@ this.showQR = false;
     this.router.navigate(['/tips']);
   }
 
+  openProjects() {
+    this.router.navigateByUrl('/tabs/projects');
+  }
+
 openAddModal() {
   if (this.showQR) this.closeQRCode();
   this.showAddModal = true;

@@ -6,8 +6,6 @@ import {
   onAuthStateChanged,
   User,
   signOut,
-  browserLocalPersistence,
-  setPersistence
 } from '@angular/fire/auth';
 import { BehaviorSubject } from 'rxjs';
 import { Preferences } from '@capacitor/preferences';
@@ -23,8 +21,6 @@ export class AuthService {
   private initPromise: Promise<void>;
 
   constructor(private auth: Auth) {
-    // Ensure persistent session
-    setPersistence(this.auth, browserLocalPersistence);
     this.initPromise = this.initializeAuth();
   }
 

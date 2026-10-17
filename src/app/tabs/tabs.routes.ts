@@ -27,6 +27,13 @@ export const routes: Routes = [
           import('../resources/resources.page').then((m) => m.ResourcesPage),
       },
       {
+        path: 'projects',
+        loadComponent: () =>
+          import('../iconic-projects/iconic-projects.page').then(
+            (m) => m.IconicProjectsPage
+          ),
+      },
+      {
         path: '',
         redirectTo: 'home', // ✅ redirect within this group
         pathMatch: 'full',

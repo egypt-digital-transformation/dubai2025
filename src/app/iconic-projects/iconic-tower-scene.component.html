@@ -1,0 +1,72 @@
+<section class="tower-showcase" aria-labelledby="tower-showcase-title">
+  <div class="showcase-copy">
+    <p class="eyebrow">Building Icons of Egypt</p>
+    <h2 id="tower-showcase-title">{{ project.name }}</h2>
+    <p class="showcase-location">
+      <ion-icon name="location-outline"></ion-icon>
+      {{ project.subtitle }}, {{ project.country }}
+    </p>
+  </div>
+
+  <div class="tower-stage">
+    <canvas
+      #sceneCanvas
+      aria-label="Interactive 3D model of The Iconic Tower. Drag to rotate."
+      (pointerdown)="onPointerDown($event)"
+      (pointermove)="onPointerMove($event)"
+      (pointerup)="onPointerUp()"
+      (pointercancel)="onPointerUp()"
+    ></canvas>
+    <div class="height-callout">
+      <strong>{{ project.stats.height }}</strong>
+      <span>Tallest tower in Africa</span>
+    </div>
+    <p class="drag-hint">Drag to rotate the tower</p>
+
+    <div class="scene-controls" aria-label="3D model controls">
+      <ion-button fill="clear" aria-label="Rotate left" (click)="rotate(-1)">
+        <ion-icon slot="icon-only" name="arrow-back-outline"></ion-icon>
+      </ion-button>
+      <ion-button fill="clear" aria-label="Zoom out" (click)="zoom(-1)">
+        <ion-icon slot="icon-only" name="remove-outline"></ion-icon>
+      </ion-button>
+      <ion-button fill="clear" aria-label="Reset 3D view" (click)="resetView()">
+        <ion-icon slot="icon-only" name="refresh-outline"></ion-icon>
+      </ion-button>
+      <ion-button fill="clear" aria-label="Zoom in" (click)="zoom(1)">
+        <ion-icon slot="icon-only" name="add-outline"></ion-icon>
+      </ion-button>
+      <ion-button fill="clear" aria-label="Rotate right" (click)="rotate(1)">
+        <ion-icon slot="icon-only" name="arrow-forward-outline"></ion-icon>
+      </ion-button>
+    </div>
+  </div>
+
+  <div class="showcase-footer">
+    <div class="impact-stat">
+      <span class="impact-value">{{ project.stats.co2Reduction }}</span>
+      <span class="impact-label">CO₂ reduction</span>
+    </div>
+    <div class="impact-stat">
+      <span class="impact-value">{{ project.stats.customStats?.[0]?.value }}</span>
+      <span class="impact-label">{{ project.stats.customStats?.[0]?.label }}</span>
+    </div>
+    <div class="showcase-products">
+      <span
+        class="product-pill"
+        *ngFor="let product of project.products"
+        [style.backgroundColor]="product.color || '#2E7D32'"
+      >
+        {{ product.name }}
+      </span>
+    </div>
+    <ion-button class="details-button" fill="clear" (click)="openDetails.emit(project)">
+      Project details
+      <ion-icon slot="end" name="arrow-forward-outline"></ion-icon>
+    </ion-button>
+  </div>
+
+  <p class="webgl-fallback" *ngIf="renderError" role="status">
+    Interactive 3D is unavailable in this browser. Project details and images remain available below.
+  </p>
+</section>
