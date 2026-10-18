@@ -1589,10 +1589,10 @@ ion-modal::part(content) {
   border-radius: 1.25rem;
   color: #fff;
   isolation: isolate;
-  margin-bottom: 1.75rem;
-  min-height: 17rem;
+  margin-bottom: 1rem;
+  min-height: 13.5rem;
   overflow: hidden;
-  padding: clamp(1.5rem, 5vw, 2.5rem);
+  padding: clamp(1.35rem, 4vw, 2rem);
   position: relative;
 }
 
@@ -1687,6 +1687,57 @@ ion-modal::part(content) {
     background: #eaf7fa;
     transform: translateY(-1px);
   }
+}
+
+.ahlan-card {
+  align-items: center;
+  display: flex;
+  min-height: 8.5rem;
+  margin-bottom: 1.5rem;
+  position: relative;
+}
+
+.ahlan-card-character {
+  align-self: flex-end;
+  flex: 0 0 7rem;
+  height: 8.5rem;
+  margin-right: -1rem;
+  position: relative;
+  z-index: 2;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+
+}
+
+.ahlan-card-copy-box {
+  background: #fff;
+  border: 1px solid #e2e8ec;
+  border-radius: 1.25rem;
+  box-shadow: 0 8px 24px rgba(12, 47, 75, 0.07);
+  flex: 1;
+  min-width: 0;
+  padding: 1.25rem 1.5rem 1.25rem 2.25rem;
+}
+
+.ahlan-card-copy {
+  max-width: 44rem;
+}
+
+.ahlan-card-copy h2 {
+  color: #1d4370;
+  font-size: 1.45rem;
+  margin: 0 0 0.35rem;
+}
+
+.ahlan-card-copy p {
+  color: #627286;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  margin: 0;
 }
 
 .home-section {
@@ -1865,7 +1916,21 @@ ion-modal::part(content) {
   }
 
   .welcome-hero {
-    min-height: 19rem;
+    min-height: 15rem;
+  }
+
+  .ahlan-card {
+    min-height: 8rem;
+  }
+
+  .ahlan-card-character {
+    flex-basis: 5.25rem;
+    height: 7.25rem;
+    margin-right: -0.75rem;
+  }
+
+  .ahlan-card-copy-box {
+    padding: 1rem 1rem 1rem 1.5rem;
   }
 
   .quick-actions {

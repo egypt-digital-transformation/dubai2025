@@ -28,16 +28,19 @@ import {
   AdminCampaign,
   AdminDashboard,
   AdminInteractiveActivity,
+  AdminRequest,
   AdminResource,
   AdminService,
   DEFAULT_RESOURCE_TYPES,
   NotificationTarget,
   ResourceType,
+  RequestStatus,
 } from '../services/admin.service';
 import { IconicProject } from '../iconic-projects/models/project.model';
 import type { ProjectInput } from '../services/admin.service';
 import { ALL_PROJECTS } from '../iconic-projects/data/projects.data';
 import countryData from '../../../node_modules/flag-icons/country.json';
+import { greetingForNationality, NationalityGreeting } from '../shared/nationality-greetings';
 
 type SegmentField =
   | 'day2.group'
@@ -52,7 +55,7 @@ interface AudienceSegment {
   label: string;
 }
 
-type AdminSection = 'overview' | 'attendees' | 'flights' | 'engagement' | 'projects' | 'resources' | 'updates';
+type AdminSection = 'overview' | 'attendees' | 'flights' | 'requests' | 'engagement' | 'projects' | 'resources' | 'updates';
 type UpdateMode = 'now' | 'scheduled';
 type AttendeeStatusFilter = 'all' | 'active' | 'loggedIn' | 'installed' | 'pushReady';
 interface ProjectCountry {
@@ -96,6 +99,10 @@ export class AdminPage implements OnInit, OnDestroy {
   activityError = '';
   showActivityResults: Record<string, boolean> = {};
   adminActivities: AdminInteractiveActivity[] = [];
+  requests: AdminRequest[] = [];
+  requestStatusOptions: RequestStatus[] = ['Open', 'In progress', 'Resolved'];
+  savingRequestId: string | null = null;
+  requestLoadError = '';
   activityLoadError = '';
   selectedSection: AdminSection = 'overview';
   updateMode: UpdateMode = 'now';
@@ -172,7 +179,7 @@ export class AdminPage implements OnInit, OnDestroy {
   }
 
   onSectionTabKeydown(event: KeyboardEvent, currentSection: AdminSection): void {
-    const sections: AdminSection[] = ['overview', 'attendees', 'flights', 'engagement', 'projects', 'resources', 'updates'];
+    const sections: AdminSection[] = ['overview', 'attendees', 'flights', 'requests', 'engagement', 'projects', 'resources', 'updates'];
     const currentIndex = sections.indexOf(currentSection);
     let nextIndex: number;
 
@@ -202,11 +209,45 @@ export class AdminPage implements OnInit, OnDestroy {
   ngOnInit(): void {
     void this.loadDashboard();
     void this.loadAdminActivities();
+    void this.loadRequests();
     this.refreshTimer = setInterval(() => {
       if (!this.isLoading && !this.isSending) {
         void this.loadDashboard(true);
+        void this.loadRequests();
       }
     }, 30_000);
+  }
+
+  async loadRequests(): Promise<void> {
+    try {
+      this.requests = await this.adminService.loadAdminRequests();
+      this.requestLoadError = '';
+    } catch (error) {
+      console.error('[AdminPage] Failed to load requests:', error);
+      this.requestLoadError = 'Could not load help requests.';
+    }
+  }
+
+  async updateRequest(request: AdminRequest): Promise<void> {
+    if (this.savingRequestId) {
+      return;
+    }
+
+    this.savingRequestId = request.id;
+    try {
+      await this.adminService.updateAdminRequest(
+        request.id,
+        request.status,
+        request.adminComment
+      );
+      this.noticeMessage = 'Request updated successfully.';
+      await this.loadRequests();
+    } catch (error) {
+      console.error('[AdminPage] Failed to update request:', error);
+      this.requestLoadError = 'Could not save this request update.';
+    } finally {
+      this.savingRequestId = null;
+    }
   }
 
   ngOnDestroy(): void {
@@ -658,6 +699,28 @@ export class AdminPage implements OnInit, OnDestroy {
 
   get attendees(): AdminAttendee[] {
     return this.dashboard?.attendees ?? [];
+  }
+
+  get nationalityGreetings(): NationalityGreeting[] {
+    const greetings = new Map<string, NationalityGreeting>();
+    for (const attendee of this.dashboard?.attendees ?? []) {
+      const nationality = attendee.nationality.trim();
+      if (!nationality) {
+        continue;
+      }
+      const key = nationality.toLowerCase();
+      const existing = greetings.get(key);
+      if (existing) {
+        existing.attendeeCount += 1;
+      } else {
+        greetings.set(key, {
+          nationality,
+          greeting: greetingForNationality(nationality),
+          attendeeCount: 1,
+        });
+      }
+    }
+    return [...greetings.values()].sort((a, b) => a.nationality.localeCompare(b.nationality));
   }
 
   get filteredAttendees(): AdminAttendee[] {

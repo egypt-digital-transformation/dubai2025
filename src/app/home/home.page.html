@@ -5,7 +5,7 @@
         <img src="assets/skyline.webp" alt="" class="welcome-skyline" />
         <div class="welcome-copy">
           <p class="welcome-eyebrow">YOUR AMEA EXPERIENCE</p>
-          <h1 id="welcome-title">Ahlan, {{ displayName || 'there' }}.</h1>
+          <h1 id="welcome-title">{{ welcomeGreeting }}, {{ firstName || displayName || 'there' }}.</h1>
           <p class="welcome-description">
             Everything you need. One memorable journey.
           </p>
@@ -14,10 +14,22 @@
             <span class="welcome-day" *ngIf="currentDay === 0">COMING SOON</span>
             <span>Egypt · 2026</span>
           </div>
-          <button type="button" class="welcome-link" (click)="navigateToAgenda()">
-            Explore your agenda
-            <ion-icon name="arrow-forward-outline" aria-hidden="true"></ion-icon>
-          </button>
+        </div>
+      </section>
+
+      <section class="ahlan-card" aria-labelledby="ahlan-card-title">
+        <div class="ahlan-card-character">
+          <img src="assets/guy.png" alt="Friendly welcome character" />
+        </div>
+        <div class="ahlan-card-copy-box">
+          <div class="ahlan-card-copy">
+            <h2 id="ahlan-card-title">Ahlan!</h2>
+            <p>
+              In Arabic, "Ahlan" means "welcome," and "Ahlan wa sahlan" adds, "may your arrival be easy."
+              Like the greeting, this app is here to make your visit easy with quick access to your
+              schedule, local info, and more.
+            </p>
+          </div>
         </div>
       </section>
 

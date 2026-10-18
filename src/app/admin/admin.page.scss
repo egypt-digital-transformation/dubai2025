@@ -935,6 +935,40 @@
   &:active {
     cursor: grabbing;
   }
+
+  .nationality-greetings {
+    margin-top: 1.5rem;
+  }
+
+  .nationality-table {
+    width: 100%;
+    min-width: 460px;
+    border-collapse: collapse;
+    text-align: left;
+  }
+
+  .nationality-table th,
+  .nationality-table td {
+    padding: 0.85rem 1rem;
+    border-bottom: 1px solid #e7edf0;
+  }
+
+  .nationality-table th {
+    color: #62717c;
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .nationality-table td {
+    color: #163b5b;
+    font-size: 0.9rem;
+  }
+
+  .nationality-table .greeting-cell {
+    font-size: 1rem;
+    font-weight: 700;
+  }
 }
 
 table {
@@ -963,7 +997,8 @@ table {
 }
 
 .attendees-table,
-.flight-details-table {
+.flight-details-table,
+.requests-table {
   min-width: max-content;
 
   th:first-child,
@@ -974,6 +1009,36 @@ table {
     min-width: 170px;
     background: #fff;
     box-shadow: 5px 0 9px rgb(23 43 77 / 8%);
+  }
+
+  .requests-table {
+    min-width: 980px;
+
+    td {
+      vertical-align: top;
+    }
+
+    td small {
+      display: block;
+      margin-top: 0.25rem;
+      color: #64748b;
+    }
+
+    ion-select {
+      min-width: 130px;
+    }
+
+    ion-textarea {
+      min-width: 220px;
+      --padding-start: 0.65rem;
+      --padding-end: 0.65rem;
+    }
+  }
+
+  .request-details-cell {
+    max-width: 280px;
+    min-width: 220px;
+    white-space: normal !important;
   }
 
   th:first-child {

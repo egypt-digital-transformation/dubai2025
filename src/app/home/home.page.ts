@@ -51,6 +51,7 @@ import {
   startWith,
 } from 'rxjs';
 import { RouterModule } from '@angular/router';
+import { greetingForNationality } from '../shared/nationality-greetings';
 
 interface Session {
   id: string;
@@ -99,6 +100,8 @@ export class HomePage implements OnInit, OnDestroy {
   public currentDay = 1;
   public showQR = false;
   public displayName: string | null = null;
+  public firstName: string | null = null;
+  public welcomeGreeting = 'Ahlan';
   readonly safetyInductions: SafetyInductions = {
     sokhnaplant: {
       completed: false,
@@ -155,6 +158,9 @@ this.showQR = false;
 
     authState$.pipe(takeUntil(this.destroy$)).subscribe((user: any) => {
       this.displayName = user?.displayName ? this.formatDisplayName(user.displayName) : null;
+      this.firstName = null;
+      this.welcomeGreeting = 'Ahlan';
+      void this.loadWelcomeProfile(user?.email ?? null, user?.uid ?? null);
       void this.loadPlantVisitRequirement(user?.email ?? null, user?.uid ?? null);
       this.listenToSafetyInductionStatus(user?.email ?? null);
 
@@ -188,6 +194,32 @@ this.showQR = false;
       }),
       shareReplay(1)
     );
+  }
+
+  private async loadWelcomeProfile(email: string | null, uid: string | null): Promise<void> {
+    if (!email) {
+      return;
+    }
+
+    try {
+      const usersQuery = query(
+        collection(this.firestore, 'users'),
+        where('emailAddress', '==', email)
+      );
+      const snapshot = await getDocs(usersQuery);
+      const data = snapshot.docs[0]?.data() as { firstName?: unknown; nationality?: unknown } | undefined;
+      if (this.auth.currentUser?.uid !== uid || !data) {
+        return;
+      }
+      const firstName = String(data.firstName ?? '').trim();
+      const nationality = String(data.nationality ?? '').trim();
+      this.zone.run(() => {
+        this.firstName = firstName || null;
+        this.welcomeGreeting = nationality ? greetingForNationality(nationality) : 'Ahlan';
+      });
+    } catch (error) {
+      console.error('[HomePage] Failed to load welcome profile:', error);
+    }
   }
 
   private async loadPlantVisitRequirement(email: string | null, uid: string | null): Promise<void> {

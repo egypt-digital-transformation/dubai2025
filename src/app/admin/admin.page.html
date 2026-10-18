@@ -61,6 +61,20 @@
         <span>Flights</span>
       </button>
       <button
+        id="admin-tab-requests"
+        type="button"
+        role="tab"
+        aria-controls="admin-workspace"
+        [attr.aria-selected]="selectedSection === 'requests'"
+        [attr.tabindex]="selectedSection === 'requests' ? 0 : -1"
+        [class.active]="selectedSection === 'requests'"
+        (click)="selectSection('requests')"
+        (keydown)="onSectionTabKeydown($event, 'requests')"
+      >
+        <ion-icon name="notifications-outline" aria-hidden="true"></ion-icon>
+        <span>Requests</span>
+      </button>
+      <button
         id="admin-tab-engagement"
         type="button"
         role="tab"
@@ -179,6 +193,36 @@
           Home-screen installs are shown only when an install event or signed-in standalone launch
           has been detected.
         </p>
+        <section class="nationality-greetings panel-card" aria-labelledby="nationality-greetings-heading">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">WELCOME IN EVERY LANGUAGE</p>
+              <h2 id="nationality-greetings-heading">Nationality greetings</h2>
+              <p class="subtitle">Greetings based on the nationalities in the attendee profiles.</p>
+            </div>
+          </div>
+          <div class="table-scroll" *ngIf="nationalityGreetings.length; else noNationalities">
+            <table class="nationality-table">
+              <thead>
+                <tr>
+                  <th scope="col">Nationality</th>
+                  <th scope="col">Greeting</th>
+                  <th scope="col">Attendees</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let item of nationalityGreetings">
+                  <td>{{ item.nationality }}</td>
+                  <td class="greeting-cell" dir="auto">{{ item.greeting }}</td>
+                  <td>{{ item.attendeeCount }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <ng-template #noNationalities>
+            <p class="empty-state">No nationality information is available yet.</p>
+          </ng-template>
+        </section>
       </section>
       </ng-container>
       <ng-template #overviewUnavailable>
@@ -692,6 +736,83 @@
               </tr>
               <tr *ngIf="!attendeesWithFlights.length">
                 <td colspan="15" class="empty-state">No flight details have been submitted.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </ng-container>
+
+    <ng-container *ngIf="selectedSection === 'requests'">
+      <section class="panel-card">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">CONCIERGE</p>
+            <h2>Help requests</h2>
+            <p class="subtitle">Review attendee requests and send status updates or comments.</p>
+          </div>
+          <ion-button fill="outline" (click)="loadRequests()">Refresh</ion-button>
+        </div>
+        <ion-note *ngIf="requestLoadError" color="danger" class="message error-message">
+          {{ requestLoadError }}
+        </ion-note>
+        <div class="table-scroll">
+          <table class="requests-table">
+            <thead>
+              <tr>
+                <th scope="col">Submitted</th>
+                <th scope="col">Attendee</th>
+                <th scope="col">Type</th>
+                <th scope="col">Request</th>
+                <th scope="col">Status</th>
+                <th scope="col">Admin comment</th>
+                <th scope="col">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let request of requests">
+                <td>{{ request.createdAt | date:'short' }}</td>
+                <td>
+                  <strong>{{ request.userName }}</strong>
+                  <small>{{ request.userEmail }}</small>
+                </td>
+                <td>{{ request.type }}</td>
+                <td class="request-details-cell">{{ request.details }}</td>
+                <td>
+                  <ion-select
+                    [(ngModel)]="request.status"
+                    fill="outline"
+                    label="Status"
+                    labelPlacement="stacked"
+                    [disabled]="savingRequestId === request.id"
+                  >
+                    <ion-select-option *ngFor="let option of requestStatusOptions" [value]="option">
+                      {{ option }}
+                    </ion-select-option>
+                  </ion-select>
+                </td>
+                <td>
+                  <ion-textarea
+                    [(ngModel)]="request.adminComment"
+                    autoGrow="true"
+                    fill="outline"
+                    placeholder="Add a response"
+                    [disabled]="savingRequestId === request.id"
+                  ></ion-textarea>
+                </td>
+                <td>
+                  <ion-button
+                    fill="solid"
+                    size="small"
+                    [disabled]="savingRequestId === request.id"
+                    (click)="updateRequest(request)"
+                  >
+                    {{ savingRequestId === request.id ? 'Saving…' : 'Save' }}
+                  </ion-button>
+                </td>
+              </tr>
+              <tr *ngIf="!requests.length">
+                <td colspan="7" class="empty-state">No attendee requests have been submitted.</td>
               </tr>
             </tbody>
           </table>

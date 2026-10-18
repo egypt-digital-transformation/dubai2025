@@ -1,18 +1,30 @@
 import { inject, Injectable } from '@angular/core';
 import { Auth } from '@angular/fire/auth';
-import { Firestore, doc, getDoc } from '@angular/fire/firestore';
 import {
+  Firestore,
+  collection as angularCollection,
+  collectionData,
+  doc,
+  getDoc,
+  query as angularQuery,
+  where as angularWhere,
+} from '@angular/fire/firestore';
+import {
+  addDoc,
   collection,
   deleteDoc,
   doc as firestoreDoc,
   getDoc as firebaseGetDoc,
   getDocs,
   getFirestore,
+  serverTimestamp,
   setDoc,
+  updateDoc,
 } from 'firebase/firestore';
 import { getApp, getApps, initializeApp } from 'firebase/app';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { getDownloadURL, getStorage, ref, uploadBytes } from 'firebase/storage';
+import { Observable, map } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { IconicProject, HolcimProduct, ProjectStats } from '../iconic-projects/models/project.model';
 
@@ -20,6 +32,8 @@ export interface AdminAttendee {
   id: string;
   email: string;
   name: string;
+  firstName: string;
+  nationality: string;
   day2Group: string;
   day3Type: string;
   day3GroupAM: string;
@@ -48,6 +62,21 @@ export interface FlightDetails {
   inbound: FlightLeg;
   outbound: FlightLeg;
   updatedAt?: string;
+}
+
+export type RequestStatus = 'Open' | 'In progress' | 'Resolved';
+
+export interface AdminRequest {
+  id: string;
+  userId: string;
+  userEmail: string;
+  userName: string;
+  type: string;
+  details: string;
+  status: RequestStatus;
+  adminComment: string;
+  createdAt?: Date | string | number | null;
+  updatedAt?: Date | string | number | null;
 }
 
 export interface AdminCampaign {
@@ -209,6 +238,55 @@ export class AdminService {
     return snapshot.docs
       .map((projectDocument) => this.toProject(projectDocument.id, projectDocument.data()))
       .sort((a, b) => a.order - b.order || a.name.localeCompare(b.name));
+  }
+
+  async createUserRequest(request: {
+    userId: string;
+    userEmail: string;
+    userName: string;
+    type: string;
+    details: string;
+  }): Promise<void> {
+    await addDoc(collection(this.firestore, 'requests'), {
+      ...request,
+      status: 'Open',
+      adminComment: '',
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+  }
+
+  watchUserRequests(email: string): Observable<AdminRequest[]> {
+    const requestsQuery = angularQuery(
+      angularCollection(this.firestore, 'requests'),
+      angularWhere('userEmail', '==', email.trim().toLowerCase())
+    );
+    return collectionData(requestsQuery, { idField: 'id' }).pipe(
+      map((requests) =>
+        requests.map((request) =>
+          this.toAdminRequest(String(request['id'] ?? ''), request as Record<string, unknown>)
+        )
+      )
+    );
+  }
+
+  async loadAdminRequests(): Promise<AdminRequest[]> {
+    const snapshot = await getDocs(collection(this.firestore, 'requests'));
+    return snapshot.docs
+      .map((requestDocument) => this.toAdminRequest(requestDocument.id, requestDocument.data()))
+      .sort((a, b) => this.requestTime(b.createdAt) - this.requestTime(a.createdAt));
+  }
+
+  async updateAdminRequest(
+    requestId: string,
+    status: RequestStatus,
+    adminComment: string
+  ): Promise<void> {
+    await updateDoc(firestoreDoc(this.firestore, 'requests', requestId), {
+      status,
+      adminComment: adminComment.trim(),
+      updatedAt: serverTimestamp(),
+    });
   }
 
   async loadFlightDetails(email: string): Promise<FlightDetails | null> {
@@ -418,6 +496,42 @@ export class AdminService {
     };
   }
 
+  private toAdminRequest(id: string, data: Record<string, unknown>): AdminRequest {
+    const status = data['status'];
+    return {
+      id,
+      userId: String(data['userId'] ?? ''),
+      userEmail: String(data['userEmail'] ?? ''),
+      userName: String(data['userName'] ?? ''),
+      type: String(data['type'] ?? ''),
+      details: String(data['details'] ?? ''),
+      status: status === 'In progress' || status === 'Resolved' ? status : 'Open',
+      adminComment: String(data['adminComment'] ?? ''),
+      createdAt: this.toRequestDate(data['createdAt']),
+      updatedAt: this.toRequestDate(data['updatedAt']),
+    };
+  }
+
+  private toRequestDate(value: unknown): Date | string | number | null {
+    if (value && typeof value === 'object' && 'toDate' in value && typeof value.toDate === 'function') {
+      return value.toDate();
+    }
+    return typeof value === 'string' || typeof value === 'number' ? value : null;
+  }
+
+  private requestTime(value: unknown): number {
+    if (value instanceof Date) {
+      return value.getTime();
+    }
+    if (value && typeof value === 'object' && 'toMillis' in value && typeof value.toMillis === 'function') {
+      return value.toMillis();
+    }
+    if (typeof value === 'string') {
+      return Date.parse(value) || 0;
+    }
+    return 0;
+  }
+
   private toFlightDetails(data: Record<string, unknown>): FlightDetails {
     const toLeg = (value: unknown): FlightLeg => {
       const leg = value && typeof value === 'object' ? value as Record<string, unknown> : {};
@@ -464,6 +578,8 @@ export class AdminService {
         const data = userDocument.data() as {
           displayName?: unknown;
           name?: unknown;
+          firstName?: unknown;
+          nationality?: unknown;
           emailAddress?: unknown;
           plantVisit?: unknown;
           day2?: { group?: unknown };
@@ -482,6 +598,8 @@ export class AdminService {
             ? data.emailAddress.trim()
             : userDocument.id,
           name: asText(data.displayName ?? data.name),
+          firstName: asText(data.firstName),
+          nationality: asText(data.nationality),
           day2Group: asText(data.day2?.group),
           day3Type: asText(data.day3?.type),
           day3GroupAM: asText(data.day3?.groupAM),

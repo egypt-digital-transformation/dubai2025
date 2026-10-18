@@ -19,3 +19,12 @@
 .module-row strong { display: block; }
 .module-row small { color: #71808d; display: block; margin-top: .2rem; }
 .module-row a { color: #079db4; display: block; font-size: .9rem; font-weight: 700; margin-top: .35rem; text-decoration: none; }
+.request-row { border-bottom: 1px solid #edf1f2; padding: 1rem 0; }
+.request-row:last-child { border-bottom: 0; }
+.request-row-header { align-items: center; display: flex; gap: .75rem; justify-content: space-between; }
+.request-row small { color: #71808d; display: block; line-height: 1.5; margin-top: .35rem; }
+.request-row time { color: #94a3b8; display: block; font-size: .75rem; margin-top: .55rem; }
+.request-status { background: #fff4d6; border-radius: 999px; color: #9a6810; font-size: .72rem; font-weight: 700; padding: .3rem .55rem; white-space: nowrap; }
+.request-status.status-progress { background: #e6f4fb; color: #087f9f; }
+.request-status.status-resolved { background: #e8f7ec; color: #26733b; }
+.request-comment { background: #f4f8f9; border-radius: .65rem; color: #486173; font-size: .85rem; line-height: 1.5; margin: .65rem 0 0; padding: .65rem .75rem; }
