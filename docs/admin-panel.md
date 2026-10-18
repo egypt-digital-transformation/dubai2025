@@ -32,6 +32,28 @@ all-attendee, individual-attendee, or profile-segment audiences. Attendees open
 Quizzes & Polls from Home and can submit one response per activity. Quiz answer
 keys are kept server-side; aggregate response counts are displayed in the admin UI.
 
+## Project portfolio
+
+Projects are stored in the `projects` Firestore collection and are maintained
+from Admin > Projects. The editor intentionally keeps the content model small:
+Title, Location, Region, and Description are required; Highlights are optional.
+Each project must use one required asset type:
+
+- **Image:** upload an image file.
+- **3D model:** choose GLB or GLTF, then provide a trusted model URL or upload a
+  `.glb`/`.gltf` file.
+
+The existing portfolio constants can be migrated once with **Import current
+portfolio**. After migration, edits made in the admin panel are the source of
+truth for the attendee-facing portfolio.
+
+Project assets are uploaded to the HSE Onboarding Firebase Storage bucket, while
+project metadata remains in the AMEA app's `projects` Firestore collection.
+The HSE Firebase Storage rules must allow authenticated AMEA app users to write
+under `projects/{projectId}/` and allow public reads for attendee display. Those
+rules belong to the HSE Firebase project and must be deployed there separately;
+the local `storage.rules` file only applies to the AMEA Firebase project.
+
 ## Cloud Functions source layout
 
 `functions/index.js` remains the deployment entry point and re-exports the functions.

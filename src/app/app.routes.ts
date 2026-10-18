@@ -44,6 +44,31 @@ export const routes: Routes = [
       import('./activities/activities.page').then(m => m.ActivitiesPage),
   },
   {
+    path: 'requests',
+    redirectTo: 'tabs/requests',
+    pathMatch: 'full',
+  },
+  {
+    path: 'takeaways',
+    redirectTo: 'tabs/takeaways',
+    pathMatch: 'full',
+  },
+  {
+    path: 'journey',
+    redirectTo: 'tabs/journey',
+    pathMatch: 'full',
+  },
+  {
+    path: 'networking',
+    redirectTo: 'tabs/networking',
+    pathMatch: 'full',
+  },
+  {
+    path: 'support',
+    redirectTo: 'tabs/support',
+    pathMatch: 'full',
+  },
+  {
     path: 'tips',
     loadComponent: () => import('./tips/tips.page').then( m => m.TipsPage)
   },

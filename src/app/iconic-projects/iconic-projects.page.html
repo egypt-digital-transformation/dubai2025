@@ -1,5 +1,10 @@
 <ion-content [fullscreen]="true" class="portfolio-content">
   <div class="portfolio-page">
+    <div *ngIf="isLoading" class="portfolio-state">Loading projects…</div>
+    <div *ngIf="errorMessage" class="portfolio-state portfolio-error" role="alert">
+      {{ errorMessage }}
+    </div>
+    <ng-container *ngIf="!isLoading && !errorMessage && egyptProjects.length">
     <header class="masthead">
       <div class="masthead-inner">
         <div class="brand-lockup">
@@ -12,7 +17,7 @@
     </header>
 
     <main>
-      <section class="opening-section">
+      <section class="opening-section" *ngIf="egyptProjects[0] as featuredProject">
         <div class="opening-copy">
           <p class="eyebrow"><span></span> EGYPT &amp; AMEA</p>
           <h1>Building what<br />moves us forward.</h1>
@@ -28,8 +33,8 @@
             <small>Photography unavailable</small>
           </div>
           <img
-            [src]="egyptProjects[0].heroImage"
-            [alt]="egyptProjects[0].name + ', ' + egyptProjects[0].subtitle"
+            [src]="featuredProject.heroImage"
+            [alt]="featuredProject.name + ', ' + featuredProject.subtitle"
             class="portfolio-image"
             fetchpriority="high"
             (error)="onImageError($event)"
@@ -37,16 +42,16 @@
           <div class="feature-shade"></div>
           <figcaption class="feature-caption">
             <span class="feature-kicker">FEATURED LANDMARK · EGYPT</span>
-            <h2>{{ egyptProjects[0].name }}</h2>
-            <p>{{ egyptProjects[0].subtitle }}</p>
+            <h2>{{ featuredProject.name }}</h2>
+            <p>{{ featuredProject.subtitle }}</p>
             <div class="feature-metrics">
               <span>
-                <strong>{{ egyptProjects[0].stats.height }}</strong>
+                <strong>{{ featuredProject.stats.height }}</strong>
                 <small>HEIGHT</small>
               </span>
               <span class="metric-divider"></span>
               <span>
-                <strong>{{ egyptProjects[0].stats.co2Reduction }}</strong>
+                <strong>{{ featuredProject.stats.co2Reduction }}</strong>
                 <small>CO₂ REDUCTION</small>
               </span>
             </div>
@@ -89,13 +94,17 @@
                   <small>CO₂ REDUCTION</small>
                 </div>
               </div>
-              <p class="project-highlight">{{ project.engineeringHighlight }}</p>
+              <div class="project-highlight">
+                <p *ngFor="let highlight of (project.highlights || [project.engineeringHighlight])">
+                  {{ highlight }}
+                </p>
+              </div>
             </div>
           </article>
         </div>
       </section>
 
-      <section class="portfolio-section amea-section">
+      <section class="portfolio-section amea-section" *ngIf="ameaProjects.length">
         <div class="section-heading">
           <div class="section-number">02 <span></span> AMEA</div>
           <div>
@@ -129,7 +138,11 @@
                   <small>CO₂ REDUCTION</small>
                 </div>
               </div>
-              <p class="project-highlight">{{ project.engineeringHighlight }}</p>
+              <div class="project-highlight">
+                <p *ngFor="let highlight of (project.highlights || [project.engineeringHighlight])">
+                  {{ highlight }}
+                </p>
+              </div>
             </div>
           </article>
         </div>
@@ -141,5 +154,6 @@
       <span>HOLCIM · BUILDING PROGRESS FOR PEOPLE AND THE PLANET</span>
       <span class="footer-mark">AMEA</span>
     </footer>
+    </ng-container>
   </div>
 </ion-content>

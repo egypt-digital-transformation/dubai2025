@@ -11,6 +11,16 @@
   --background: var(--paper);
 }
 
+.portfolio-state {
+  padding: 80px 24px;
+  color: #476173;
+  text-align: center;
+}
+
+.portfolio-error {
+  color: #a33f35;
+}
+
 .portfolio-page {
   min-height: 100%;
   padding-bottom: 88px;

@@ -1,288 +1,48 @@
-<ion-content [fullscreen]="true" class="resources-content">
-  <div class="pb-20">
-    <!-- Header -->
-    <div class="header-gradient">
-      <h2 class="header-title">AMEA RESOURCES</h2>
-      <img src="assets/skyline.webp" alt="" class="header-overlay" />
-      <p class="header-subtitle">Essential materials, host city guide & AMEA regional operations</p>
-    </div>
+<ion-content class="resources-content">
+  <main class="resource-library">
+    <header class="resource-library-header">
+      <p class="resource-kicker">IDEAS TO TAKE WITH YOU</p>
+      <h1>Resource library</h1>
+      <p>Presentations, recordings and shared knowledge.</p>
+      <img src="assets/skyline.webp" alt="" class="resource-header-overlay" />
+    </header>
 
-    <!-- Tabs -->
-    <div class="tabs-container">
-      <div class="tabs-wrapper">
+    <section class="resource-tools" aria-label="Resource filters">
+      <div class="resource-filters" role="group" aria-label="Filter by resource type">
         <button
-          class="tab-btn"
-          [class.active]="activeSection === 'materials'"
-          (click)="setActiveSection('materials')">
-          <ion-icon name="document-outline"></ion-icon>
-          <span>Materials</span>
-        </button>
-        <button
-          class="tab-btn"
-          [class.active]="activeSection === 'company'"
-          (click)="setActiveSection('company')">
-          <ion-icon name="business-outline"></ion-icon>
-          <span>Holcim</span>
-        </button>
-        <button
-          class="tab-btn"
-          [class.active]="activeSection === 'host'"
-          (click)="setActiveSection('host')">
-          <ion-icon name="location-outline"></ion-icon>
-          <span>UAE</span>
+          *ngFor="let filter of resourceFilters"
+          type="button"
+          [class.active]="activeFilter === filter"
+          (click)="setFilter(filter)">
+          {{ filter }}
         </button>
       </div>
 
-      <!-- Sub-tabs for Materials -->
-      <div class="sub-tabs-wrapper" *ngIf="activeSection === 'materials'">
+      <label class="resource-search">
+        <ion-icon name="search-outline" aria-hidden="true"></ion-icon>
+        <input
+          type="search"
+          [(ngModel)]="resourceSearch"
+          placeholder="Search resources"
+          aria-label="Search resources" />
         <button
-          class="sub-tab-btn"
-          [class.active]="activeMaterialsTab === 'general'"
-          (click)="setActiveMaterialsTab('general')">
-          General
+          *ngIf="resourceSearch"
+          type="button"
+          class="clear-search"
+          (click)="resourceSearch = ''"
+          aria-label="Clear resource search">
+          <ion-icon name="close-circle-outline"></ion-icon>
         </button>
-        <button
-          class="sub-tab-btn"
-          [class.active]="activeMaterialsTab === 'plenary'"
-          (click)="setActiveMaterialsTab('plenary')">
-          Plenary
-        </button>
-        <button
-          class="sub-tab-btn"
-          [class.active]="activeMaterialsTab === 'workshops'"
-          (click)="setActiveMaterialsTab('workshops')">
-          Workshops
-        </button>
-      </div>
-    </div>
+      </label>
+    </section>
 
-    
-    <!-- MATERIALS SECTION -->
-    <div *ngIf="activeSection === 'materials'" class="content-section">
-      <div class="section-header">
-        <p class="section-desc">
-          <ng-container [ngSwitch]="activeMaterialsTab">
-            <span *ngSwitchCase="'general'">Essential documents and conference information</span>
-            <span *ngSwitchCase="'plenary'">Keynote presentations and main session materials</span>
-            <span *ngSwitchCase="'workshops'">Workshop resources and guides</span>
-          </ng-container>
-        </p>
-      </div>
-
-      <div class="documents-list">
-        <a 
-          *ngFor="let doc of filteredDocuments"
-          class="document-card"
-          (click)="openDocument(doc)"
-          role="button"
-          tabindex="0">
-          <div class="doc-icon">
-            <ion-icon name="document-text-outline"></ion-icon>
-          </div>
-          <div class="doc-info">
-            <div class="doc-title">{{ doc.title }}</div>
-            <div class="doc-meta">{{ doc.date }} • {{ doc.size }}</div>
-          </div>
-          <div class="doc-action">
-            <ion-icon name="open-outline"></ion-icon>
-          </div>
-        </a>
-      </div>
-    </div>
-
-    <!-- Egypt SECTION (Mobile-First Design) -->
-    <div *ngIf="activeSection === 'host'" class="content-section">
-
-                    <img src="assets/guide.jpg" alt="Burj Khalifa" class="landmark-image" />
-<!-- Modern Gradient Divider -->
-<div class="section-divider"></div>
-
-      
-      <!-- Egypt Big 4  -->
-      <div class="Egypt-section">
-        <div class="section-header-main">
-          <h3 class="section-title-main">The Egypt Big 4</h3>
-          <p class="section-desc-main">Experience the iconic landmarks that define this remarkable city</p>
-        </div>
-
-        <div class="landmark-grid">
-          <!-- Burj Khalifa -->
-          <div class="landmark-card">
-            <div class="landmark-image-container">
-              <img src="assets/burj.webp" alt="Burj Khalifa" class="landmark-image" />
-              <div class="landmark-badge">1</div>
-            </div>
-            <div class="landmark-content">
-              <h4 class="landmark-title">Burj Khalifa</h4>
-              <p class="landmark-description">
-                At 828 meters, the world's tallest building offers breathtaking views from its observation decks on floors 124, 125, and 148. Visit at sunset for the most spectacular experience as the city transforms from day to night.
-              </p>
-              <div class="landmark-tip">
-                <ion-icon name="bulb-outline"></ion-icon>
-                <span>Book tickets online in advance to skip the queues</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Egypt Mall -->
-          <div class="landmark-card">
-            <div class="landmark-image-container">
-              <img src="assets/mall.webp" alt="Egypt Mall" class="landmark-image" />
-              <div class="landmark-badge">2</div>
-            </div>
-            <div class="landmark-content">
-              <h4 class="landmark-title">Egypt Mall</h4>
-              <p class="landmark-description">
-                More than just shopping—this mega-mall features over 1,200 stores, the Egypt Aquarium, an Olympic-sized ice rink, and the mesmerizing Egypt Fountain show outside.
-              </p>
-              <div class="landmark-tip">
-                <ion-icon name="bulb-outline"></ion-icon>
-                <span>Fountain shows run every 30 minutes from 6 PM</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Palm Jumeirah -->
-          <div class="landmark-card">
-            <div class="landmark-image-container">
-              <img src="assets/palm.webp" alt="Palm Jumeirah" class="landmark-image" />
-              <div class="landmark-badge">3</div>
-            </div>
-            <div class="landmark-content">
-              <h4 class="landmark-title">The Palm Jumeirah</h4>
-              <p class="landmark-description">
-                This engineering marvel is visible from space—a man-made archipelago shaped like a palm tree. Home to luxury resorts and the famous Atlantis resort.
-              </p>
-              <div class="landmark-tip">
-                <ion-icon name="bulb-outline"></ion-icon>
-                <span>Visit The View at The Palm for 360° panoramic views</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Al Fahidi -->
-          <div class="landmark-card">
-            <div class="landmark-image-container">
-              <img src="assets/fahidi.webp" alt="Al Fahidi" class="landmark-image" />
-              <div class="landmark-badge">4</div>
-            </div>
-            <div class="landmark-content">
-              <h4 class="landmark-title">Al Fahidi Historical District</h4>
-              <p class="landmark-description">
-                Step back in time in Old Egypt's preserved heritage site. Wander through narrow lanes, visit traditional wind-tower houses, art galleries, and the Egypt Museum.
-              </p>
-              <div class="landmark-tip">
-                <ion-icon name="bulb-outline"></ion-icon>
-                <span>Best visited in early morning or late afternoon</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- COMPANY SECTION -->
-    <div *ngIf="activeSection === 'company'" class="company-section">
-
-      <!-- Header -->
-      <div class="section-header">
-        <h3 class="section-title-main">Holcim AMEA: Building Progress</h3>
-        <p class="section-desc">
-          Celebrating the diversity and impact of our Australia, Middle East & Africa regions.
-        </p>
-      </div>
-
-      <!-- Performance / Flagship Projects -->
-      <section class="performance-section">
-        <h4 class="section-subtitle">Flagship Projects</h4>
-        <div class="projects-grid">
-
-          <div class="project-card">
-            <img src="assets/zuhra.webp" alt="ECOPact Tower" />
-            <div class="project-info">
-              <h5>Low-Carbon Concrete Tower — Egypt, UAE</h5>
-              <p>Supply of ECOPact low-carbon concrete for sustainable high-rise developments in Egypt, lowering embodied carbon emissions and supporting green urban growth.</p>
-            </div>
-          </div>
-
-          <div class="project-card">
-            <img src="assets/zuhra.webp" alt="Milaki OLYMPUS Project" />
-            <div class="project-info">
-              <h5>Near-Zero Cement Plant — Milaki, Algeria</h5>
-              <p>Holcim El Djazaïr's strategic expansion and port logistics strengthen exports to up to 40%.</p>
-            </div>
-          </div>
-
-          <div class="project-card">
-            <img src="assets/zuhra.webp" alt="Grand Egyptian Museum" />
-            <div class="project-info">
-              <h5>Grand Egyptian Museum, Egypt</h5>
-              <p>Holcim supplied sustainable materials for Africa's first IFC EDGE Advanced Green Building certified site.</p>
-            </div>
-          </div>
-
-          <div class="project-card">
-            <img src="assets/zuhra.webp" alt="Common Seawater Project Iraq" />
-            <div class="project-info">
-              <h5>Water Infrastructure — Um Qasr, Iraq</h5>
-              <p>Holcim supports infrastructure projects like the Common Seawater Supply Project near Um Qasr, part of Iraq's integrated energy and utilities development.</p>
-            </div>
-          </div>
-
-
-
-        </div>
-      </section>
-
-      <!-- People / Voices -->
-      <section class="people-section">
-        <h4 class="section-subtitle">Our AMEA Voices</h4>
-        <div class="people-list">
-          <div class="profile-item">
-            <img src="assets/profile.jpg" alt="Ahmed El-Masri" />
-            <div class="profile-info">
-              <h5>Ahmed El-Masri</h5>
-              <p>Logistics, Egypt</p>
-              <q>"Building the future of Cairo sustainably with ECOPact."</q>
-            </div>
-          </div>
-          <div class="profile-item">
-            <img src="assets/profile.jpg" alt="Sophie Turner" />
-            <div class="profile-info">
-              <h5>Sophie Turner</h5>
-              <p>Innovation, Australia</p>
-              <q>"Recycling meets resilience — our tire-to-road project redefines urban infrastructure."</q>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- Fun Facts by Country -->
-      <section class="fun-facts-section">
-        <h4 class="section-subtitle">Did You Know?</h4>
-        <div class="facts-grid">
-          <div class="purpose-card people-card">
-            <h5>Egypt</h5>
-            <p>Holcim Egypt developed a cement blend that reduces water consumption by 25% under arid climate conditions.</p>
-          </div>
-          <div class="purpose-card purpose-card-main">
-            <h5>Australia</h5>
-            <p>Holcim Australia champions circular economy with tyre-recycled road base materials, easing environmental burden significantly.</p>
-          </div>
-          <div class="purpose-card performance-card">
-            <h5>UAE</h5>
-            <p>ECOPact low-carbon concrete from Holcim UAE supports major sustainable urban developments and green certifications.</p>
-          </div>
-        </div>
-      </section>
-
-      <!-- Closing Statement -->
-      <div class="closing-statement">
-        <p>
-          Together, through People, Purpose & Performance, we are building progress for the planet.
-        </p>
-      </div>
-    </div>
-
-  </div>
+    <section class="resource-empty" aria-live="polite">
+      <ion-icon name="folder-open-outline" aria-hidden="true"></ion-icon>
+      <h2>Good ideas are worth keeping.</h2>
+      <p>
+        The event team will publish approved presentations, recordings and photos here.
+        No files have been uploaded yet.
+      </p>
+    </section>
+  </main>
 </ion-content>

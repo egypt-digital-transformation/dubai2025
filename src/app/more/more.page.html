@@ -1,0 +1,34 @@
+<ion-content [fullscreen]="true" class="more-content">
+  <main class="more-page">
+    <header class="more-hero">
+      <p class="eyebrow">YOUR COMPANION</p>
+      <h1>Everything else,<br />right here.</h1>
+      <p>Your journey, your connections, your peace of mind.</p>
+    </header>
+
+    <section class="more-section" aria-label="Companion services">
+      <div class="more-grid">
+        <button class="more-card" type="button" *ngFor="let item of journeyItems.concat(eventItems)" (click)="open(item)">
+          <span class="card-icon"><ion-icon [name]="item.icon"></ion-icon></span>
+          <span class="card-copy">
+            <strong>{{ item.title }}</strong>
+            <small>{{ item.description }}</small>
+          </span>
+          <ion-icon class="card-arrow" name="arrow-forward-outline" aria-hidden="true"></ion-icon>
+        </button>
+      </div>
+    </section>
+
+    <section class="more-section more-links" aria-label="More actions">
+      <button class="wide-link admin-link" type="button" (click)="openAdmin()">
+        <span><strong>Event administration</strong><small>Manage attendees, updates and engagement</small></span>
+        <ion-icon name="arrow-forward-outline"></ion-icon>
+      </button>
+    </section>
+
+    <button class="sign-out" type="button" (click)="signOut()">
+      <ion-icon name="log-out-outline"></ion-icon>
+      Sign out
+    </button>
+  </main>
+</ion-content>

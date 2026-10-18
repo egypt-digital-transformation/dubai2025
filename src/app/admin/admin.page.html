@@ -61,6 +61,20 @@
         <span>Engagement</span>
       </button>
       <button
+        id="admin-tab-projects"
+        type="button"
+        role="tab"
+        aria-controls="admin-workspace"
+        [attr.aria-selected]="selectedSection === 'projects'"
+        [attr.tabindex]="selectedSection === 'projects' ? 0 : -1"
+        [class.active]="selectedSection === 'projects'"
+        (click)="selectSection('projects')"
+        (keydown)="onSectionTabKeydown($event, 'projects')"
+      >
+        <ion-icon name="grid-outline" aria-hidden="true"></ion-icon>
+        <span>Projects</span>
+      </button>
+      <button
         id="admin-tab-updates"
         type="button"
         role="tab"
@@ -138,33 +152,6 @@
           has been detected.
         </p>
       </section>
-      <section class="panel-card readiness-panel" aria-labelledby="readiness-heading">
-        <div class="section-heading">
-          <div>
-            <p class="eyebrow">EVENT READINESS</p>
-            <h2 id="readiness-heading">Operational coverage</h2>
-          </div>
-          <span class="metric-caption">Based on current attendee data</span>
-        </div>
-        <ul class="readiness-list">
-          <li *ngFor="let item of eventReadiness" [class]="item.status">
-            <span class="readiness-icon" aria-hidden="true">
-              {{ item.status === 'ready' ? '✓' : '!' }}
-            </span>
-            <span class="readiness-copy">
-              <strong>{{ item.label }}</strong>
-              <span>{{ item.detail }}</span>
-            </span>
-            <span class="readiness-status">
-              {{ item.status === 'ready' ? 'Ready' : 'Needs attention' }}
-            </span>
-          </li>
-        </ul>
-        <p class="metric-caption readiness-note">
-          Coverage reflects profiles currently returned by the admin dashboard; it does not
-          represent attendance at the venue.
-        </p>
-      </section>
       </ng-container>
       <ng-template #overviewUnavailable>
         <section class="panel-card workspace-unavailable">
@@ -177,6 +164,190 @@
           </ion-button>
         </section>
       </ng-template>
+    </ng-container>
+
+    <ng-container *ngIf="selectedSection === 'projects'">
+    <section id="projects" class="panel-card">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">PROJECT PORTFOLIO</p>
+          <h2>Manage projects</h2>
+          <p class="subtitle">Changes are published to the attendee project portfolio immediately.</p>
+        </div>
+        <ion-button fill="outline" class="project-add-button" (click)="startNewProject()">
+          <ion-icon slot="start" name="add-outline"></ion-icon>
+          Add project
+        </ion-button>
+      </div>
+      <ion-note *ngIf="projectNotice" color="success" class="message success-message">{{ projectNotice }}</ion-note>
+      <ion-note *ngIf="projectError && !isProjectFormOpen" color="danger" class="message error-message">{{ projectError }}</ion-note>
+      <div *ngIf="isLoadingProjects" class="loading-state">Loading projects…</div>
+      <div *ngIf="projectLoadError" class="message error-message">{{ projectLoadError }}</div>
+
+      <form *ngIf="isProjectFormOpen" class="notification-form project-form" (ngSubmit)="saveProject()">
+        <div class="project-editor-header">
+          <div>
+            <p class="eyebrow">PROJECT EDITOR</p>
+            <h3>{{ editingProjectId ? 'Edit project' : 'Add project' }}</h3>
+          </div>
+          <ion-button type="button" fill="clear" class="project-close-button" (click)="cancelProjectEdit()" aria-label="Close project editor">
+            <ion-icon slot="icon-only" name="close-outline"></ion-icon>
+          </ion-button>
+        </div>
+        <div *ngIf="projectError" class="project-editor-error" role="alert">
+          {{ projectError }}
+        </div>
+        <div class="project-form-grid">
+          <ion-input label="Title" labelPlacement="stacked" fill="outline" [(ngModel)]="projectForm.title" name="projectTitle" required></ion-input>
+          <ion-input label="Location" labelPlacement="stacked" fill="outline" [(ngModel)]="projectForm.location" name="projectLocation" required></ion-input>
+          <div class="country-picker">
+            <label class="country-picker-label" for="project-country-search">Region / country</label>
+            <button
+              id="project-country-search"
+              type="button"
+              class="country-picker-trigger"
+              [attr.aria-expanded]="isCountryPickerOpen"
+              (click)="isCountryPickerOpen ? closeCountryPicker() : openCountryPicker()"
+            >
+              <span>{{ projectForm.country || 'Choose a country' }}</span>
+              <ion-icon name="chevron-down-outline" aria-hidden="true"></ion-icon>
+            </button>
+            <div *ngIf="isCountryPickerOpen" class="country-picker-menu">
+              <ion-searchbar
+                [(ngModel)]="countrySearch"
+                name="projectCountrySearch"
+                placeholder="Search countries"
+                [showClearButton]="'focus'"
+                (ionInput)="filterProjectCountries()"
+              ></ion-searchbar>
+              <div class="country-picker-options">
+                <button
+                  *ngFor="let country of filteredProjectCountries"
+                  type="button"
+                  [class.selected]="projectForm.country === country.name"
+                  (click)="selectProjectCountry(country)"
+                >
+                  {{ country.name }}
+                </button>
+                <span *ngIf="!filteredProjectCountries.length" class="country-picker-empty">
+                  No countries found
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <ion-textarea label="Description" labelPlacement="stacked" fill="outline" autoGrow="true" [(ngModel)]="projectForm.description" name="projectDescription" required></ion-textarea>
+        <div class="project-highlights">
+          <div class="project-highlights-heading">
+            <label>Highlights <span>(optional)</span></label>
+            <ion-button type="button" fill="clear" class="project-add-highlight" (click)="addProjectHighlight()">
+              <ion-icon slot="start" name="add-outline"></ion-icon>
+              Add highlight
+            </ion-button>
+          </div>
+          <div class="project-highlight-row" *ngFor="let highlight of projectForm.highlights; let i = index">
+            <ion-textarea
+              label="Highlight {{ i + 1 }}"
+              labelPlacement="stacked"
+              fill="outline"
+              autoGrow="true"
+              [(ngModel)]="projectForm.highlights[i]"
+              [name]="'projectHighlight' + i"
+            ></ion-textarea>
+            <ion-button
+              *ngIf="projectForm.highlights.length > 1"
+              type="button"
+              fill="clear"
+              color="danger"
+              class="project-remove-highlight"
+              (click)="removeProjectHighlight(i)"
+              [attr.aria-label]="'Remove highlight ' + (i + 1)"
+            >
+              <ion-icon slot="icon-only" name="trash-outline"></ion-icon>
+            </ion-button>
+          </div>
+        </div>
+        <ion-select label="Project asset" labelPlacement="stacked" fill="outline" [(ngModel)]="projectForm.assetType" name="projectAssetType">
+          <ion-select-option value="image">Image</ion-select-option>
+          <ion-select-option value="model">3D model (GLB / GLTF)</ion-select-option>
+        </ion-select>
+        <div *ngIf="projectForm.assetType === 'image'" class="project-upload">
+          <img
+            *ngIf="projectForm.assetUrl"
+            class="project-asset-preview"
+            [src]="projectForm.assetUrl"
+            [alt]="projectForm.title + ' preview'"
+            (error)="$any($event.target).hidden = true"
+          />
+          <ion-icon name="cloud-upload-outline" aria-hidden="true"></ion-icon>
+          <label for="project-image-upload">
+            {{ projectForm.assetUrl ? 'Replace image' : 'Upload image' }}
+            <span *ngIf="!projectForm.assetUrl">(required)</span>
+          </label>
+          <input id="project-image-upload" type="file" accept="image/*" (change)="onProjectFileSelected($event)" />
+        </div>
+        <ng-container *ngIf="projectForm.assetType === 'model'">
+          <ion-select label="Model format" labelPlacement="stacked" fill="outline" [(ngModel)]="projectForm.modelFormat" name="projectModelFormat">
+            <ion-select-option value="glb">GLB</ion-select-option>
+            <ion-select-option value="gltf">GLTF</ion-select-option>
+          </ion-select>
+          <ion-input label="GLB / GLTF model URL" labelPlacement="stacked" fill="outline" [(ngModel)]="projectForm.assetUrl" name="projectAssetUrl" type="url"></ion-input>
+          <p *ngIf="projectForm.assetUrl" class="project-current-asset">
+            Current {{ projectForm.modelFormat?.toUpperCase() }} model is configured.
+          </p>
+          <div class="project-upload">
+            <ion-icon name="cloud-upload-outline" aria-hidden="true"></ion-icon>
+            <label for="project-model-upload">Upload model</label>
+            <input id="project-model-upload" type="file" accept=".glb,.gltf,model/gltf-binary,model/gltf+json" (change)="onProjectFileSelected($event)" />
+          </div>
+        </ng-container>
+        <div class="send-row project-form-actions">
+          <p>{{ selectedProjectFile?.name || 'Choose the project asset before saving.' }}</p>
+          <span>
+            <ion-button type="button" fill="outline" class="project-cancel-button" (click)="cancelProjectEdit()">Cancel</ion-button>
+            <ion-button type="submit" class="project-save-button" [disabled]="isSavingProject">
+              <ion-spinner *ngIf="isSavingProject" name="crescent"></ion-spinner>
+              <span *ngIf="!isSavingProject">Save changes</span>
+            </ion-button>
+          </span>
+        </div>
+      </form>
+
+      <div *ngIf="!isLoadingProjects && !projects.length && editingProjectId === null" class="empty-state">
+        <strong>No projects yet</strong>
+        <span>Add the first project to publish it to attendees.</span>
+        <ion-button fill="outline" (click)="importCurrentPortfolio()" [disabled]="isSavingProject">
+          Import current portfolio
+        </ion-button>
+      </div>
+      <div class="admin-project-list">
+        <article class="admin-project-item" *ngFor="let project of projects">
+          <img *ngIf="(project.assetType ?? 'image') === 'image'" [src]="project.assetUrl || project.heroImage" [alt]="project.title || project.name" (error)="$any($event.target).hidden = true" />
+          <div>
+            <p class="eyebrow">{{ project.region | uppercase }} · {{ project.country }}</p>
+            <h3>{{ project.title || project.name }}</h3>
+            <p>{{ project.location || project.subtitle }}</p>
+          </div>
+          <div class="activity-actions">
+            <ion-button fill="outline" class="project-edit-button" (click)="editProject(project)">
+              <ion-icon slot="start" name="create-outline"></ion-icon>
+              Edit
+            </ion-button>
+            <ion-button
+              fill="clear"
+              color="danger"
+              class="project-remove-button"
+              [disabled]="isDeletingProject"
+              (click)="removeProject(project)"
+              [attr.aria-label]="'Move ' + (project.title || project.name) + ' to recycle bin'"
+              title="Move to recycle bin"
+            >
+              <ion-icon slot="icon-only" name="trash-outline"></ion-icon>
+            </ion-button>
+          </div>
+        </article>
+      </div>
+    </section>
     </ng-container>
 
     <ng-container *ngIf="selectedSection === 'updates'">
@@ -205,11 +376,7 @@
           Schedule update
         </button>
       </div>
-      <div *ngIf="updateMode === 'scheduled'" class="unavailable-note" role="status">
-        <strong>Scheduling is not available</strong>
-        <span>The admin service currently supports publishing an update immediately only.</span>
-        <span>To avoid creating a misleading campaign record, choose “Publish now” when you are ready to send.</span>
-      </div>
+
       <ion-note *ngIf="!dashboard" color="medium" class="campaign-note">
         Audience details are unavailable until the admin dashboard service responds.
       </ion-note>
@@ -544,8 +711,8 @@
       <section id="attendees" class="panel-card">
         <div class="section-heading">
           <div>
-            <p class="eyebrow">DELEGATES</p>
-            <h2>Attendee directory</h2>
+            <p class="eyebrow">USER STATUS</p>
+            <h2>All users</h2>
           </div>
           <ion-button fill="outline" (click)="exportAttendees()" [disabled]="!filteredAttendees.length">
             <ion-icon slot="start" name="download-outline"></ion-icon>
@@ -588,31 +755,61 @@
           <table>
             <thead>
               <tr>
-                <th scope="col">Attendee</th>
-                <th scope="col">Email</th>
-                <th scope="col">Logged in</th>
-                <th scope="col">Active</th>
-                <th scope="col">Installed</th>
-                <th scope="col">Push</th>
-                <th scope="col">Group / track</th>
+                <th scope="col">User email</th>
+                <th scope="col">Add home screen</th>
+                <th scope="col">Sign in</th>
+                <th scope="col">Notification token</th>
+                <th scope="col">Safety induction</th>
               </tr>
             </thead>
             <tbody>
               <tr *ngFor="let attendee of filteredAttendees">
-                <td>{{ attendee.name || '—' }}</td>
                 <td>{{ attendee.email }}</td>
-                <td><span class="status-badge" [class.status-badge--positive]="attendee.loggedIn">{{ attendee.loggedIn ? 'Signed in' : 'Not signed in' }}</span></td>
-                <td><span class="status-badge" [class.status-badge--positive]="attendee.active">{{ attendee.active ? 'Active' : 'Inactive' }}</span></td>
-                <td><span class="status-badge" [class.status-badge--positive]="attendee.installed">{{ attendee.installed ? 'Installed' : 'Not installed' }}</span></td>
-                <td><span class="status-badge" [class.status-badge--positive]="attendee.hasPushToken">{{ attendee.hasPushToken ? 'Ready' : 'Not enabled' }}</span></td>
                 <td>
-                  <span *ngIf="attendee.day2Group">D2 {{ attendee.day2Group }}</span>
-                  <span *ngIf="attendee.day3Type"> · D3 {{ attendee.day3Type }}</span>
-                  <span *ngIf="!attendee.day2Group && !attendee.day3Type">—</span>
+                  <span
+                    class="status-badge"
+                    [class.status-badge--positive]="attendee.installed"
+                    [class.status-badge--attention]="!attendee.installed"
+                  >
+                    {{ attendee.installed ? 'Done' : 'Not done' }}
+                  </span>
+                </td>
+                <td>
+                  <span
+                    class="status-badge"
+                    [class.status-badge--positive]="attendee.loggedIn"
+                    [class.status-badge--attention]="!attendee.loggedIn"
+                  >
+                    {{ attendee.loggedIn ? 'Done' : 'Not done' }}
+                  </span>
+                </td>
+                <td>
+                  <span
+                    class="status-badge"
+                    [class.status-badge--positive]="attendee.hasPushToken"
+                    [class.status-badge--attention]="!attendee.hasPushToken"
+                  >
+                    {{ attendee.hasPushToken ? 'Set' : 'Not set' }}
+                  </span>
+                </td>
+                <td>
+                  <span
+                    class="status-badge"
+                    [class.status-badge--positive]="attendee.safetyInductionCompleted === true"
+                    [class.status-badge--attention]="attendee.safetyInductionCompleted !== true"
+                  >
+                    {{
+                      attendee.safetyInductionCompleted === true
+                        ? 'Done'
+                        : attendee.safetyInductionCompleted === false
+                          ? 'Not done'
+                          : 'Not recorded'
+                    }}
+                  </span>
                 </td>
               </tr>
               <tr *ngIf="!filteredAttendees.length">
-                <td colspan="7" class="empty-state">
+                <td colspan="5" class="empty-state">
                   {{ data.attendees.length ? 'No attendees match these filters.' : 'No attendee profiles were found.' }}
                 </td>
               </tr>

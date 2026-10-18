@@ -1,4 +1,7 @@
 {
+  "storage": {
+    "rules": "storage.rules"
+  },
   "hosting": {
     "site": "mea-egypt-ahlanapp-prd",
     "public": "www",

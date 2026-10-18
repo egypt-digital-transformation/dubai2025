@@ -8,6 +8,147 @@ $holcim-light-green: #eaf5df; // Subtle background highlight
   --background: #ffffff;
 }
 
+.resource-library {
+  color: #092d4f;
+  margin: 0 auto;
+  max-width: 760px;
+  padding: 2rem 1rem 6rem;
+}
+
+.resource-library-header {
+  background: linear-gradient(to bottom right, #041739 0%, #041739 40%, #1d4370 100%);
+  border-radius: 0 0 1.25rem 1.25rem;
+  color: #fff;
+  overflow: hidden;
+  padding: 2rem 1.25rem 2.25rem;
+  position: relative;
+  margin-bottom: 1.5rem;
+}
+
+.resource-kicker {
+  color: #8ed9e5;
+  font-size: .68rem;
+  font-weight: 800;
+  letter-spacing: .16em;
+  margin: 0 0 .55rem;
+}
+
+.resource-library-header h1 {
+  font-size: clamp(2rem, 8vw, 3rem);
+  line-height: 1;
+  margin: 0 0 .75rem;
+  position: relative;
+  z-index: 1;
+}
+
+.resource-library-header p:last-child {
+  color: rgba(255, 255, 255, .8);
+  margin: 0;
+  position: relative;
+  z-index: 1;
+}
+
+.resource-header-overlay {
+  bottom: -1.5rem;
+  opacity: .32;
+  pointer-events: none;
+  position: absolute;
+  right: -3rem;
+  width: 15rem;
+}
+
+.resource-tools {
+  margin-bottom: 2.25rem;
+}
+
+.resource-filters {
+  display: flex;
+  gap: .45rem;
+  margin-bottom: .85rem;
+  overflow-x: auto;
+  padding-bottom: .2rem;
+  scrollbar-width: none;
+}
+
+.resource-filters::-webkit-scrollbar {
+  display: none;
+}
+
+.resource-filters button {
+  background: #fff;
+  border: 1px solid #dfe7ea;
+  border-radius: 999px;
+  color: #506778;
+  flex: 0 0 auto;
+  font: inherit;
+  font-size: .78rem;
+  font-weight: 700;
+  padding: .6rem .85rem;
+}
+
+.resource-filters button.active {
+  background: #e8f7f8;
+  border-color: #a9dfe5;
+  color: #08798c;
+}
+
+.resource-search {
+  align-items: center;
+  background: #fff;
+  border: 1px solid #dfe7ea;
+  border-radius: .8rem;
+  display: flex;
+  gap: .55rem;
+  padding: .15rem .75rem;
+}
+
+.resource-search > ion-icon {
+  color: #079db4;
+  font-size: 1.15rem;
+}
+
+.resource-search input {
+  background: transparent;
+  border: 0;
+  color: #092d4f;
+  flex: 1;
+  font: inherit;
+  min-width: 0;
+  outline: 0;
+  padding: .7rem 0;
+}
+
+.clear-search {
+  background: transparent;
+  border: 0;
+  color: #71808d;
+  display: flex;
+  padding: .35rem;
+}
+
+.resource-empty {
+  color: #71808d;
+  padding: 3rem 1.5rem;
+  text-align: center;
+}
+
+.resource-empty ion-icon {
+  color: #079db4;
+  font-size: 2.75rem;
+}
+
+.resource-empty h2 {
+  color: #092d4f;
+  font-size: 1.15rem;
+  margin: .8rem 0 .4rem;
+}
+
+.resource-empty p {
+  line-height: 1.5;
+  margin: 0 auto;
+  max-width: 32rem;
+}
+
 .pb-20 {
   padding-bottom: 5rem;
 }
@@ -81,6 +222,17 @@ $holcim-light-green: #eaf5df; // Subtle background highlight
     font-size: 1.6rem;
   }
 
+  .header-kicker {
+    position: relative;
+    z-index: 2;
+    color: #8ed9e5;
+    font-size: .7rem;
+    font-weight: 800;
+    letter-spacing: .16em;
+    margin: 0 0 .45rem;
+    text-transform: uppercase;
+  }
+
   @media (min-width: 768px) {
     font-size: 1.75rem;
   }
@@ -96,6 +248,61 @@ $holcim-light-green: #eaf5df; // Subtle background highlight
 
   @media (min-width: 480px) {
     font-size: 0.9rem;
+  }
+
+  .resource-search {
+    align-items: center;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: .75rem;
+    box-shadow: 0 3px 8px rgba(29, 67, 112, .12);
+    display: flex;
+    gap: .55rem;
+    margin: 0 1rem 1rem;
+    padding: .15rem .75rem;
+    position: relative;
+    z-index: 3;
+  }
+
+  .resource-search ion-icon {
+    color: #079db4;
+    font-size: 1.15rem;
+  }
+
+  .resource-search input {
+    border: 0;
+    color: #092d4f;
+    flex: 1;
+    min-width: 0;
+    outline: 0;
+    padding: .7rem 0;
+  }
+
+  .resource-search button {
+    background: transparent;
+    border: 0;
+    color: #71808d;
+    padding: .35rem;
+  }
+
+  .resource-empty {
+    color: #71808d;
+    padding: 3rem 1.5rem;
+    text-align: center;
+  }
+
+  .resource-empty ion-icon {
+    color: #079db4;
+    font-size: 2.5rem;
+  }
+
+  .resource-empty h3 {
+    color: #092d4f;
+    margin: .75rem 0 .35rem;
+  }
+
+  .resource-empty p {
+    margin: 0;
   }
 
   @media (min-width: 768px) {
@@ -867,4 +1074,3 @@ $holcim-light-green: #eaf5df; // Subtle background highlight
     margin: 0 auto;
   }
 }
-

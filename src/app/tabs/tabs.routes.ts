@@ -34,6 +34,36 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'more',
+        loadComponent: () =>
+          import('../more/more.page').then((m) => m.MorePage),
+      },
+      {
+        path: 'requests',
+        loadComponent: () =>
+          import('../requests/requests.page').then((m) => m.RequestsPage),
+      },
+      {
+        path: 'takeaways',
+        loadComponent: () =>
+          import('../takeaways/takeaways.page').then((m) => m.TakeawaysPage),
+      },
+      {
+        path: 'journey',
+        loadComponent: () =>
+          import('../journey/journey.page').then((m) => m.JourneyPage),
+      },
+      {
+        path: 'networking',
+        loadComponent: () =>
+          import('../networking/networking.page').then((m) => m.NetworkingPage),
+      },
+      {
+        path: 'support',
+        loadComponent: () =>
+          import('../support/support.page').then((m) => m.SupportPage),
+      },
+      {
         path: '',
         redirectTo: 'home', // ✅ redirect within this group
         pathMatch: 'full',

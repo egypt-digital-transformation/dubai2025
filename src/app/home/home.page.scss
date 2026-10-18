@@ -1600,61 +1600,6 @@ ion-modal::part(content) {
   background: #f5f7f8;
 }
 
-.home-header {
-  background: #fff;
-  border-bottom: 1px solid #e8edf0;
-  padding: calc(0.5rem + env(safe-area-inset-top)) 1.25rem 0.5rem;
-}
-
-.home-header-inner {
-  align-items: center;
-  display: flex;
-  justify-content: space-between;
-  margin: 0 auto;
-  max-width: 58rem;
-  min-height: 3rem;
-}
-
-.home-brand {
-  align-items: center;
-  color: #1d4370;
-  display: inline-flex;
-  gap: 0.6rem;
-  text-decoration: none;
-
-  img {
-    height: 2.25rem;
-    object-fit: contain;
-    width: 2.25rem;
-  }
-
-  span {
-    display: grid;
-    gap: 0.1rem;
-  }
-
-  strong {
-    font-size: 0.9rem;
-    letter-spacing: 0.015em;
-  }
-
-  small {
-    color: #667582;
-    font-size: 0.65rem;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-  }
-}
-
-.home-logout {
-  --color: #526577;
-  margin: 0;
-
-  ion-icon {
-    font-size: 1.3rem;
-  }
-}
-
 .content-container {
   margin: 0 auto;
   max-width: 58rem;

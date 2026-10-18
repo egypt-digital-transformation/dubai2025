@@ -6,13 +6,18 @@ import { addIcons } from 'ionicons';
 import {
   addOutline,
   arrowBackOutline,
+  chevronDownOutline,
+  closeOutline,
+  createOutline,
   downloadOutline,
   gridOutline,
   notificationsOutline,
   peopleOutline,
   refreshOutline,
+  trashOutline,
   sendOutline,
   statsChartOutline,
+  cloudUploadOutline,
 } from 'ionicons/icons';
 import { interval } from 'rxjs';
 import { Router } from '@angular/router';
@@ -24,6 +29,10 @@ import {
   AdminService,
   NotificationTarget,
 } from '../services/admin.service';
+import { IconicProject } from '../iconic-projects/models/project.model';
+import type { ProjectInput } from '../services/admin.service';
+import { ALL_PROJECTS } from '../iconic-projects/data/projects.data';
+import countryData from '../../../node_modules/flag-icons/country.json';
 
 type SegmentField =
   | 'day2.group'
@@ -38,15 +47,13 @@ interface AudienceSegment {
   label: string;
 }
 
-interface EventReadinessItem {
-  label: string;
-  detail: string;
-  status: 'ready' | 'attention';
-}
-
-type AdminSection = 'overview' | 'attendees' | 'engagement' | 'updates';
+type AdminSection = 'overview' | 'attendees' | 'engagement' | 'projects' | 'updates';
 type UpdateMode = 'now' | 'scheduled';
 type AttendeeStatusFilter = 'all' | 'active' | 'loggedIn' | 'installed' | 'pushReady';
+interface ProjectCountry {
+  name: string;
+  code: string;
+}
 
 @Component({
   selector: 'app-admin',
@@ -89,6 +96,24 @@ export class AdminPage implements OnInit, OnDestroy {
   updateMode: UpdateMode = 'now';
   attendeeSearch = '';
   attendeeStatusFilter: AttendeeStatusFilter = 'all';
+  projects: IconicProject[] = [];
+  projectLoadError = '';
+  projectNotice = '';
+  projectError = '';
+  isLoadingProjects = false;
+  isSavingProject = false;
+  isDeletingProject = false;
+  editingProjectId: string | null = null;
+  isProjectFormOpen = false;
+  selectedProjectFile: File | null = null;
+  projectForm = this.emptyProjectForm();
+  readonly projectCountries: ProjectCountry[] = countryData
+    .filter((country) => country.iso)
+    .map((country) => ({ name: country.name, code: country.code }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+  filteredProjectCountries = this.projectCountries;
+  isCountryPickerOpen = false;
+  countrySearch = '';
 
   private refreshTimer?: ReturnType<typeof setInterval>;
 
@@ -96,13 +121,18 @@ export class AdminPage implements OnInit, OnDestroy {
     addIcons({
       addOutline,
       arrowBackOutline,
+      chevronDownOutline,
+      closeOutline,
+      createOutline,
       downloadOutline,
       gridOutline,
       notificationsOutline,
       peopleOutline,
       refreshOutline,
+      trashOutline,
       sendOutline,
       statsChartOutline,
+      cloudUploadOutline,
     });
   }
 
@@ -112,10 +142,13 @@ export class AdminPage implements OnInit, OnDestroy {
 
   selectSection(section: AdminSection): void {
     this.selectedSection = section;
+    if (section === 'projects' && !this.projects.length && !this.isLoadingProjects) {
+      void this.loadProjects();
+    }
   }
 
   onSectionTabKeydown(event: KeyboardEvent, currentSection: AdminSection): void {
-    const sections: AdminSection[] = ['overview', 'attendees', 'engagement', 'updates'];
+    const sections: AdminSection[] = ['overview', 'attendees', 'engagement', 'projects', 'updates'];
     const currentIndex = sections.indexOf(currentSection);
     let nextIndex: number;
 
@@ -183,6 +216,252 @@ export class AdminPage implements OnInit, OnDestroy {
     }
   }
 
+  async loadProjects(): Promise<void> {
+    this.isLoadingProjects = true;
+    this.projectLoadError = '';
+    try {
+      this.projects = await this.adminService.loadProjects();
+    } catch (error) {
+      console.error('[AdminPage] Failed to load projects:', error);
+      this.projectLoadError = 'Could not load projects. Check your connection and try again.';
+    } finally {
+      this.isLoadingProjects = false;
+    }
+
+  }
+
+  async importCurrentPortfolio(): Promise<void> {
+    this.isSavingProject = true;
+    this.projectError = '';
+    try {
+      const imported = await Promise.all(
+        ALL_PROJECTS.map((project) => this.adminService.saveProject(project))
+      );
+      this.projects = imported.sort((a, b) => a.order - b.order || a.name.localeCompare(b.name));
+      this.projectNotice = `${imported.length} projects imported. They can now be edited from this panel.`;
+    } catch (error) {
+      console.error('[AdminPage] Failed to import current portfolio:', error);
+      this.projectError = 'Could not import the current portfolio. Please try again.';
+    } finally {
+      this.isSavingProject = false;
+    }
+  }
+
+  startNewProject(): void {
+    this.editingProjectId = null;
+    this.isProjectFormOpen = true;
+    this.projectForm = this.emptyProjectForm();
+    this.selectedProjectFile = null;
+    this.closeCountryPicker();
+    this.projectError = '';
+    this.projectNotice = '';
+  }
+
+  editProject(project: IconicProject): void {
+    this.editingProjectId = project.id;
+    this.isProjectFormOpen = true;
+    this.projectForm = {
+      title: project.title ?? project.name,
+      location: project.location ?? project.subtitle,
+      country: project.country || 'Egypt',
+      assetType: project.assetType ?? 'image',
+      assetUrl: project.assetUrl ?? project.heroImage,
+      modelFormat: project.modelFormat ?? 'glb',
+      description: project.description,
+      highlights: project.highlights?.length
+        ? [...project.highlights]
+        : (project.engineeringHighlight ? [project.engineeringHighlight] : ['']),
+    };
+    this.selectedProjectFile = null;
+    this.closeCountryPicker();
+    this.projectError = '';
+    this.projectNotice = '';
+  }
+
+  cancelProjectEdit(): void {
+    this.editingProjectId = null;
+    this.isProjectFormOpen = false;
+    this.projectError = '';
+    this.closeCountryPicker();
+  }
+
+  async saveProject(): Promise<void> {
+    const form = this.projectForm;
+    if (!form.title.trim() || !form.location.trim() || !form.country || !form.description.trim()) {
+      this.projectError = 'Title, location, region, and description are required.';
+      return;
+    }
+    if (form.assetType === 'image' && !this.selectedProjectFile && !form.assetUrl) {
+      this.projectError = 'Upload an image before saving.';
+      return;
+    }
+    if (form.assetType === 'model' && !this.selectedProjectFile && !form.assetUrl.trim()) {
+      this.projectError = 'Provide a GLB/GLTF URL or upload a model before saving.';
+      return;
+    }
+    this.isSavingProject = true;
+    this.projectError = '';
+    try {
+      const assetUrl = this.selectedProjectFile
+        ? await this.adminService.uploadProjectAsset(
+          this.selectedProjectFile,
+          form.assetType,
+          form.title.trim()
+        )
+        : await this.adminService.ensureProjectAssetStored(
+          form.assetUrl.trim(),
+          form.assetType,
+          form.title.trim()
+        );
+      const project: ProjectInput = {
+        id: this.editingProjectId ?? undefined,
+        title: form.title.trim(),
+        location: form.location.trim(),
+        name: form.title.trim(),
+        subtitle: form.location.trim(),
+        region: form.country === 'Egypt' ? 'egypt' : 'amea',
+        country: form.country,
+        countryCode: this.countryCode(form.country),
+        coordinates: { lat: 0, lng: 0 },
+        heroImage: form.assetType === 'image' ? assetUrl : '',
+        assetType: form.assetType,
+        assetUrl,
+        description: form.description.trim(),
+        engineeringHighlight: form.highlights.map((highlight) => highlight.trim()).filter(Boolean)[0] ?? '',
+        highlights: form.highlights.map((highlight) => highlight.trim()).filter(Boolean),
+        stats: {},
+        products: [],
+        tags: [],
+        order: this.projects.length + 1,
+      };
+      if (form.assetType === 'model') {
+        project.modelFormat = form.modelFormat;
+      }
+      const saved = await this.adminService.saveProject(project);
+      const existingIndex = this.projects.findIndex((project) => project.id === saved.id);
+      this.projects = existingIndex < 0
+        ? [...this.projects, saved]
+        : this.projects.map((project) => project.id === saved.id ? saved : project);
+      this.projects.sort((a, b) => a.order - b.order || a.name.localeCompare(b.name));
+      this.editingProjectId = null;
+      this.isProjectFormOpen = false;
+      this.selectedProjectFile = null;
+      this.projectNotice = `${saved.name} saved.`;
+    } catch (error) {
+      console.error('[AdminPage] Failed to save project:', error);
+      this.projectError = 'Could not save this project. Please try again.';
+    } finally {
+      this.isSavingProject = false;
+    }
+  }
+
+  async removeProject(project: IconicProject): Promise<void> {
+    const confirmation = await this.alertController.create({
+      header: 'Remove project?',
+      message: `Remove “${project.title || project.name}” from the attendee portfolio?`,
+      buttons: [
+        { text: 'Cancel', role: 'cancel' },
+        { text: 'Remove', role: 'confirm', cssClass: 'danger-button' },
+      ],
+    });
+    await confirmation.present();
+    const { role } = await confirmation.onDidDismiss();
+    if (role !== 'confirm') {
+      return;
+    }
+
+    this.isDeletingProject = true;
+    this.projectError = '';
+    try {
+      await this.adminService.deleteProject(project.id);
+      this.projects = this.projects.filter((item) => item.id !== project.id);
+      this.projectNotice = `${project.name} removed.`;
+      if (this.editingProjectId === project.id) {
+        this.editingProjectId = null;
+        this.isProjectFormOpen = false;
+      }
+    } catch (error) {
+      console.error('[AdminPage] Failed to remove project:', error);
+      this.projectError = 'Could not remove this project. Please try again.';
+    } finally {
+      this.isDeletingProject = false;
+    }
+  }
+
+  private emptyProjectForm() {
+    return {
+      title: '',
+      location: '',
+      country: 'Egypt',
+      description: '',
+      highlights: [''],
+      assetType: 'image' as 'image' | 'model',
+      assetUrl: '',
+      modelFormat: 'glb' as 'glb' | 'gltf',
+    };
+  }
+
+  addProjectHighlight(): void {
+    this.projectForm.highlights.push('');
+  }
+
+  removeProjectHighlight(index: number): void {
+    if (this.projectForm.highlights.length <= 1) {
+      this.projectForm.highlights[0] = '';
+      return;
+    }
+    this.projectForm.highlights.splice(index, 1);
+  }
+
+  openCountryPicker(): void {
+    this.isCountryPickerOpen = true;
+    this.countrySearch = '';
+    this.filteredProjectCountries = this.projectCountries;
+  }
+
+  closeCountryPicker(): void {
+    this.isCountryPickerOpen = false;
+    this.countrySearch = '';
+  }
+
+  filterProjectCountries(): void {
+    const query = this.countrySearch.trim().toLowerCase();
+    this.filteredProjectCountries = query
+      ? this.projectCountries.filter((country) => country.name.toLowerCase().includes(query))
+      : this.projectCountries;
+  }
+
+  selectProjectCountry(country: ProjectCountry): void {
+    this.projectForm.country = country.name;
+    this.closeCountryPicker();
+  }
+
+  onProjectFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0] ?? null;
+    if (!file) {
+      this.selectedProjectFile = null;
+      return;
+    }
+
+    const isImage = this.projectForm.assetType === 'image' && file.type.startsWith('image/');
+    const isModel = this.projectForm.assetType === 'model' && /\.(glb|gltf)$/i.test(file.name);
+    if (!isImage && !isModel) {
+      this.selectedProjectFile = null;
+      this.projectError = this.projectForm.assetType === 'image'
+        ? 'Choose a valid image file.'
+        : 'Choose a .glb or .gltf model file.';
+      input.value = '';
+      return;
+    }
+    this.projectError = '';
+    this.selectedProjectFile = file;
+  }
+
+  private countryCode(countryName: string): string {
+    return this.projectCountries.find((country) => country.name === countryName)?.code ?? '';
+  }
+
   get selectedRecipientCount(): number | null {
     const attendees = this.dashboard?.attendees;
     if (!attendees) {
@@ -202,37 +481,6 @@ export class AdminPage implements OnInit, OnDestroy {
 
   get attendees(): AdminAttendee[] {
     return this.dashboard?.attendees ?? [];
-  }
-
-  get eventReadiness(): EventReadinessItem[] {
-    const data = this.dashboard;
-    if (!data) {
-      return [];
-    }
-
-    const total = data.totalAttendees;
-    return [
-      {
-        label: 'Delegate profiles',
-        detail: `${total} profile${total === 1 ? '' : 's'} loaded`,
-        status: total > 0 ? 'ready' : 'attention',
-      },
-      {
-        label: 'Sign-in coverage',
-        detail: `${data.totalLoggedIn} of ${total} signed in`,
-        status: total > 0 && data.totalLoggedIn >= total ? 'ready' : 'attention',
-      },
-      {
-        label: 'App install coverage',
-        detail: `${data.installedUsers} of ${total} installed`,
-        status: total > 0 && data.installedUsers >= total ? 'ready' : 'attention',
-      },
-      {
-        label: 'Push delivery coverage',
-        detail: `${data.pushReadyUsers} of ${total} push-enabled`,
-        status: total > 0 && data.pushReadyUsers >= total ? 'ready' : 'attention',
-      },
-    ];
   }
 
   get filteredAttendees(): AdminAttendee[] {

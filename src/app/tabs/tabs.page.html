@@ -1,3 +1,23 @@
+<ion-header class="app-header">
+  <ion-toolbar>
+    <div class="app-brand">
+      <img src="assets/logo.png" alt="" />
+      <span>
+        <strong>AHLAN</strong>
+        <small>AMEA 2026</small>
+      </span>
+    </div>
+    <ion-buttons slot="end">
+      <ion-button fill="clear" aria-label="Notifications" (click)="openNotifications()">
+        <ion-icon slot="icon-only" name="notifications-outline"></ion-icon>
+      </ion-button>
+      <ion-button fill="clear" aria-label="Sign out" (click)="signOut()">
+        <ion-icon slot="icon-only" name="log-out-outline"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
 <ion-tabs>
   <ion-tab-bar slot="bottom">
     <ion-tab-button tab="home" href="/tabs/home">
@@ -25,6 +45,11 @@
     <ion-tab-button tab="resources" href="/tabs/resources">
       <ion-icon aria-hidden="true" name="book-outline"></ion-icon>
       <ion-label>Resources</ion-label>
+    </ion-tab-button>
+
+    <ion-tab-button tab="more" href="/tabs/more">
+      <ion-icon aria-hidden="true" name="menu-outline"></ion-icon>
+      <ion-label>More</ion-label>
     </ion-tab-button>
 
   </ion-tab-bar>

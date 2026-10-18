@@ -1,5 +1,8 @@
 export interface IconicProject {
   id: string;
+  /** Admin-facing content fields. */
+  title?: string;
+  location?: string;
   name: string;
   subtitle: string;
   region: 'egypt' | 'amea';
@@ -9,8 +12,12 @@ export interface IconicProject {
   /** Percentage-based position for rendering on the AMEA map (0–100) */
   mapPosition?: { x: number; y: number };
   heroImage: string;
+  assetType?: 'image' | 'model';
+  assetUrl?: string;
+  modelFormat?: 'glb' | 'gltf';
   description: string;
-  engineeringHighlight: string;
+  engineeringHighlight?: string;
+  highlights?: string[];
   stats: ProjectStats;
   products: HolcimProduct[];
   tags: string[];

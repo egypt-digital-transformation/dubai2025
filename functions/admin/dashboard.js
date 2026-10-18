@@ -82,7 +82,7 @@ export const getAdminDashboard = onCall(
     const attendees = attendeesSnapshot.docs
       .map((attendeeDocument) => {
         const data = attendeeDocument.data();
-        const email = data.email?.trim();
+        const email = attendeeDocument.id.trim();
         if (!email) {
           return null;
         }
