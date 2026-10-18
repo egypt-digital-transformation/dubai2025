@@ -114,9 +114,6 @@ export class HomePage implements OnInit, OnDestroy {
 newAnnouncementTitle: any;
 newAnnouncementDesc: any;
 announcementError = '';
-openPhotos() {
-throw new Error('Method not implemented.');
-}
   public primarySession: Session | null = null;
   public secondarySession: Session | null = null;
   public todaySessions$!: Observable<Session[]>;
@@ -538,6 +535,10 @@ this.showQR = false;
 
   openNetworking() {
     this.router.navigate(['/tabs/network']);
+  }
+
+  openResources() {
+    this.router.navigateByUrl('/tabs/resources');
   }
 
   openTips() {

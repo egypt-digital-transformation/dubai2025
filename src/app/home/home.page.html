@@ -1,26 +1,47 @@
 <ion-content [fullscreen]="true" [scrollY]="true">
   <div class="home-wrapper">
-    <!-- ================= HEADER ================= -->
-    <div class="header-gradient">
-      <div class="header-container">
-        <div class="header-content">
-          <p class="event-label">AMEA REGIONAL MEETING 2026</p>
-<h1 class="day-title" *ngIf="currentDay > 0">DAY {{ currentDay }}</h1>
-<h1 class="day-title" *ngIf="currentDay === 0">COMING SOON</h1>
-          <p class="date-text">Ahlan, {{ displayName }}!</p>
+    <header class="home-header">
+      <div class="home-header-inner">
+        <div class="home-brand">
+          <img src="assets/logo.png" alt="" />
+          <span><strong>HOLCIM</strong><small>AMEA 2026</small></span>
         </div>
-
-        <!-- Logout Icon -->
-        <ion-button fill="clear" class="logout-btn" (click)="logoutUser()">
+        <ion-button fill="clear" class="home-logout" aria-label="Sign out" (click)="logoutUser()">
           <ion-icon name="log-out-outline"></ion-icon>
         </ion-button>
-
-        <img src="assets/skyline.webp" alt="" class="header-overlay" />
       </div>
-    </div>
+    </header>
 
-    <!-- ================= MAIN CONTENT ================= -->
     <div class="content-container">
+      <section class="welcome-hero" aria-labelledby="welcome-title">
+        <img src="assets/skyline.webp" alt="" class="welcome-skyline" />
+        <div class="welcome-copy">
+          <p class="welcome-eyebrow">YOUR AMEA EXPERIENCE</p>
+          <h1 id="welcome-title">Ahlan, {{ displayName || 'there' }}.</h1>
+          <p class="welcome-description">
+            New perspectives. Shared ambition. Welcome to the AMEA Regional Meeting.
+          </p>
+          <div class="welcome-meta">
+            <span class="welcome-day" *ngIf="currentDay > 0">DAY {{ currentDay }}</span>
+            <span class="welcome-day" *ngIf="currentDay === 0">COMING SOON</span>
+            <span>Egypt · 2026</span>
+          </div>
+          <button type="button" class="welcome-link" (click)="navigateToAgenda()">
+            Explore your agenda
+            <ion-icon name="arrow-forward-outline" aria-hidden="true"></ion-icon>
+          </button>
+        </div>
+      </section>
+
+      <div class="home-section-heading">
+          <div>
+            <p class="section-eyebrow">MAKE THE MOST OF TODAY</p>
+            <h2 id="next-session-heading">Your next chapter</h2>
+          </div>
+          <span class="day-chip" *ngIf="currentDay > 0">DAY {{ currentDay }}</span>
+          <span class="day-chip" *ngIf="currentDay === 0">COMING SOON</span>
+      </div>
+
       <!-- Skeleton Loader -->
       <ng-container *ngIf="primarySession === null && messageType === null; else loadedContent">
         <div class="session-card skeleton-loader">
@@ -53,6 +74,7 @@
 
       <!-- ================= ACTUAL CONTENT ================= -->
       <ng-template #loadedContent>
+        <section class="home-section next-section" aria-labelledby="next-session-heading">
         <!-- Primary or Upcoming Session -->
         <ng-container *ngIf="primarySession; else noSession">
           <div
@@ -197,60 +219,67 @@
   </div>
 </ng-template>
 
+      </section>
 
-        <!-- Quick Actions -->
+        <section class="home-section essentials-section" aria-labelledby="essentials-heading">
+          <div class="home-section-heading">
+            <div>
+              <p class="section-eyebrow">HERE WHEN YOU NEED THEM</p>
+              <h2 id="essentials-heading">Your event essentials</h2>
+            </div>
+          </div>
         <div class="quick-actions">
-          <div class="action-card" (click)="openQRCode()">
-            <div class="action-content">
-              <div class="action-icon qr"><ion-icon name="qr-code-outline"></ion-icon></div>
-              <div class="action-title">My QR</div>
-              <div class="action-desc">Share contact</div>
-            </div>
-          </div>
+          <button type="button" class="action-card" (click)="openQRCode()">
+            <span class="action-content">
+              <span class="action-icon qr"><ion-icon name="qr-code-outline"></ion-icon></span>
+              <span class="action-title">My QR</span>
+              <span class="action-desc">Share contact</span>
+            </span>
+          </button>
 
-          <div class="action-card" (click)="openPhotos()">
-            <div class="action-content">
-              <div class="action-icon photos"><ion-icon name="images-outline"></ion-icon></div>
-              <div class="action-title">Photos</div>
-              <div class="action-desc">Event gallery</div>
-            </div>
-          </div>
+          <button type="button" class="action-card" (click)="openResources()">
+            <span class="action-content">
+              <span class="action-icon photos"><ion-icon name="folder-open-outline"></ion-icon></span>
+              <span class="action-title">Resources</span>
+              <span class="action-desc">Event materials</span>
+            </span>
+          </button>
 
-          <div class="action-card" (click)="navigateToVenue()">
-            <div class="action-content">
-              <div class="action-icon venue"><ion-icon name="map-outline"></ion-icon></div>
-              <div class="action-title">Venue</div>
-              <div class="action-desc">Navigate</div>
-            </div>
-          </div>
+          <button type="button" class="action-card" (click)="navigateToVenue()">
+            <span class="action-content">
+              <span class="action-icon venue"><ion-icon name="map-outline"></ion-icon></span>
+              <span class="action-title">Find your way</span>
+              <span class="action-desc">Venue &amp; maps</span>
+            </span>
+          </button>
 
-          <div class="action-card" (click)="openProjects()">
-            <div class="action-content">
-              <div class="action-icon projects"><ion-icon name="business-outline"></ion-icon></div>
-              <div class="action-title">Projects</div>
-              <div class="action-desc">Egypt &amp; AMEA landmarks</div>
-            </div>
-          </div>
+          <button type="button" class="action-card" (click)="openProjects()">
+            <span class="action-content">
+              <span class="action-icon projects"><ion-icon name="business-outline"></ion-icon></span>
+              <span class="action-title">Projects</span>
+              <span class="action-desc">Egypt &amp; AMEA landmarks</span>
+            </span>
+          </button>
 
-          <div class="action-card" (click)="openTips()">
-            <div class="action-content">
-              <div class="action-icon networking"><ion-icon name="bulb-outline"></ion-icon></div>
-              <div class="action-title">Tips</div>
-              <div class="action-desc">Recommendations</div>
-            </div>
-          </div>
+          <button type="button" class="action-card" (click)="openTips()">
+            <span class="action-content">
+              <span class="action-icon networking"><ion-icon name="bulb-outline"></ion-icon></span>
+              <span class="action-title">Tips</span>
+              <span class="action-desc">Local recommendations</span>
+            </span>
+          </button>
 
-          <div class="action-card" (click)="openSafetyInductionModal()">
-            <div class="action-content">
-              <div class="action-icon hse">
+          <button type="button" class="action-card" (click)="openSafetyInductionModal()">
+            <span class="action-content">
+              <span class="action-icon hse">
                 <img src="assets/safety.png" alt="" aria-hidden="true" />
-              </div>
-              <div class="action-title">Safety Induction</div>
-              <div class="action-desc">
+              </span>
+              <span class="action-title">Safety induction</span>
+              <span class="action-desc">
                 {{ completedInductionsCount }} of {{ totalInductionsRequired }} completed
-              </div>
-            </div>
-          </div>
+              </span>
+            </span>
+          </button>
 
           <button
             type="button"
@@ -279,13 +308,17 @@
             </span>
           </button>
         </div>
+        </section>
 
         <!-- My Agenda -->
-        <div class="agenda-card">
+        <section class="agenda-card home-section">
           <div class="card-content">
             <div class="card-header">
-              <h3 class="card-title">My Agenda</h3>
-              <button class="view-all-btn" (click)="navigateToAgenda()">View All</button>
+              <div>
+                <p class="section-eyebrow">A LITTLE MORE TO LOOK FORWARD TO</p>
+                <h2 class="card-title">Today’s agenda</h2>
+              </div>
+              <button class="view-all-btn" (click)="navigateToAgenda()">View all</button>
             </div>
 
             <div class="agenda-sessions" *ngIf="todaySessions$ | async as todaySessions">
@@ -315,13 +348,13 @@
                   <p class="empty-text">
                     Free time! Relax or visit the
                     <a [routerLink]="['/tabs/resources']" class="deeplink-text">Resources tab</a>
-                    for things to do in Dubai.
+                    for things to do in Egypt.
                   </p>
                 </div>
               </ng-template>
             </div>
           </div>
-        </div>
+        </section>
 
         <!-- Announcements -->
 <div class="announcements-card" *ngIf="announcements$ | async as announcements">

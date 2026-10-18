@@ -141,13 +141,149 @@ describe('AdminPage', () => {
     });
   });
 
-  it('keeps campaign and quiz/poll composers visible when dashboard data is unavailable', () => {
+  it('keeps the update composer available and explains unavailable audience data', () => {
     component.dashboard = null;
+    component.selectedSection = 'updates';
     fixture.detectChanges();
 
     const pageText = fixture.nativeElement.textContent as string;
-    expect(pageText).toContain('Targeted push notifications');
-    expect(pageText).toContain('Create a quiz or poll');
+    expect(pageText).toContain('Publish an update');
     expect(pageText).toContain('All attendees');
+    expect(pageText).toContain('Audience details are unavailable');
+
+    component.selectSection('engagement');
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Create a quiz or poll');
+  });
+
+  it('opens the overview by default and renders one admin workspace at a time', () => {
+    fixture.detectChanges();
+
+    const page: HTMLElement = fixture.nativeElement;
+    expect(component.selectedSection).toBe('overview');
+    expect(page.querySelector('#admin-tab-overview')?.getAttribute('aria-selected')).toBe('true');
+    expect(page.querySelector('#overview')).not.toBeNull();
+    expect(page.querySelector('#notifications')).toBeNull();
+    expect(page.querySelector('#engagement')).toBeNull();
+    expect(page.querySelector('.metric-definition')?.textContent).toContain('15 minutes');
+  });
+
+  it('switches workspaces from the horizontal tabs without navigating away', () => {
+    fixture.detectChanges();
+
+    const page: HTMLElement = fixture.nativeElement;
+    page.querySelector<HTMLButtonElement>(
+      '#admin-tab-updates'
+    )?.click();
+    fixture.detectChanges();
+
+    expect(component.selectedSection).toBe('updates');
+    expect(page.querySelector('#admin-tab-updates')?.getAttribute('aria-selected')).toBe('true');
+    expect(page.querySelector('#notifications')).not.toBeNull();
+    expect(page.querySelector('#campaigns')).not.toBeNull();
+    expect(page.querySelector('#engagement')).toBeNull();
+    expect(page.querySelector('.admin-section-nav a')).toBeNull();
+
+    page.querySelector<HTMLButtonElement>('#admin-tab-engagement')?.click();
+    fixture.detectChanges();
+
+    expect(component.selectedSection).toBe('engagement');
+    expect(page.querySelector('#notifications')).toBeNull();
+    expect(page.querySelector('#engagement')).not.toBeNull();
+    expect(page.textContent).toContain('Published quizzes and polls');
+  });
+
+  it('presents recent update reporting guidance', () => {
+    component.selectedSection = 'updates';
+    fixture.detectChanges();
+
+    const page: HTMLElement = fixture.nativeElement;
+    expect(page.textContent).toContain('Recent updates');
+    expect(page.textContent).toContain('Accepted” means Firebase accepted the send request');
+    expect(page.textContent).toContain('Opens count unique recipients');
+  });
+
+  it('supports arrow-key navigation between admin tabs', () => {
+    fixture.detectChanges();
+    const tab = fixture.nativeElement.querySelector('#admin-tab-overview') as HTMLButtonElement;
+    const event = new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true });
+    tab.dispatchEvent(event);
+    fixture.detectChanges();
+
+    expect(component.selectedSection).toBe('attendees');
+    expect(document.activeElement?.id).toBe('admin-tab-attendees');
+    expect(fixture.nativeElement.querySelector('#attendees')).not.toBeNull();
+  });
+
+  it('filters attendees by search text and status', () => {
+    component.selectedSection = 'attendees';
+    component.attendeeSearch = 'b@example.com';
+    component.attendeeStatusFilter = 'installed';
+    fixture.detectChanges();
+
+    expect(component.filteredAttendees.map((attendee) => attendee.id)).toEqual([]);
+    component.attendeeStatusFilter = 'all';
+    fixture.detectChanges();
+    expect(component.filteredAttendees.map((attendee) => attendee.id)).toEqual(['delegate-b']);
+  });
+
+  it('exports the currently filtered attendees as CSV', () => {
+    component.selectedSection = 'attendees';
+    component.attendeeSearch = 'delegate-a';
+    const createObjectUrl = spyOn(URL, 'createObjectURL').and.returnValue('blob:test');
+    const revokeObjectUrl = spyOn(URL, 'revokeObjectURL');
+    const click = jasmine.createSpy('click');
+    spyOn(document, 'createElement').and.returnValue({
+      click,
+    } as unknown as HTMLAnchorElement);
+
+    component.exportAttendees();
+
+    expect(createObjectUrl).toHaveBeenCalled();
+    expect(click).toHaveBeenCalled();
+    expect(revokeObjectUrl).toHaveBeenCalledWith('blob:test');
+  });
+
+  it('shows activity lifecycle status without offering unsupported close persistence', async () => {
+    adminService.listAdminInteractiveActivities.and.resolveTo({
+      activities: [
+        {
+          id: 'open-activity',
+          title: 'Open check',
+          question: 'Question?',
+          options: ['Yes', 'No'],
+          kind: 'poll',
+          active: true,
+          target: { kind: 'all' },
+          responseCount: 1,
+          optionCounts: [1, 0],
+          correctCount: null,
+        },
+        {
+          id: 'closed-activity',
+          title: 'Closed check',
+          question: 'Question?',
+          options: ['A', 'B'],
+          kind: 'quiz',
+          active: false,
+          target: { kind: 'all' },
+          responseCount: 2,
+          optionCounts: [1, 1],
+          correctCount: 1,
+        },
+      ],
+    });
+
+    await component.loadAdminActivities();
+    component.selectedSection = 'engagement';
+    fixture.detectChanges();
+
+    const pageText = fixture.nativeElement.textContent as string;
+    expect(pageText).toContain('Activity lifecycle controls unavailable');
+    expect(pageText).toContain('Closing an activity is not supported');
+    expect(fixture.nativeElement.querySelectorAll('.status-badge').length).toBe(2);
+    expect(fixture.nativeElement.querySelector('.status-badge')?.textContent).toContain('Open');
+    expect(fixture.nativeElement.querySelector('.status-badge-closed')?.textContent).toContain('Closed');
+    expect(pageText).not.toContain('Close activity');
   });
 });

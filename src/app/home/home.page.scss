@@ -1592,3 +1592,375 @@ ion-modal {
 ion-modal::part(content) {
   animation: modalSlideIn 0.3s ease-out;
 }
+
+// Home screen visual system
+.home-wrapper {
+  min-height: 100%;
+  padding-bottom: 1.5rem;
+  background: #f5f7f8;
+}
+
+.home-header {
+  background: #fff;
+  border-bottom: 1px solid #e8edf0;
+  padding: calc(0.5rem + env(safe-area-inset-top)) 1.25rem 0.5rem;
+}
+
+.home-header-inner {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  margin: 0 auto;
+  max-width: 58rem;
+  min-height: 3rem;
+}
+
+.home-brand {
+  align-items: center;
+  color: #1d4370;
+  display: inline-flex;
+  gap: 0.6rem;
+  text-decoration: none;
+
+  img {
+    height: 2.25rem;
+    object-fit: contain;
+    width: 2.25rem;
+  }
+
+  span {
+    display: grid;
+    gap: 0.1rem;
+  }
+
+  strong {
+    font-size: 0.9rem;
+    letter-spacing: 0.015em;
+  }
+
+  small {
+    color: #667582;
+    font-size: 0.65rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+}
+
+.home-logout {
+  --color: #526577;
+  margin: 0;
+
+  ion-icon {
+    font-size: 1.3rem;
+  }
+}
+
+.content-container {
+  margin: 0 auto;
+  max-width: 58rem;
+  padding: 1.25rem 1rem 2rem;
+}
+
+.welcome-hero {
+  background:
+    radial-gradient(ellipse at 82% 15%, rgba(0, 169, 224, 0.22), transparent 37%),
+    linear-gradient(125deg, #071a38 0%, #102f52 63%, #16456d 100%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 1.25rem;
+  color: #fff;
+  isolation: isolate;
+  margin-bottom: 1.75rem;
+  min-height: 17rem;
+  overflow: hidden;
+  padding: clamp(1.5rem, 5vw, 2.5rem);
+  position: relative;
+}
+
+.welcome-skyline {
+  bottom: -2rem;
+  height: 75%;
+  max-width: 70%;
+  object-fit: contain;
+  object-position: right bottom;
+  opacity: 0.16;
+  pointer-events: none;
+  position: absolute;
+  right: -1rem;
+  z-index: -1;
+}
+
+.welcome-copy {
+  max-width: 32rem;
+  position: relative;
+}
+
+.welcome-eyebrow,
+.section-eyebrow {
+  color: #83d4e7;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  line-height: 1.4;
+  margin: 0 0 0.75rem;
+  text-transform: uppercase;
+}
+
+.welcome-hero h1 {
+  color: #fff;
+  font-size: clamp(2rem, 7vw, 3.1rem);
+  font-weight: 650;
+  letter-spacing: -0.045em;
+  line-height: 1.08;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.welcome-description {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.95rem;
+  line-height: 1.6;
+  margin: 0.85rem 0 1.1rem;
+  max-width: 26rem;
+}
+
+.welcome-meta {
+  align-items: center;
+  color: rgba(255, 255, 255, 0.75);
+  display: flex;
+  font-size: 0.75rem;
+  gap: 0.65rem;
+}
+
+.welcome-day {
+  background: rgba(148, 193, 46, 0.18);
+  border: 1px solid rgba(177, 220, 83, 0.4);
+  border-radius: 999px;
+  color: #ddf2a5;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 0.32rem 0.55rem;
+}
+
+.welcome-link {
+  align-items: center;
+  background: #fff;
+  border: 0;
+  border-radius: 0.55rem;
+  color: #123457;
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 650;
+  gap: 0.65rem;
+  margin-top: 1.25rem;
+  min-height: 2.8rem;
+  padding: 0 1rem;
+  transition: background 160ms ease, transform 160ms ease;
+
+  ion-icon {
+    font-size: 1rem;
+  }
+
+  &:hover {
+    background: #eaf7fa;
+    transform: translateY(-1px);
+  }
+}
+
+.home-section {
+  margin-bottom: 1.75rem;
+}
+
+.home-section-heading {
+  align-items: end;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.85rem;
+
+  h2 {
+    color: #152e48;
+    font-size: 1.3rem;
+    font-weight: 650;
+    letter-spacing: -0.025em;
+    line-height: 1.2;
+    margin: 0;
+  }
+
+  .section-eyebrow {
+    color: #668092;
+    font-size: 0.6rem;
+    margin-bottom: 0.35rem;
+  }
+}
+
+.day-chip {
+  background: #eaf2f4;
+  border-radius: 999px;
+  color: #476477;
+  flex-shrink: 0;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 0.4rem 0.65rem;
+}
+
+.next-section .session-card {
+  margin-top: 0;
+}
+
+.next-section .session-card .card-content {
+  padding: 1.25rem;
+}
+
+.essentials-section .home-section-heading {
+  margin-bottom: 0.75rem;
+}
+
+.quick-actions {
+  gap: 0.65rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  min-height: 0;
+
+  .action-card {
+    align-items: center;
+    background: #fff;
+    border: 1px solid #e6ecef;
+    border-radius: 0.9rem;
+    box-shadow: 0 2px 8px rgba(14, 40, 61, 0.035);
+    color: #1d4370;
+    display: flex;
+    font: inherit;
+    justify-content: flex-start;
+    min-height: 7rem;
+    padding: 0.9rem;
+    text-align: left;
+    transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+
+    &:hover {
+      border-color: #9dd9e4;
+      box-shadow: 0 6px 16px rgba(14, 40, 61, 0.08);
+      transform: translateY(-2px);
+    }
+
+    &:focus-visible {
+      outline: 3px solid rgba(0, 169, 224, 0.45);
+      outline-offset: 2px;
+    }
+  }
+
+  .action-content {
+    align-items: flex-start;
+    min-width: 0;
+  }
+
+  .action-icon {
+    border-radius: 0.65rem;
+    height: 2.15rem;
+    margin-bottom: 0.6rem;
+    width: 2.15rem;
+
+    ion-icon {
+      font-size: 1.15rem;
+    }
+  }
+
+  .action-title {
+    color: #173a59;
+    font-size: 0.79rem;
+    line-height: 1.35;
+  }
+
+  .action-desc {
+    color: #778793;
+    font-size: 0.68rem;
+    line-height: 1.4;
+    margin-top: 0.15rem;
+  }
+}
+
+.agenda-card.home-section {
+  background: #fff;
+  border: 1px solid #e6ecef;
+  border-radius: 1rem;
+  box-shadow: 0 2px 8px rgba(14, 40, 61, 0.035);
+
+  .card-content {
+    padding: 1.2rem;
+  }
+
+  .card-header {
+    align-items: center;
+    margin-bottom: 1rem;
+  }
+
+  .section-eyebrow {
+    color: #668092;
+    font-size: 0.58rem;
+    margin-bottom: 0.35rem;
+  }
+
+  .card-title {
+    color: #152e48;
+    font-size: 1.2rem;
+    font-weight: 650;
+    letter-spacing: -0.025em;
+  }
+
+  .view-all-btn {
+    color: #087f9f;
+    font-size: 0.78rem;
+    font-weight: 650;
+  }
+
+  .agenda-item {
+    align-items: center;
+    background: #f7f9fa;
+    border: 1px solid #edf1f2;
+    border-radius: 0.7rem;
+    min-height: 3.25rem;
+  }
+
+  .time-label {
+    color: #087f9f;
+    font-size: 0.78rem;
+  }
+
+  .session-name {
+    color: #243b50;
+    font-size: 0.82rem;
+  }
+}
+
+.announcements-card,
+.hotel-card {
+  border-radius: 1rem;
+  margin-bottom: 1rem;
+}
+
+@media (min-width: 640px) {
+  .content-container {
+    padding: 1.75rem 1.5rem 2.5rem;
+  }
+
+  .welcome-hero {
+    min-height: 19rem;
+  }
+
+  .quick-actions {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .welcome-link,
+  .quick-actions .action-card {
+    transition: none;
+  }
+
+  .welcome-link:hover,
+  .quick-actions .action-card:hover {
+    transform: none;
+  }
+}

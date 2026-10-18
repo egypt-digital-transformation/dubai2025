@@ -1,30 +1,86 @@
 <ion-content [fullscreen]="true" class="admin-content">
   <main class="admin-page">
     <header class="admin-header">
-      <div class="admin-heading">
-        <ion-button
-          fill="clear"
-          class="back-button"
-          (click)="returnToApp()"
-        >
-          <ion-icon slot="start" name="arrow-back-outline"></ion-icon>
-          Back to app
-        </ion-button>
-        <div>
-          <p class="eyebrow">AHLAN COMPANION</p>
-          <h1>Admin panel</h1>
-          <p class="subtitle">Adoption, attendee activity and targeted notifications</p>
-        </div>
-      </div>
-      <ion-button fill="outline" (click)="loadDashboard()" [disabled]="isLoading">
+      <ion-button fill="clear" class="back-button" (click)="returnToApp()">
+        <ion-icon slot="start" name="arrow-back-outline"></ion-icon>
+        Delegate view
+      </ion-button>
+      <ion-button fill="outline" class="refresh-button" (click)="loadDashboard()" [disabled]="isLoading">
         <ion-icon slot="start" name="refresh-outline"></ion-icon>
-        Refresh
+        Refresh data
       </ion-button>
     </header>
 
-    <ion-note *ngIf="errorMessage" color="danger" class="message error-message">
-      {{ errorMessage }}
-    </ion-note>
+    <section class="admin-hero" aria-labelledby="admin-title">
+      <p class="hero-eyebrow">EVENT ADMINISTRATION</p>
+      <h1 id="admin-title">Every detail,<br />in good hands.</h1>
+      <p>Attendee experience, engagement and communications at a glance.</p>
+    </section>
+
+    <nav class="admin-section-nav" role="tablist" aria-label="Admin sections">
+      <button
+        id="admin-tab-overview"
+        type="button"
+        role="tab"
+        aria-controls="admin-workspace"
+        [attr.aria-selected]="selectedSection === 'overview'"
+        [attr.tabindex]="selectedSection === 'overview' ? 0 : -1"
+        [class.active]="selectedSection === 'overview'"
+        (click)="selectSection('overview')"
+        (keydown)="onSectionTabKeydown($event, 'overview')"
+      >
+        <ion-icon name="grid-outline" aria-hidden="true"></ion-icon>
+        <span>Overview</span>
+      </button>
+      <button
+        id="admin-tab-attendees"
+        type="button"
+        role="tab"
+        aria-controls="admin-workspace"
+        [attr.aria-selected]="selectedSection === 'attendees'"
+        [attr.tabindex]="selectedSection === 'attendees' ? 0 : -1"
+        [class.active]="selectedSection === 'attendees'"
+        (click)="selectSection('attendees')"
+        (keydown)="onSectionTabKeydown($event, 'attendees')"
+      >
+        <ion-icon name="people-outline" aria-hidden="true"></ion-icon>
+        <span>Attendees</span>
+      </button>
+      <button
+        id="admin-tab-engagement"
+        type="button"
+        role="tab"
+        aria-controls="admin-workspace"
+        [attr.aria-selected]="selectedSection === 'engagement'"
+        [attr.tabindex]="selectedSection === 'engagement' ? 0 : -1"
+        [class.active]="selectedSection === 'engagement'"
+        (click)="selectSection('engagement')"
+        (keydown)="onSectionTabKeydown($event, 'engagement')"
+      >
+        <ion-icon name="stats-chart-outline" aria-hidden="true"></ion-icon>
+        <span>Engagement</span>
+      </button>
+      <button
+        id="admin-tab-updates"
+        type="button"
+        role="tab"
+        aria-controls="admin-workspace"
+        [attr.aria-selected]="selectedSection === 'updates'"
+        [attr.tabindex]="selectedSection === 'updates' ? 0 : -1"
+        [class.active]="selectedSection === 'updates'"
+        (click)="selectSection('updates')"
+        (keydown)="onSectionTabKeydown($event, 'updates')"
+      >
+        <ion-icon name="notifications-outline" aria-hidden="true"></ion-icon>
+        <span>Updates</span>
+      </button>
+    </nav>
+
+    <div *ngIf="errorMessage" class="message error-message" role="alert">
+      <strong>Dashboard data is unavailable</strong>
+      <span>{{ errorMessage }}</span>
+      <span class="error-hint">You can still prepare a quiz or poll. Audience targeting will be available when attendee data loads.</span>
+    </div>
     <ion-note *ngIf="noticeMessage" color="success" class="message success-message">
       {{ noticeMessage }}
     </ion-note>
@@ -33,12 +89,126 @@
       Loading admin data…
     </div>
 
-    <section class="panel-card">
+    <div
+      id="admin-workspace"
+      class="admin-workspace"
+      role="tabpanel"
+      tabindex="0"
+      [attr.aria-labelledby]="'admin-tab-' + selectedSection"
+    >
+    <ng-container *ngIf="selectedSection === 'overview'">
+      <ng-container *ngIf="dashboard as data; else overviewUnavailable">
+      <section id="overview" class="admin-overview" aria-labelledby="overview-heading">
+        <div class="overview-heading">
+          <div>
+            <p class="eyebrow">AT A GLANCE</p>
+            <h2 id="overview-heading">Event adoption</h2>
+          </div>
+          <span class="count-pill">{{ data.totalAttendees }} delegate profiles</span>
+        </div>
+        <div class="metric-grid" aria-label="App analytics">
+          <article class="metric-card">
+            <span class="metric-label">Active now</span>
+            <strong>{{ data.activeLoggedIn }}</strong>
+            <span class="metric-caption">Signed in and seen within 15 minutes</span>
+          </article>
+          <article class="metric-card">
+            <span class="metric-label">Signed in</span>
+            <strong>{{ data.totalLoggedIn }}</strong>
+            <span class="metric-caption">Unique attendee profiles observed signing in</span>
+          </article>
+          <article class="metric-card">
+            <span class="metric-label">Home-screen installs</span>
+            <strong>{{ data.installedUsers }}</strong>
+            <span class="metric-caption">Install detected for this attendee</span>
+          </article>
+          <article class="metric-card">
+            <span class="metric-label">Push-enabled</span>
+            <strong>{{ data.pushReadyUsers }}</strong>
+            <span class="metric-caption">Of {{ data.totalAttendees }} delegate profiles</span>
+          </article>
+        </div>
+        <p class="refresh-caption">
+          Updated {{ data.refreshedAt | date:'mediumTime' }} · Refreshes every 30 seconds
+        </p>
+        <p class="metric-definition">
+          “Active now” means the signed-in app was visible recently; activity expires after
+          15 minutes without a heartbeat. Counts represent attendee profiles, not devices or tabs.
+          Home-screen installs are shown only when an install event or signed-in standalone launch
+          has been detected.
+        </p>
+      </section>
+      <section class="panel-card readiness-panel" aria-labelledby="readiness-heading">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">EVENT READINESS</p>
+            <h2 id="readiness-heading">Operational coverage</h2>
+          </div>
+          <span class="metric-caption">Based on current attendee data</span>
+        </div>
+        <ul class="readiness-list">
+          <li *ngFor="let item of eventReadiness" [class]="item.status">
+            <span class="readiness-icon" aria-hidden="true">
+              {{ item.status === 'ready' ? '✓' : '!' }}
+            </span>
+            <span class="readiness-copy">
+              <strong>{{ item.label }}</strong>
+              <span>{{ item.detail }}</span>
+            </span>
+            <span class="readiness-status">
+              {{ item.status === 'ready' ? 'Ready' : 'Needs attention' }}
+            </span>
+          </li>
+        </ul>
+        <p class="metric-caption readiness-note">
+          Coverage reflects profiles currently returned by the admin dashboard; it does not
+          represent attendance at the venue.
+        </p>
+      </section>
+      </ng-container>
+      <ng-template #overviewUnavailable>
+        <section class="panel-card workspace-unavailable">
+          <p class="eyebrow">OVERVIEW</p>
+          <h2>Live metrics will appear here</h2>
+          <p>Connect to the admin service to see attendee adoption and activity.</p>
+          <ion-button fill="outline" (click)="loadDashboard()" [disabled]="isLoading">
+            <ion-icon slot="start" name="refresh-outline"></ion-icon>
+            Try again
+          </ion-button>
+        </section>
+      </ng-template>
+    </ng-container>
+
+    <ng-container *ngIf="selectedSection === 'updates'">
+    <section id="notifications" class="panel-card">
       <div class="section-heading">
         <div>
-          <p class="eyebrow">CAMPAIGNS</p>
-          <h2>Targeted push notifications</h2>
+          <p class="eyebrow">UPDATES</p>
+          <h2>Publish an update</h2>
         </div>
+      </div>
+      <div class="update-mode" role="group" aria-label="Update delivery">
+        <button
+          type="button"
+          [class.active]="updateMode === 'now'"
+          [attr.aria-pressed]="updateMode === 'now'"
+          (click)="updateMode = 'now'"
+        >
+          Publish now
+        </button>
+        <button
+          type="button"
+          [class.active]="updateMode === 'scheduled'"
+          [attr.aria-pressed]="updateMode === 'scheduled'"
+          (click)="updateMode = 'scheduled'"
+        >
+          Schedule update
+        </button>
+      </div>
+      <div *ngIf="updateMode === 'scheduled'" class="unavailable-note" role="status">
+        <strong>Scheduling is not available</strong>
+        <span>The admin service currently supports publishing an update immediately only.</span>
+        <span>To avoid creating a misleading campaign record, choose “Publish now” when you are ready to send.</span>
       </div>
       <ion-note *ngIf="!dashboard" color="medium" class="campaign-note">
         Audience details are unavailable until the admin dashboard service responds.
@@ -110,19 +280,72 @@
           </p>
           <ion-button
             type="submit"
-            [disabled]="!dashboard || isSending || !notificationTitle.trim() || !notificationBody.trim()"
+            [disabled]="updateMode !== 'now' || !dashboard || isSending || !notificationTitle.trim() || !notificationBody.trim()"
           >
             <ion-spinner *ngIf="isSending" name="crescent"></ion-spinner>
             <ng-container *ngIf="!isSending">
               <ion-icon slot="start" name="send-outline"></ion-icon>
-              Send notification
+              Publish now
             </ng-container>
           </ion-button>
         </div>
       </form>
     </section>
+    <ng-container *ngIf="dashboard as data; else campaignsUnavailable">
+      <section id="campaigns" class="panel-card">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">DELIVERY &amp; ENGAGEMENT</p>
+            <h2>Recent updates</h2>
+          </div>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Sent</th>
+                <th scope="col">Title</th>
+                <th scope="col">Audience</th>
+                <th scope="col">Accepted</th>
+                <th scope="col">Failed</th>
+                <th scope="col">Opened</th>
+                <th scope="col">Open rate</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let campaign of data.campaigns">
+                <td>{{ campaign.createdAt | date:'short' }}</td>
+                <td>{{ campaign.title }}</td>
+                <td>{{ campaign.targetLabel }}</td>
+                <td>{{ campaign.acceptedCount }}</td>
+                <td>{{ campaign.failedCount }}</td>
+                <td>{{ campaign.openedCount }}</td>
+                <td>{{ openRate(campaign) }}%</td>
+              </tr>
+              <tr *ngIf="!data.campaigns.length">
+                <td colspan="7" class="empty-state">No push campaigns have been sent.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="metric-caption campaign-note">
+          Reporting guidance: “Accepted” means Firebase accepted the send request, not that every
+          device displayed it. Opens count unique recipients who return to the app through that
+          notification; compare opens with accepted sends rather than total attendee profiles.
+        </p>
+      </section>
+    </ng-container>
+    <ng-template #campaignsUnavailable>
+      <section class="panel-card">
+        <p class="eyebrow">CAMPAIGNS</p>
+        <h2>Campaign history is unavailable</h2>
+        <p class="metric-caption">Load dashboard data to see delivery results.</p>
+      </section>
+    </ng-template>
+    </ng-container>
 
-    <section class="panel-card">
+    <ng-container *ngIf="selectedSection === 'engagement'">
+    <section id="engagement" class="panel-card">
       <div class="section-heading">
         <div>
           <p class="eyebrow">ATTENDEE ENGAGEMENT</p>
@@ -262,7 +485,7 @@
       </form>
     </section>
 
-    <section class="panel-card">
+    <section id="responses" class="panel-card">
       <div class="section-heading">
         <div>
           <p class="eyebrow">RESPONSES</p>
@@ -270,23 +493,39 @@
         </div>
         <ion-button fill="outline" (click)="loadAdminActivities()">Refresh results</ion-button>
       </div>
+      <div class="unsupported-note" role="status">
+        <strong>Activity lifecycle controls unavailable</strong>
+        <span>
+          Published activities show their current open or closed state. Closing an activity is not
+          supported by the current admin service, so no close action is offered here.
+        </span>
+      </div>
       <p *ngIf="activityLoadError" class="metric-caption">{{ activityLoadError }}</p>
       <div *ngIf="!activityLoadError && !adminActivities.length" class="empty-state">
-        No quizzes or polls have been published.
+        <strong>No quizzes or polls yet</strong>
+        <span>Published activities and their response counts will appear here.</span>
       </div>
       <article class="activity-result" *ngFor="let activity of adminActivities">
         <div class="section-heading">
           <div>
-            <p class="eyebrow">{{ activity.kind | uppercase }} · {{ activity.responseCount }} responses</p>
+            <p class="eyebrow">
+              {{ activity.kind | uppercase }} · {{ activity.responseCount }} responses
+            </p>
             <h3>{{ activity.title }}</h3>
             <p>{{ activity.question }}</p>
           </div>
-          <ion-button
-            fill="outline"
-            (click)="toggleActivityResults(activity.id)"
-          >
-            {{ showActivityResults[activity.id] ? 'Hide results' : 'Show results' }}
-          </ion-button>
+          <div class="activity-actions">
+            <span
+              class="status-badge"
+              [class.status-badge-closed]="!activity.active"
+              [attr.aria-label]="'Activity status: ' + (activity.active ? 'Open' : 'Closed')"
+            >
+              {{ activity.active ? 'Open' : 'Closed' }}
+            </span>
+            <ion-button fill="outline" (click)="toggleActivityResults(activity.id)">
+              {{ showActivityResults[activity.id] ? 'Hide results' : 'Show results' }}
+            </ion-button>
+          </div>
         </div>
         <div class="activity-result-counts" *ngIf="showActivityResults[activity.id]">
           <p *ngFor="let option of activity.options; let i = index">
@@ -298,41 +537,52 @@
         </div>
       </article>
     </section>
+    </ng-container>
 
-    <ng-container *ngIf="dashboard as data">
-      <section class="metric-grid" aria-label="App analytics">
-        <article class="metric-card">
-          <span class="metric-label">Active now</span>
-          <strong>{{ data.activeLoggedIn }}</strong>
-          <span class="metric-caption">Seen in the last 15 minutes</span>
-        </article>
-        <article class="metric-card">
-          <span class="metric-label">Logged in</span>
-          <strong>{{ data.totalLoggedIn }}</strong>
-          <span class="metric-caption">Unique users observed signing in</span>
-        </article>
-        <article class="metric-card">
-          <span class="metric-label">Added to home screen</span>
-          <strong>{{ data.installedUsers }}</strong>
-          <span class="metric-caption">Install detected on this account</span>
-        </article>
-        <article class="metric-card">
-          <span class="metric-label">Push-enabled</span>
-          <strong>{{ data.pushReadyUsers }}</strong>
-          <span class="metric-caption">Of {{ data.totalAttendees }} delegate profiles</span>
-        </article>
-      </section>
-      <p class="refresh-caption">
-        Updated {{ data.refreshedAt | date:'mediumTime' }} · Refreshes every 30 seconds
-      </p>
-
-      <section class="panel-card">
+    <ng-container *ngIf="selectedSection === 'attendees'">
+    <ng-container *ngIf="dashboard as data; else attendeesUnavailable">
+      <section id="attendees" class="panel-card">
         <div class="section-heading">
           <div>
             <p class="eyebrow">DELEGATES</p>
-            <h2>Attendee activity</h2>
+            <h2>Attendee directory</h2>
           </div>
-          <span class="count-pill">{{ data.attendees.length }} profiles</span>
+          <ion-button fill="outline" (click)="exportAttendees()" [disabled]="!filteredAttendees.length">
+            <ion-icon slot="start" name="download-outline"></ion-icon>
+            Export CSV
+          </ion-button>
+        </div>
+        <div class="attendee-tools" aria-label="Filter attendees">
+          <ion-searchbar
+            [(ngModel)]="attendeeSearch"
+            placeholder="Search name, email, ID or group"
+            aria-label="Search attendees"
+            [debounce]="0"
+          ></ion-searchbar>
+          <ion-select
+            [(ngModel)]="attendeeStatusFilter"
+            label="Status"
+            labelPlacement="stacked"
+            fill="outline"
+            aria-label="Filter attendees by status"
+          >
+            <ion-select-option value="all">All statuses</ion-select-option>
+            <ion-select-option value="active">Active now</ion-select-option>
+            <ion-select-option value="loggedIn">Signed in</ion-select-option>
+            <ion-select-option value="installed">Installed</ion-select-option>
+            <ion-select-option value="pushReady">Push ready</ion-select-option>
+          </ion-select>
+        </div>
+        <div class="attendee-summary">
+          <span>{{ filteredAttendees.length }} of {{ data.attendees.length }} profiles</span>
+          <button
+            *ngIf="attendeeSearch || attendeeStatusFilter !== 'all'"
+            type="button"
+            class="clear-filters"
+            (click)="attendeeSearch = ''; attendeeStatusFilter = 'all'"
+          >
+            Clear filters
+          </button>
         </div>
         <div class="table-scroll">
           <table>
@@ -348,68 +598,41 @@
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let attendee of data.attendees">
+              <tr *ngFor="let attendee of filteredAttendees">
                 <td>{{ attendee.name || '—' }}</td>
                 <td>{{ attendee.email }}</td>
-                <td>{{ attendee.loggedIn ? 'Yes' : 'No' }}</td>
-                <td><span class="status-dot" [class.online]="attendee.active"></span>{{ attendee.active ? 'Active' : '—' }}</td>
-                <td>{{ attendee.installed ? 'Yes' : 'No' }}</td>
-                <td>{{ attendee.hasPushToken ? 'Ready' : 'Not enabled' }}</td>
+                <td><span class="status-badge" [class.status-badge--positive]="attendee.loggedIn">{{ attendee.loggedIn ? 'Signed in' : 'Not signed in' }}</span></td>
+                <td><span class="status-badge" [class.status-badge--positive]="attendee.active">{{ attendee.active ? 'Active' : 'Inactive' }}</span></td>
+                <td><span class="status-badge" [class.status-badge--positive]="attendee.installed">{{ attendee.installed ? 'Installed' : 'Not installed' }}</span></td>
+                <td><span class="status-badge" [class.status-badge--positive]="attendee.hasPushToken">{{ attendee.hasPushToken ? 'Ready' : 'Not enabled' }}</span></td>
                 <td>
                   <span *ngIf="attendee.day2Group">D2 {{ attendee.day2Group }}</span>
                   <span *ngIf="attendee.day3Type"> · D3 {{ attendee.day3Type }}</span>
                   <span *ngIf="!attendee.day2Group && !attendee.day3Type">—</span>
                 </td>
               </tr>
-              <tr *ngIf="!data.attendees.length">
-                <td colspan="7" class="empty-state">No attendee profiles were found.</td>
+              <tr *ngIf="!filteredAttendees.length">
+                <td colspan="7" class="empty-state">
+                  {{ data.attendees.length ? 'No attendees match these filters.' : 'No attendee profiles were found.' }}
+                </td>
               </tr>
             </tbody>
           </table>
         </div>
-      </section>
-
-      <section class="panel-card">
-        <div class="section-heading">
-          <div>
-            <p class="eyebrow">DELIVERY &amp; ENGAGEMENT</p>
-            <h2>Recent campaigns</h2>
-          </div>
-        </div>
-        <div class="table-scroll">
-          <table>
-            <thead>
-              <tr>
-                <th scope="col">Sent</th>
-                <th scope="col">Title</th>
-                <th scope="col">Audience</th>
-                <th scope="col">Accepted</th>
-                <th scope="col">Failed</th>
-                <th scope="col">Opened</th>
-                <th scope="col">Open rate</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let campaign of data.campaigns">
-                <td>{{ campaign.createdAt | date:'short' }}</td>
-                <td>{{ campaign.title }}</td>
-                <td>{{ campaign.targetLabel }}</td>
-                <td>{{ campaign.acceptedCount }}</td>
-                <td>{{ campaign.failedCount }}</td>
-                <td>{{ campaign.openedCount }}</td>
-                <td>{{ openRate(campaign) }}%</td>
-              </tr>
-              <tr *ngIf="!data.campaigns.length">
-                <td colspan="7" class="empty-state">No push campaigns have been sent.</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        <p class="metric-caption campaign-note">
-          “Accepted” means Firebase accepted the send request. Opens count unique recipients
-          who return to the app through that notification.
-        </p>
       </section>
     </ng-container>
+    <ng-template #attendeesUnavailable>
+      <section class="panel-card workspace-unavailable">
+        <p class="eyebrow">ATTENDEES</p>
+        <h2>Attendee activity is unavailable</h2>
+        <p>Load dashboard data to review attendee profiles and engagement.</p>
+        <ion-button fill="outline" (click)="loadDashboard()" [disabled]="isLoading">
+          <ion-icon slot="start" name="refresh-outline"></ion-icon>
+          Try again
+        </ion-button>
+      </section>
+    </ng-template>
+    </ng-container>
+    </div>
   </main>
 </ion-content>

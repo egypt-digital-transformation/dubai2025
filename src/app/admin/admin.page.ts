@@ -6,6 +6,10 @@ import { addIcons } from 'ionicons';
 import {
   addOutline,
   arrowBackOutline,
+  downloadOutline,
+  gridOutline,
+  notificationsOutline,
+  peopleOutline,
   refreshOutline,
   sendOutline,
   statsChartOutline,
@@ -33,6 +37,16 @@ interface AudienceSegment {
   value: string;
   label: string;
 }
+
+interface EventReadinessItem {
+  label: string;
+  detail: string;
+  status: 'ready' | 'attention';
+}
+
+type AdminSection = 'overview' | 'attendees' | 'engagement' | 'updates';
+type UpdateMode = 'now' | 'scheduled';
+type AttendeeStatusFilter = 'all' | 'active' | 'loggedIn' | 'installed' | 'pushReady';
 
 @Component({
   selector: 'app-admin',
@@ -71,15 +85,61 @@ export class AdminPage implements OnInit, OnDestroy {
   showActivityResults: Record<string, boolean> = {};
   adminActivities: AdminInteractiveActivity[] = [];
   activityLoadError = '';
+  selectedSection: AdminSection = 'overview';
+  updateMode: UpdateMode = 'now';
+  attendeeSearch = '';
+  attendeeStatusFilter: AttendeeStatusFilter = 'all';
 
   private refreshTimer?: ReturnType<typeof setInterval>;
 
   constructor() {
-    addIcons({ addOutline, arrowBackOutline, refreshOutline, sendOutline, statsChartOutline });
+    addIcons({
+      addOutline,
+      arrowBackOutline,
+      downloadOutline,
+      gridOutline,
+      notificationsOutline,
+      peopleOutline,
+      refreshOutline,
+      sendOutline,
+      statsChartOutline,
+    });
   }
 
   returnToApp(): void {
     void this.router.navigateByUrl('/tabs/home');
+  }
+
+  selectSection(section: AdminSection): void {
+    this.selectedSection = section;
+  }
+
+  onSectionTabKeydown(event: KeyboardEvent, currentSection: AdminSection): void {
+    const sections: AdminSection[] = ['overview', 'attendees', 'engagement', 'updates'];
+    const currentIndex = sections.indexOf(currentSection);
+    let nextIndex: number;
+
+    switch (event.key) {
+      case 'ArrowRight':
+        nextIndex = (currentIndex + 1) % sections.length;
+        break;
+      case 'ArrowLeft':
+        nextIndex = (currentIndex - 1 + sections.length) % sections.length;
+        break;
+      case 'Home':
+        nextIndex = 0;
+        break;
+      case 'End':
+        nextIndex = sections.length - 1;
+        break;
+      default:
+        return;
+    }
+
+    event.preventDefault();
+    const nextSection = sections[nextIndex];
+    this.selectSection(nextSection);
+    document.getElementById(`admin-tab-${nextSection}`)?.focus();
   }
 
   ngOnInit(): void {
@@ -144,6 +204,75 @@ export class AdminPage implements OnInit, OnDestroy {
     return this.dashboard?.attendees ?? [];
   }
 
+  get eventReadiness(): EventReadinessItem[] {
+    const data = this.dashboard;
+    if (!data) {
+      return [];
+    }
+
+    const total = data.totalAttendees;
+    return [
+      {
+        label: 'Delegate profiles',
+        detail: `${total} profile${total === 1 ? '' : 's'} loaded`,
+        status: total > 0 ? 'ready' : 'attention',
+      },
+      {
+        label: 'Sign-in coverage',
+        detail: `${data.totalLoggedIn} of ${total} signed in`,
+        status: total > 0 && data.totalLoggedIn >= total ? 'ready' : 'attention',
+      },
+      {
+        label: 'App install coverage',
+        detail: `${data.installedUsers} of ${total} installed`,
+        status: total > 0 && data.installedUsers >= total ? 'ready' : 'attention',
+      },
+      {
+        label: 'Push delivery coverage',
+        detail: `${data.pushReadyUsers} of ${total} push-enabled`,
+        status: total > 0 && data.pushReadyUsers >= total ? 'ready' : 'attention',
+      },
+    ];
+  }
+
+  get filteredAttendees(): AdminAttendee[] {
+    const query = this.attendeeSearch.trim().toLowerCase();
+    return this.attendees.filter((attendee) => {
+      const matchesQuery =
+        !query ||
+        [attendee.name, attendee.email, attendee.id, attendee.day2Group, attendee.day3Type,
+          attendee.day3GroupAM, attendee.day3GroupPM]
+          .some((value) => value.toLowerCase().includes(query));
+      const matchesStatus =
+        this.attendeeStatusFilter === 'all' ||
+        (this.attendeeStatusFilter === 'active' && attendee.active) ||
+        (this.attendeeStatusFilter === 'loggedIn' && attendee.loggedIn) ||
+        (this.attendeeStatusFilter === 'installed' && attendee.installed) ||
+        (this.attendeeStatusFilter === 'pushReady' && attendee.hasPushToken);
+      return matchesQuery && matchesStatus;
+    });
+  }
+
+  exportAttendees(): void {
+    const headers = ['Name', 'Email', 'ID', 'Logged in', 'Active', 'Installed', 'Push ready',
+      'Day 2 group', 'Day 3 type', 'Day 3 morning group', 'Day 3 afternoon group'];
+    const rows = this.filteredAttendees.map((attendee) => [
+      attendee.name, attendee.email, attendee.id, attendee.loggedIn, attendee.active,
+      attendee.installed, attendee.hasPushToken, attendee.day2Group, attendee.day3Type,
+      attendee.day3GroupAM, attendee.day3GroupPM,
+    ]);
+    const csv = [headers, ...rows]
+      .map((row) => row.map((value) => `"${String(value ?? '').replace(/"/g, '""')}"`).join(','))
+      .join('\r\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'attendees.csv';
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
   get pushReadyRecipientCount(): number | null {
     const attendees = this.dashboard?.attendees;
     if (!attendees) {
@@ -167,6 +296,11 @@ export class AdminPage implements OnInit, OnDestroy {
   }
 
   async sendNotification(): Promise<void> {
+    if (this.updateMode !== 'now') {
+      this.errorMessage =
+        'Scheduling is not available. Choose “Publish now” when you are ready to send.';
+      return;
+    }
     const title = this.notificationTitle.trim();
     const body = this.notificationBody.trim();
     const target = this.getNotificationTarget();

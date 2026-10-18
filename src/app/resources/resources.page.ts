@@ -129,7 +129,7 @@ export class ResourcesPage {
     {
       icon: '🍽️',
       title: 'Top Culinary Experiences',
-      description: 'Explore the best Emirati, Arabic, and international dining in Dubai',
+      description: 'Explore the best Emirati, Arabic, and international dining in Egypt',
       action: 'Explore'
     },
     {
