@@ -40,6 +40,7 @@ export type SafetyInductions = Record<SafetyInductionSite, SafetyInduction>;
 })
 export class SafetyInductionModalComponent {
   @Input({ required: true }) safetyInductions!: SafetyInductions;
+  @Input() rmxRequired = true;
   @Input() completedCount = 0;
   @Input() totalRequired = 2;
 

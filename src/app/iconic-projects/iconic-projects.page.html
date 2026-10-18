@@ -27,10 +27,18 @@
           </p>
         </div>
 
-        <figure class="feature-image">
+        <figure
+          class="feature-image asset-clickable"
+          role="button"
+          tabindex="0"
+          [attr.aria-label]="'Open ' + (featuredProject.title || featuredProject.name)"
+          (click)="openProjectAsset(featuredProject)"
+          (keydown.enter)="openProjectAsset(featuredProject)"
+          (keydown.space)="$event.preventDefault(); openProjectAsset(featuredProject)"
+        >
           <div class="image-placeholder feature-placeholder">
-            <span>EGYPT</span>
-            <small>Photography unavailable</small>
+            <span>{{ featuredProject.assetType === 'model' ? '3D MODEL' : featuredProject.country }}</span>
+            <small>{{ featuredProject.assetType === 'model' ? 'Interactive model available' : 'Project image' }}</small>
           </div>
           <img
             [src]="featuredProject.heroImage"
@@ -43,18 +51,8 @@
           <figcaption class="feature-caption">
             <span class="feature-kicker">FEATURED LANDMARK · EGYPT</span>
             <h2>{{ featuredProject.name }}</h2>
-            <p>{{ featuredProject.subtitle }}</p>
-            <div class="feature-metrics">
-              <span>
-                <strong>{{ featuredProject.stats.height }}</strong>
-                <small>HEIGHT</small>
-              </span>
-              <span class="metric-divider"></span>
-              <span>
-                <strong>{{ featuredProject.stats.co2Reduction }}</strong>
-                <small>CO₂ REDUCTION</small>
-              </span>
-            </div>
+            <p>{{ featuredProject.location || featuredProject.subtitle }} · {{ featuredProject.country }}</p>
+            <span class="asset-badge" *ngIf="featuredProject.assetType === 'model'">VIEW 3D MODEL</span>
           </figcaption>
           <span class="image-index">01</span>
         </figure>
@@ -71,10 +69,18 @@
 
         <div class="project-grid egypt-grid">
           <article class="project-card" *ngFor="let project of egyptProjects.slice(1); let i = index">
-            <figure class="card-image">
+            <figure
+              class="card-image asset-clickable"
+              role="button"
+              tabindex="0"
+              [attr.aria-label]="'Open ' + (project.title || project.name)"
+              (click)="openProjectAsset(project)"
+              (keydown.enter)="openProjectAsset(project)"
+              (keydown.space)="$event.preventDefault(); openProjectAsset(project)"
+            >
               <div class="image-placeholder">
-                <span>{{ project.country }}</span>
-                <small>Photography unavailable</small>
+                <span>{{ project.assetType === 'model' ? '3D MODEL' : project.country }}</span>
+                <small>{{ project.assetType === 'model' ? 'Interactive model available' : 'Project image' }}</small>
               </div>
               <img
                 [src]="project.heroImage"
@@ -86,18 +92,14 @@
               <span class="card-index">0{{ i + 2 }}</span>
             </figure>
             <div class="card-copy">
-              <p class="project-location">{{ project.subtitle }} · {{ project.country }}</p>
+              <p class="project-location">{{ project.location || project.subtitle }} · {{ project.country }}</p>
               <div class="card-title-row">
-                <h3>{{ project.name }}</h3>
-                <div class="card-metric" *ngIf="project.stats.co2Reduction">
-                  <strong>{{ project.stats.co2Reduction }}</strong>
-                  <small>CO₂ REDUCTION</small>
-                </div>
+                <h3>{{ project.title || project.name }}</h3>
+                <span class="asset-badge dark" *ngIf="project.assetType === 'model'">3D</span>
               </div>
-              <div class="project-highlight">
-                <p *ngFor="let highlight of (project.highlights || [project.engineeringHighlight])">
-                  {{ highlight }}
-                </p>
+              <p class="project-description">{{ project.description }}</p>
+              <div class="project-highlight" *ngIf="project.highlights?.length">
+                <p *ngFor="let highlight of project.highlights">{{ highlight }}</p>
               </div>
             </div>
           </article>
@@ -115,7 +117,15 @@
 
         <div class="project-grid amea-grid">
           <article class="project-card" *ngFor="let project of ameaProjects; let i = index">
-            <figure class="card-image">
+            <figure
+              class="card-image asset-clickable"
+              role="button"
+              tabindex="0"
+              [attr.aria-label]="'Open ' + (project.title || project.name)"
+              (click)="openProjectAsset(project)"
+              (keydown.enter)="openProjectAsset(project)"
+              (keydown.space)="$event.preventDefault(); openProjectAsset(project)"
+            >
               <div class="image-placeholder">
                 <span>{{ project.country }}</span>
                 <small>Photography unavailable</small>
@@ -130,18 +140,14 @@
               <span class="card-index">0{{ i + 1 }}</span>
             </figure>
             <div class="card-copy">
-              <p class="project-location">{{ project.subtitle }}</p>
+              <p class="project-location">{{ project.location || project.subtitle }} · {{ project.country }}</p>
               <div class="card-title-row">
-                <h3>{{ project.name }}</h3>
-                <div class="card-metric" *ngIf="project.stats.co2Reduction">
-                  <strong>{{ project.stats.co2Reduction }}</strong>
-                  <small>CO₂ REDUCTION</small>
-                </div>
+                <h3>{{ project.title || project.name }}</h3>
+                <span class="asset-badge dark" *ngIf="project.assetType === 'model'">3D</span>
               </div>
-              <div class="project-highlight">
-                <p *ngFor="let highlight of (project.highlights || [project.engineeringHighlight])">
-                  {{ highlight }}
-                </p>
+              <p class="project-description">{{ project.description }}</p>
+              <div class="project-highlight" *ngIf="project.highlights?.length">
+                <p *ngFor="let highlight of project.highlights">{{ highlight }}</p>
               </div>
             </div>
           </article>
@@ -157,3 +163,27 @@
     </ng-container>
   </div>
 </ion-content>
+
+<div
+  *ngIf="selectedImage as image"
+  class="asset-viewer-overlay"
+  role="dialog"
+  aria-modal="true"
+  [attr.aria-label]="image.title"
+  (click)="closeProjectAsset()"
+>
+  <button
+    type="button"
+    class="asset-viewer-close"
+    aria-label="Close image"
+    (click)="closeProjectAsset()"
+  >
+    ×
+  </button>
+  <img
+    class="asset-viewer-image"
+    [src]="image.url"
+    [alt]="image.title"
+    (click)="$event.stopPropagation()"
+  />
+</div>

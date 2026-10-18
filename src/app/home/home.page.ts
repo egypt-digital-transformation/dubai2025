@@ -1,11 +1,6 @@
-import { Component, inject, NgZone, OnInit, OnDestroy } from '@angular/core';
+import { Component, NgZone, OnInit, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
 import { CommonModule, DatePipe } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-import { addIcons } from 'ionicons';
-import { clipboardOutline, statsChartOutline } from 'ionicons/icons';
-
-
 import {
   IonContent,
   IonIcon,
@@ -14,11 +9,11 @@ import {
   IonCardTitle,
   IonCard,
   IonCardHeader,
-  IonCardContent, IonTextarea, IonInput, IonText } from '@ionic/angular/standalone';
+  IonCardContent,
+} from '@ionic/angular/standalone';
 import { Auth, signOut, onAuthStateChanged } from '@angular/fire/auth';
 import { ModalController } from '@ionic/angular/standalone';
 import { DataService } from '../services/data.service';
-import { AdminService } from '../services/admin.service';
 import { environment } from '../../environments/environment';
 import { getApps, initializeApp } from 'firebase/app';
 import {
@@ -26,9 +21,7 @@ import {
   DocumentData,
   getFirestore,
   onSnapshot,
-  query as firebaseQuery,
   Unsubscribe,
-  where,
 } from 'firebase/firestore';
 import {
   SafetyInductionModalComponent,
@@ -41,6 +34,8 @@ import {
   collection,
   collectionData,
   query,
+  where,
+  getDocs,
   orderBy,
   Timestamp,
 } from '@angular/fire/firestore';
@@ -56,15 +51,6 @@ import {
   startWith,
 } from 'rxjs';
 import { RouterModule } from '@angular/router';
-
-interface Announcement {
-  id: string;
-  title: string;
-  description: string;
-  timestamp: any;
-  active: boolean;
-  priority: string;
-}
 
 interface Session {
   id: string;
@@ -92,8 +78,7 @@ type MessageType = 'today' | 'over' | 'before' | null;
   standalone: true,
   templateUrl: 'home.page.html',
   styleUrls: ['home.page.scss'],
-  imports: [IonInput, IonTextarea, 
-    IonCardContent,
+  imports: [
     IonCardHeader,
     IonCard,
     IonCardTitle,
@@ -101,28 +86,19 @@ type MessageType = 'today' | 'over' | 'before' | null;
     IonModal,
     IonContent,
     IonIcon,
-    IonText,
     CommonModule,
     DatePipe,
-    RouterModule,
-    FormsModule
+    RouterModule
   ],
 })
 export class HomePage implements OnInit, OnDestroy {
-  private readonly adminService = inject(AdminService);
-
-newAnnouncementTitle: any;
-newAnnouncementDesc: any;
-announcementError = '';
   public primarySession: Session | null = null;
   public secondarySession: Session | null = null;
   public todaySessions$!: Observable<Session[]>;
-  public announcements$!: Observable<Announcement[]>;
   public messageType: MessageType = null;
   public currentDay = 1;
   public showQR = false;
   public displayName: string | null = null;
-  public isAdmin = false;
   readonly safetyInductions: SafetyInductions = {
     sokhnaplant: {
       completed: false,
@@ -133,35 +109,10 @@ announcementError = '';
       link: 'https://mea-hseegyptonboarding-prod.web.app/RMX',
     },
   };
-  readonly totalInductionsRequired = 2;
+  rmxRequired = false;
+  totalInductionsRequired = 1;
   completedInductionsCount = 0;
-
-showAddModal = false;
-newAnnouncementPriority = 'normal';
-
-
-
-async submitAnnouncement() {
-  const title = this.newAnnouncementTitle?.trim();
-  const description = this.newAnnouncementDesc?.trim();
-  if (!title || !description) return;
-
-  this.announcementError = '';
-  try {
-    await this.adminService.createAnnouncement(
-      title,
-      description,
-      this.newAnnouncementPriority
-    );
-    this.newAnnouncementTitle = '';
-    this.newAnnouncementDesc = '';
-    this.newAnnouncementPriority = 'normal';
-    this.closeAddModal();
-  } catch (error) {
-    console.error('[HomePage] Failed to publish announcement:', error);
-    this.announcementError = 'Could not publish the announcement. Please try again.';
-  }
-}
+  isPlantVisitRequired = false;
 
   private destroy$ = new Subject<void>();
   private readonly TICK_MS = 1000;
@@ -175,12 +126,10 @@ async submitAnnouncement() {
     private modalController: ModalController,
     private zone: NgZone
   ) {
-    addIcons({ clipboardOutline, statsChartOutline });
   }
 
   ngOnInit() {
 
-    this.showAddModal = false;
 this.showQR = false;
 
     // sessions$ from data service but ensure it's sorted and convert timestamps lazily when needed.
@@ -190,9 +139,6 @@ this.showQR = false;
       ),
       shareReplay(1)
     );
-
-    // announcements are expected to come from data service — reuse and share
-    this.announcements$ = (this.data.announcements$ || [] as any) as Observable<Announcement[]>;
 
     // "now" stream for ticking UI (used in evaluation and time-remaining helpers)
     const now$ = interval(this.TICK_MS).pipe(
@@ -209,16 +155,7 @@ this.showQR = false;
 
     authState$.pipe(takeUntil(this.destroy$)).subscribe((user: any) => {
       this.displayName = user?.displayName ? this.formatDisplayName(user.displayName) : null;
-      this.isAdmin = false;
-      if (user?.email) {
-        void this.adminService.isAdmin(user.email).then((isAdmin) => {
-          if (this.auth.currentUser?.uid === user.uid) {
-            this.zone.run(() => (this.isAdmin = isAdmin));
-          }
-        }).catch((error) => {
-          console.error('[HomePage] Failed to check admin access:', error);
-        });
-      }
+      void this.loadPlantVisitRequirement(user?.email ?? null, user?.uid ?? null);
       this.listenToSafetyInductionStatus(user?.email ?? null);
 
     });
@@ -253,6 +190,29 @@ this.showQR = false;
     );
   }
 
+  private async loadPlantVisitRequirement(email: string | null, uid: string | null): Promise<void> {
+    this.isPlantVisitRequired = false;
+    if (!email) {
+      return;
+    }
+
+    try {
+      const usersQuery = query(
+        collection(this.firestore, 'users'),
+        where('emailAddress', '==', email)
+      );
+      const snapshot = await getDocs(usersQuery);
+      const plantVisit = snapshot.docs[0]?.data()['plantVisit'] === true;
+      if (this.auth.currentUser?.uid === uid) {
+        this.zone.run(() => {
+          this.isPlantVisitRequired = plantVisit;
+        });
+      }
+    } catch (error) {
+      console.error('[HomePage] Failed to load plant visit requirement:', error);
+    }
+  }
+
   ngOnDestroy() {
     this.safetyInductionUnsubscribe?.();
     this.destroy$.next();
@@ -268,21 +228,18 @@ this.showQR = false;
       return;
     }
 
-    const normalizedEmail = email.toLowerCase();
-    const emailVariants = Array.from(new Set([email, normalizedEmail]));
+    const normalizedEmail = email.trim().toLowerCase();
     const hseApp =
       getApps().find((app) => app.name === 'HSEApp') ??
       initializeApp(environment.hsefirebaseConfig, 'HSEApp');
     const hseFirestore = getFirestore(hseApp);
-    const userProgressQuery = firebaseQuery(
-      firebaseCollection(hseFirestore, 'userProgress'),
-      where('email', 'in', emailVariants)
-    );
-
     this.safetyInductionUnsubscribe = onSnapshot(
-      userProgressQuery,
+      firebaseCollection(hseFirestore, 'userProgress'),
       (snapshot) => {
-        this.zone.run(() => this.updateSafetyInductionStatus(snapshot.docs[0]?.data()));
+        const matchingProgress = snapshot.docs.find((progressDocument) =>
+          String(progressDocument.data()['email'] ?? '').trim().toLowerCase() === normalizedEmail
+        );
+        this.zone.run(() => this.updateSafetyInductionStatus(matchingProgress?.data()));
       },
       (error) => {
         console.error('[SafetyInduction] Failed to load induction progress:', error);
@@ -299,8 +256,12 @@ this.showQR = false;
       sokhnaPlantData?.['questionnairePassed'] === true;
     this.safetyInductions.rmx.completed =
       rmxData?.['questionnairePassed'] === true;
-    this.completedInductionsCount = Object.values(this.safetyInductions)
-      .filter((induction) => induction.completed).length;
+    this.rmxRequired = rmxData !== undefined && rmxData !== null;
+    this.totalInductionsRequired = this.rmxRequired ? 2 : 1;
+    this.completedInductionsCount = [
+      this.safetyInductions.sokhnaplant.completed,
+      this.rmxRequired && this.safetyInductions.rmx.completed,
+    ].filter(Boolean).length;
   }
 
   async openSafetyInductionModal(): Promise<void> {
@@ -308,10 +269,13 @@ this.showQR = false;
       component: SafetyInductionModalComponent,
       componentProps: {
         safetyInductions: this.safetyInductions,
+        rmxRequired: this.rmxRequired,
         completedCount: this.completedInductionsCount,
         totalRequired: this.totalInductionsRequired,
       },
-      cssClass: 'safety-induction-modal',
+      cssClass: this.rmxRequired
+        ? 'safety-induction-modal'
+        : 'safety-induction-modal single-site',
     });
 
     await modal.present();
@@ -537,40 +501,11 @@ this.showQR = false;
     this.router.navigate(['/tabs/network']);
   }
 
-  openResources() {
-    this.router.navigateByUrl('/tabs/resources');
-  }
-
   openTips() {
     this.router.navigate(['/tips']);
   }
 
-  openProjects() {
-    this.router.navigateByUrl('/tabs/projects');
-  }
-
-  openAdminPanel() {
-    this.router.navigateByUrl('/admin');
-  }
-
-  openActivities() {
-    this.router.navigateByUrl('/activities');
-  }
-
-openAddModal() {
-  if (this.showQR) this.closeQRCode();
-  this.announcementError = '';
-  this.showAddModal = true;
-}
-
-async closeAddModal() {
-  this.showAddModal = false;
-  const modal = document.querySelector('ion-modal.add-modal') as HTMLIonModalElement;
-  if (modal) await modal.dismiss();
-}
-
 openQRCode() {
-  if (this.showAddModal) this.closeAddModal();
   this.showQR = true;
 }
 
@@ -579,21 +514,6 @@ async closeQRCode() {
   const modal = document.querySelector('ion-modal.qr-modal') as HTMLIonModalElement;
   if (modal) await modal.dismiss();
 }
-
-
-  timeAgo(timestamp: any): string {
-    if (!timestamp?.toDate) return '';
-    const now = new Date();
-    const t = timestamp.toDate();
-    const diffMs = now.getTime() - t.getTime();
-    const diffMinutes = Math.floor(diffMs / 60000);
-    if (diffMinutes < 1) return 'Just now';
-    if (diffMinutes < 60) return `${diffMinutes} min ago`;
-    const diffHours = Math.floor(diffMinutes / 60);
-    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
-    const diffDays = Math.floor(diffHours / 24);
-    return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
-  }
 
   navigateToVenue() {
     this.router.navigate(['/venue']);
@@ -607,9 +527,5 @@ async closeQRCode() {
       })
       .catch((err) => console.error('[SSO] Logout error:', err));
   }
-
-  async addAnnouncement(title: string, description: string, priority: string = 'normal') {
-    await this.adminService.createAnnouncement(title, description, priority);
-}
 
 }

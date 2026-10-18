@@ -47,6 +47,20 @@
         <span>Attendees</span>
       </button>
       <button
+        id="admin-tab-flights"
+        type="button"
+        role="tab"
+        aria-controls="admin-workspace"
+        [attr.aria-selected]="selectedSection === 'flights'"
+        [attr.tabindex]="selectedSection === 'flights' ? 0 : -1"
+        [class.active]="selectedSection === 'flights'"
+        (click)="selectSection('flights')"
+        (keydown)="onSectionTabKeydown($event, 'flights')"
+      >
+        <ion-icon name="airplane-outline" aria-hidden="true"></ion-icon>
+        <span>Flights</span>
+      </button>
+      <button
         id="admin-tab-engagement"
         type="button"
         role="tab"
@@ -250,7 +264,16 @@
             </div>
           </div>
         </div>
-        <ion-textarea label="Description" labelPlacement="stacked" fill="outline" autoGrow="true" [(ngModel)]="projectForm.description" name="projectDescription" required></ion-textarea>
+        <ion-textarea
+          class="project-description-field"
+          label="Description"
+          labelPlacement="stacked"
+          fill="outline"
+          rows="6"
+          [(ngModel)]="projectForm.description"
+          name="projectDescription"
+          required
+        ></ion-textarea>
         <div class="project-highlights">
           <div class="project-highlights-heading">
             <label>Highlights <span>(optional)</span></label>
@@ -417,7 +440,7 @@
           </ion-button>
         </div>
         <ion-textarea label="Description" labelPlacement="stacked" fill="outline" autoGrow="true" [(ngModel)]="resourceForm.description" name="resourceDescription"></ion-textarea>
-        <ion-input label="HTTPS link (optional if uploading)" labelPlacement="stacked" fill="outline" [(ngModel)]="resourceForm.url" name="resourceUrl" type="url"></ion-input>
+        <ion-input label="URL (optional if uploading)" labelPlacement="stacked" fill="outline" [(ngModel)]="resourceForm.url" name="resourceUrl" type="url"></ion-input>
         <div class="project-upload">
           <ion-icon name="cloud-upload-outline" aria-hidden="true"></ion-icon>
           <label for="resource-file-upload">{{ selectedResourceFile ? selectedResourceFile.name : 'Upload file' }}</label>
@@ -574,7 +597,7 @@
           </div>
         </div>
         <div class="table-scroll">
-          <table>
+          <table class="attendees-table">
             <thead>
               <tr>
                 <th scope="col">Sent</th>
@@ -616,6 +639,64 @@
         <p class="metric-caption">Load dashboard data to see delivery results.</p>
       </section>
     </ng-template>
+    </ng-container>
+
+    <ng-container *ngIf="selectedSection === 'flights'">
+      <section class="panel-card">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">TRAVEL DATA</p>
+            <h2>Users flight details</h2>
+            <p class="subtitle">Values from each user's <code>flightInfo</code> document.</p>
+          </div>
+          <span class="metric-caption">{{ attendeesWithFlights.length }} users</span>
+        </div>
+        <div class="table-scroll">
+          <table class="flight-details-table">
+            <thead>
+              <tr>
+                <th scope="col">email</th>
+                <th scope="col">inbound.arrivalAirport</th>
+                <th scope="col">inbound.arrivalTime</th>
+                <th scope="col">inbound.departureAirport</th>
+                <th scope="col">inbound.departureDate</th>
+                <th scope="col">inbound.departureTime</th>
+                <th scope="col">inbound.flightNo</th>
+                <th scope="col">outbound.arrivalAirport</th>
+                <th scope="col">outbound.arrivalDate</th>
+                <th scope="col">outbound.arrivalTime</th>
+                <th scope="col">outbound.departureAirport</th>
+                <th scope="col">outbound.departureDate</th>
+                <th scope="col">outbound.departureTime</th>
+                <th scope="col">outbound.flightNo</th>
+                <th scope="col">updatedAt</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let attendee of attendeesWithFlights">
+                <td>{{ attendee.email }}</td>
+                <td>{{ attendee.flightDetails?.inbound?.arrivalAirport }}</td>
+                <td>{{ attendee.flightDetails?.inbound?.arrivalTime }}</td>
+                <td>{{ attendee.flightDetails?.inbound?.departureAirport }}</td>
+                <td>{{ attendee.flightDetails?.inbound?.departureDate }}</td>
+                <td>{{ attendee.flightDetails?.inbound?.departureTime }}</td>
+                <td>{{ attendee.flightDetails?.inbound?.flightNo }}</td>
+                <td>{{ attendee.flightDetails?.outbound?.arrivalAirport }}</td>
+                <td>{{ attendee.flightDetails?.outbound?.arrivalDate }}</td>
+                <td>{{ attendee.flightDetails?.outbound?.arrivalTime }}</td>
+                <td>{{ attendee.flightDetails?.outbound?.departureAirport }}</td>
+                <td>{{ attendee.flightDetails?.outbound?.departureDate }}</td>
+                <td>{{ attendee.flightDetails?.outbound?.departureTime }}</td>
+                <td>{{ attendee.flightDetails?.outbound?.flightNo }}</td>
+                <td>{{ attendee.flightDetails?.updatedAt }}</td>
+              </tr>
+              <tr *ngIf="!attendeesWithFlights.length">
+                <td colspan="15" class="empty-state">No flight details have been submitted.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
     </ng-container>
 
     <ng-container *ngIf="selectedSection === 'engagement'">
@@ -901,17 +982,18 @@
                 </td>
                 <td>
                   <span
+                    *ngIf="attendee.safetyInductionStatus === 'N/A'"
+                    class="status-badge"
+                  >
+                    N/A
+                  </span>
+                  <span
+                    *ngIf="attendee.safetyInductionStatus !== 'N/A'"
                     class="status-badge"
                     [class.status-badge--positive]="attendee.safetyInductionCompleted === true"
                     [class.status-badge--attention]="attendee.safetyInductionCompleted !== true"
                   >
-                    {{
-                      attendee.safetyInductionCompleted === true
-                        ? 'Done'
-                        : attendee.safetyInductionCompleted === false
-                          ? 'Not done'
-                          : 'Not recorded'
-                    }}
+                    {{ attendee.safetyInductionStatus || 'Not started' }}
                   </span>
                 </td>
               </tr>

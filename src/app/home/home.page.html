@@ -7,7 +7,7 @@
           <p class="welcome-eyebrow">YOUR AMEA EXPERIENCE</p>
           <h1 id="welcome-title">Ahlan, {{ displayName || 'there' }}.</h1>
           <p class="welcome-description">
-            New perspectives. Shared ambition. Welcome to the AMEA Regional Meeting.
+            Everything you need. One memorable journey.
           </p>
           <div class="welcome-meta">
             <span class="welcome-day" *ngIf="currentDay > 0">DAY {{ currentDay }}</span>
@@ -225,27 +225,11 @@
             </span>
           </button>
 
-          <button type="button" class="action-card" (click)="openResources()">
-            <span class="action-content">
-              <span class="action-icon photos"><ion-icon name="folder-open-outline"></ion-icon></span>
-              <span class="action-title">Resources</span>
-              <span class="action-desc">Event materials</span>
-            </span>
-          </button>
-
           <button type="button" class="action-card" (click)="navigateToVenue()">
             <span class="action-content">
               <span class="action-icon venue"><ion-icon name="map-outline"></ion-icon></span>
               <span class="action-title">Find your way</span>
               <span class="action-desc">Venue &amp; maps</span>
-            </span>
-          </button>
-
-          <button type="button" class="action-card" (click)="openProjects()">
-            <span class="action-content">
-              <span class="action-icon projects"><ion-icon name="business-outline"></ion-icon></span>
-              <span class="action-title">Projects</span>
-              <span class="action-desc">Egypt &amp; AMEA landmarks</span>
             </span>
           </button>
 
@@ -257,7 +241,7 @@
             </span>
           </button>
 
-          <button type="button" class="action-card" (click)="openSafetyInductionModal()">
+          <button *ngIf="isPlantVisitRequired" type="button" class="action-card" (click)="openSafetyInductionModal()">
             <span class="action-content">
               <span class="action-icon hse">
                 <img src="assets/safety.png" alt="" aria-hidden="true" />
@@ -269,32 +253,6 @@
             </span>
           </button>
 
-          <button
-            type="button"
-            class="action-card activities-action-card"
-            (click)="openActivities()"
-            aria-label="Open quizzes and polls"
-          >
-            <span class="action-content">
-              <span class="action-icon activities"><ion-icon name="clipboard-outline"></ion-icon></span>
-              <span class="action-title">Quizzes &amp; Polls</span>
-              <span class="action-desc">Answer event questions</span>
-            </span>
-          </button>
-
-          <button
-            *ngIf="isAdmin"
-            type="button"
-            class="action-card admin-action-card"
-            (click)="openAdminPanel()"
-            aria-label="Open admin panel"
-          >
-            <span class="action-content">
-              <span class="action-icon admin"><ion-icon name="stats-chart-outline"></ion-icon></span>
-              <span class="action-title">Admin Panel</span>
-              <span class="action-desc">Analytics &amp; notifications</span>
-            </span>
-          </button>
         </div>
         </section>
 
@@ -344,47 +302,7 @@
           </div>
         </section>
 
-        <!-- Announcements -->
-<div class="announcements-card" *ngIf="announcements$ | async as announcements">
-  <div class="card-content">
-    <!-- Title and Add Button on Same Row -->
-    <div class="card-header">
-      <h3 class="card-title">Announcements</h3>
-      <ion-button *ngIf="isAdmin" shape="round" class="add-btn" (click)="openAddModal()">
-        <ion-icon name="add-outline"></ion-icon>
-      </ion-button>
-    </div>
-
-    <!-- Announcements List -->
-    <div class="announcement-list" *ngIf="announcements.length; else noAnnouncements">
-      <div class="announcement-item" *ngFor="let a of announcements | slice:0:3">
-        <div
-          class="announcement-dot"
-          [class.active]="a.active || a.priority === 'high'"
-          [class.pulse]="a.priority === 'high'"
-        ></div>
-        <div class="announcement-content">
-          <div class="announcement-title">{{ a.title }}</div>
-          <div class="announcement-desc">{{ a.description }}</div>
-          <div class="announcement-time">{{ timeAgo(a.timestamp) }}</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Empty State -->
-    <ng-template #noAnnouncements>
-      <div class="empty-state">
-        <div class="empty-icon">
-          <ion-icon name="notifications-off-outline"></ion-icon>
-        </div>
-        <h4 class="empty-title">All Quiet Here</h4>
-        <p class="empty-text">
-          No fresh announcements right now. Relax, explore, and check back soon!
-        </p>
-      </div>
-    </ng-template>
-  </div>
-</div><!-- Hotel Wi-Fi Details -->
+<!-- Hotel Wi-Fi Details -->
 <div class="hotel-card subtle-highlight">
   <div class="card-content">
     <div class="card-header">
@@ -468,58 +386,6 @@
             </div>
           </div>
         </div>
-      </div>
-    </div>
-  </ng-template>
-</ion-modal>
-
-    <!-- Add Announcement Modal -->
-<!-- ================= ADD ANNOUNCEMENT MODAL ================= -->
-<ion-modal
-  [isOpen]="showAddModal"
-  (willDismiss)="closeAddModal()"
-  [backdropDismiss]="true"
-  class="add-modal"
->
-  <ng-template>
-    <div class="add-modal-content">
-      <!-- Header -->
-      <div class="modal-header">
-        <h1 class="modal-title">Add New Announcement</h1>
-        <button class="close-btn" (click)="closeAddModal()">
-          <ion-icon name="close-outline"></ion-icon>
-        </button>
-      </div>
-
-      <!-- Body -->
-      <div class="modal-body">
-        <ion-text color="danger" *ngIf="announcementError">
-          <p>{{ announcementError }}</p>
-        </ion-text>
-        <ion-input
-          label-placement="floating"
-          fill="outline"
-          [(ngModel)]="newAnnouncementTitle"
-          placeholder="Enter announcement title"
-        ></ion-input>
-
-        <ion-textarea
-          label="Description"
-          label-placement="floating"
-          fill="outline"
-          [(ngModel)]="newAnnouncementDesc"
-          placeholder="Write the announcement details..."
-        ></ion-textarea>
-
-        <ion-button
-          expand="block"
-          shape="round"
-          class="save-btn"
-          (click)="submitAnnouncement()"
-        >
-          <ion-icon name="checkmark-circle-outline"></ion-icon>
-          <span>Post Announcement</span>
-        </ion-button>
       </div>
     </div>
   </ng-template>

@@ -41,7 +41,7 @@
       </button>
     </div>
 
-    <div class="site-card" [class.completed]="safetyInductions.rmx.completed">
+    <div *ngIf="rmxRequired" class="site-card" [class.completed]="safetyInductions.rmx.completed">
       <div class="site-header">
         <ion-icon class="site-icon" name="construct-outline"></ion-icon>
         <h3>RMX</h3>

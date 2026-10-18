@@ -6,6 +6,7 @@ import { addIcons } from 'ionicons';
 import {
   addOutline,
   arrowBackOutline,
+  airplaneOutline,
   chevronDownOutline,
   closeOutline,
   createOutline,
@@ -51,7 +52,7 @@ interface AudienceSegment {
   label: string;
 }
 
-type AdminSection = 'overview' | 'attendees' | 'engagement' | 'projects' | 'resources' | 'updates';
+type AdminSection = 'overview' | 'attendees' | 'flights' | 'engagement' | 'projects' | 'resources' | 'updates';
 type UpdateMode = 'now' | 'scheduled';
 type AttendeeStatusFilter = 'all' | 'active' | 'loggedIn' | 'installed' | 'pushReady';
 interface ProjectCountry {
@@ -139,6 +140,7 @@ export class AdminPage implements OnInit, OnDestroy {
     addIcons({
       addOutline,
       arrowBackOutline,
+      airplaneOutline,
       chevronDownOutline,
       closeOutline,
       createOutline,
@@ -170,7 +172,7 @@ export class AdminPage implements OnInit, OnDestroy {
   }
 
   onSectionTabKeydown(event: KeyboardEvent, currentSection: AdminSection): void {
-    const sections: AdminSection[] = ['overview', 'attendees', 'engagement', 'projects', 'resources', 'updates'];
+    const sections: AdminSection[] = ['overview', 'attendees', 'flights', 'engagement', 'projects', 'resources', 'updates'];
     const currentIndex = sections.indexOf(currentSection);
     let nextIndex: number;
 
@@ -341,7 +343,7 @@ export class AdminPage implements OnInit, OnDestroy {
       return;
     }
     if (!this.selectedResourceFile && !form.url.trim()) {
-      this.resourceError = 'Provide an HTTPS link or upload a file.';
+      this.resourceError = 'Provide an URL or upload a file.';
       return;
     }
     if (!this.selectedResourceFile && !/^https:\/\//i.test(form.url.trim())) {
@@ -674,6 +676,10 @@ export class AdminPage implements OnInit, OnDestroy {
         (this.attendeeStatusFilter === 'pushReady' && attendee.hasPushToken);
       return matchesQuery && matchesStatus;
     });
+  }
+
+  get attendeesWithFlights(): AdminAttendee[] {
+    return this.attendees.filter((attendee) => attendee.flightDetails);
   }
 
   exportAttendees(): void {

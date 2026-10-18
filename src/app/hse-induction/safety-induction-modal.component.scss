@@ -102,6 +102,10 @@
   --max-height: 330px;
   --border-radius: 16px;
 
+  &.single-site {
+    --max-height: 245px;
+  }
+
   ion-toolbar {
     --background: #ffffff;
     --color: #1f2a44;

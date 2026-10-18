@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, HostListener, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { IonContent } from '@ionic/angular/standalone';
 import { IconicProject } from './models/project.model';
@@ -17,6 +17,7 @@ export class IconicProjectsPage {
   ameaProjects: IconicProject[] = [];
   isLoading = true;
   errorMessage = '';
+  selectedImage: { url: string; title: string } | null = null;
 
   constructor() {
     void this.loadProjects();
@@ -40,5 +41,31 @@ export class IconicProjectsPage {
     if (image instanceof HTMLImageElement) {
       image.hidden = true;
     }
+  }
+
+  openProjectAsset(project: IconicProject): void {
+    const assetUrl = project.assetUrl || project.heroImage;
+    if (!assetUrl) {
+      return;
+    }
+
+    if (project.assetType === 'model') {
+      window.open(assetUrl, '_blank', 'noopener,noreferrer');
+      return;
+    }
+
+    this.selectedImage = {
+      url: assetUrl,
+      title: project.title || project.name,
+    };
+  }
+
+  closeProjectAsset(): void {
+    this.selectedImage = null;
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
+    this.closeProjectAsset();
   }
 }

@@ -428,18 +428,6 @@ ion-content {
     cursor: pointer;
     transition: all 0.2s ease;
 
-    &.admin-action-card {
-      width: 100%;
-      color: inherit;
-      font: inherit;
-    }
-
-    &.activities-action-card {
-      width: 100%;
-      color: inherit;
-      font: inherit;
-    }
-
     &:active {
       transform: scale(0.95);
       box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.1);
@@ -449,6 +437,10 @@ ion-content {
       display: flex;
       flex-direction: column;
       align-items: center;
+      justify-content: center;
+      width: 100%;
+      min-height: 7.25rem;
+      text-align: center;
     }
 
     .action-icon {
@@ -464,31 +456,15 @@ ion-content {
         background: linear-gradient(135deg, #007fad 0%, #007fad 100%);
       }
 
-      &.photos {
-background: linear-gradient(135deg, #4bb05b 0%, #4bb05b 100%); 
-      }
-
       &.venue {                      background: linear-gradient(135deg, #94C12E 0%, #94C12E 100%);
 
 
-      }
-
-      &.projects {
-        background: linear-gradient(135deg, #E2A83B 0%, #C98220 100%);
       }
 
       &.networking {background: linear-gradient(135deg, #1D4370 0%, #1d4370 100%); 
       }
 
       &.hse {background: linear-gradient(135deg, #4bb05b 0%, #4bb05b 100%); 
-      }
-
-      &.admin {
-        background: linear-gradient(135deg, #0b2d5c 0%, #1d4370 100%);
-      }
-
-      &.activities {
-        background: linear-gradient(135deg, #6b5dd3 0%, #4c43aa 100%);
       }
 
       &.hse img {
@@ -519,10 +495,9 @@ background: linear-gradient(135deg, #4bb05b 0%, #4bb05b 100%);
 }
 
 // ========================================
-// AGENDA & ANNOUNCEMENTS CARDS
+// AGENDA CARD
 // ========================================
-.agenda-card,
-.announcements-card {
+.agenda-card {
   background: white;
   border-radius: 1rem;
   box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);

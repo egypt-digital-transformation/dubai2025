@@ -1,1 +1,46 @@
-<ion-content class="module-page"><main class="module-shell"><header class="module-hero"><p class="eyebrow">YOUR PERSONAL CONCIERGE</p><h1>A seamless journey</h1><p>Your travel and stay, together in one place.</p></header><section class="module-card"><h2>Flight details</h2><div class="module-row"><div><strong>Inbound · Arrival</strong><small>Flight details awaiting confirmation</small></div><span class="module-muted">Pending</span></div><div class="module-row"><div><strong>Outbound · Departure</strong><small>Departure details awaiting confirmation</small></div><span class="module-muted">Pending</span></div><p class="module-muted">Your meet &amp; greet team will welcome you on arrival.</p></section><section class="module-card"><h2>Your stay</h2><div class="module-row"><div><strong>Meeting hotel · To be confirmed</strong><small>Room · Assigned at check-in</small></div><span class="module-muted">Pending</span></div><p class="module-muted">Travel updates are managed by the event team.</p></section></main></ion-content>
+<ion-content class="module-page">
+  <main class="module-shell">
+    <header class="module-hero">
+      <p class="eyebrow">YOUR PERSONAL CONCIERGE</p>
+      <h1>A seamless journey</h1>
+      <p>Your travel and stay, together in one place.</p>
+    </header>
+
+    <section *ngIf="flightDetails" class="module-card">
+      <h2>Flight details</h2>
+      <div class="module-row">
+        <div>
+          <strong>Inbound · Arrival</strong>
+          <small>
+            {{ flightDetails.inbound.flightNo || 'Flight' }} ·
+            {{ flightDetails.inbound.arrivalAirport || flightDetails.inbound.departureAirport || 'Airport' }}<br />
+            {{ flightDetails.inbound.arrivalDate || flightDetails.inbound.departureDate }}
+            {{ flightDetails.inbound.arrivalTime || flightDetails.inbound.departureTime }}
+          </small>
+        </div>
+      </div>
+      <div class="module-row">
+        <div>
+          <strong>Outbound · Departure</strong>
+          <small>
+            {{ flightDetails.outbound.flightNo || 'Flight' }} ·
+            {{ flightDetails.outbound.arrivalAirport || flightDetails.outbound.departureAirport || 'Airport' }}<br />
+            {{ flightDetails.outbound.arrivalDate || flightDetails.outbound.departureDate }}
+            {{ flightDetails.outbound.arrivalTime || flightDetails.outbound.departureTime }}
+          </small>
+        </div>
+      </div>
+    </section>
+
+    <section class="module-card">
+      <h2>Your stay</h2>
+      <div class="module-row">
+        <div>
+          <strong>Meeting hotel · To be confirmed</strong>
+          <small>Room · Assigned at check-in</small>
+        </div>
+        <span class="module-muted">Pending</span>
+      </div>
+    </section>
+  </main>
+</ion-content>

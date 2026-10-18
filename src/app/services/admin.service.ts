@@ -5,6 +5,7 @@ import {
   collection,
   deleteDoc,
   doc as firestoreDoc,
+  getDoc as firebaseGetDoc,
   getDocs,
   getFirestore,
   setDoc,
@@ -27,7 +28,26 @@ export interface AdminAttendee {
   loggedIn: boolean;
   active: boolean;
   installed: boolean;
+  plantVisit: boolean;
   safetyInductionCompleted?: boolean;
+  safetyInductionStatus?: string;
+  flightDetails?: FlightDetails;
+}
+
+export interface FlightLeg {
+  arrivalAirport: string;
+  arrivalDate: string;
+  arrivalTime: string;
+  departureAirport: string;
+  departureDate: string;
+  departureTime: string;
+  flightNo: string;
+}
+
+export interface FlightDetails {
+  inbound: FlightLeg;
+  outbound: FlightLeg;
+  updatedAt?: string;
 }
 
 export interface AdminCampaign {
@@ -191,6 +211,18 @@ export class AdminService {
       .sort((a, b) => a.order - b.order || a.name.localeCompare(b.name));
   }
 
+  async loadFlightDetails(email: string): Promise<FlightDetails | null> {
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail) return null;
+    const usersSnapshot = await getDocs(collection(this.firestore, 'users'));
+    const userDocument = usersSnapshot.docs.find((candidate) => {
+      const data = candidate.data() as { emailAddress?: unknown };
+      return String(data.emailAddress ?? candidate.id).trim().toLowerCase() === normalizedEmail;
+    });
+    if (!userDocument) return null;
+    return this.loadFlightDetailsForUserId(userDocument.id);
+  }
+
   async saveProject(project: ProjectInput): Promise<IconicProject> {
     const id = project.id?.trim() || this.createProjectId(project.name);
     const savedProject: IconicProject = { ...project, id };
@@ -310,15 +342,15 @@ export class AdminService {
         initializeApp(environment.hsefirebaseConfig, 'HSEApp');
       const hseFirestore = getFirestore(hseApp);
       const snapshot = await getDocs(collection(hseFirestore, 'userProgress'));
-      const statusByEmail = new Map<string, boolean>();
+      const statusByEmail = new Map<string, { completed: boolean; status: string }>();
 
       for (const progressDocument of snapshot.docs) {
         const data = progressDocument.data() as {
           email?: unknown;
           RMX?: { questionnairePassed?: unknown };
           rmx?: { questionnairePassed?: unknown };
-          sokhnaplant?: { questionnairePassed?: unknown };
-          sokhnaPlant?: { questionnairePassed?: unknown };
+          sokhnaplant?: { questionnairePassed?: unknown; lastWatchedIndex?: unknown };
+          sokhnaPlant?: { questionnairePassed?: unknown; lastWatchedIndex?: unknown };
         };
         const email = typeof data.email === 'string'
           ? data.email.trim().toLowerCase()
@@ -332,16 +364,36 @@ export class AdminService {
         const requiresRmx = rmx !== undefined;
         const sokhnaComplete = sokhna?.questionnairePassed === true;
         const rmxComplete = rmx?.questionnairePassed === true;
-        statusByEmail.set(email, requiresRmx
+        const completed = requiresRmx
           ? sokhnaComplete && rmxComplete
-          : sokhnaComplete);
+          : sokhnaComplete;
+        const lastWatchedIndex = sokhna?.lastWatchedIndex;
+        const progress = typeof lastWatchedIndex === 'number' && lastWatchedIndex > 0
+          ? `${lastWatchedIndex}/5`
+          : 'Not started';
+        statusByEmail.set(email, {
+          completed,
+          status: completed ? 'Done' : progress,
+        });
       }
 
       return attendees.map((attendee) => {
         const email = attendee.email.trim().toLowerCase();
-        return statusByEmail.has(email)
-          ? { ...attendee, safetyInductionCompleted: statusByEmail.get(email) }
-          : attendee;
+        if (!attendee.plantVisit) {
+          return {
+            ...attendee,
+            safetyInductionCompleted: undefined,
+            safetyInductionStatus: 'N/A',
+          };
+        }
+        const status = statusByEmail.get(email);
+        return status
+          ? {
+              ...attendee,
+              safetyInductionCompleted: status.completed,
+              safetyInductionStatus: status.status,
+            }
+          : { ...attendee, safetyInductionCompleted: false, safetyInductionStatus: 'Not started' };
       });
     } catch (error) {
       console.error('[AdminService] Failed to load HSE induction status:', error);
@@ -366,6 +418,26 @@ export class AdminService {
     };
   }
 
+  private toFlightDetails(data: Record<string, unknown>): FlightDetails {
+    const toLeg = (value: unknown): FlightLeg => {
+      const leg = value && typeof value === 'object' ? value as Record<string, unknown> : {};
+      return {
+        arrivalAirport: String(leg['arrivalAirport'] ?? ''),
+        arrivalDate: String(leg['arrivalDate'] ?? ''),
+        arrivalTime: String(leg['arrivalTime'] ?? ''),
+        departureAirport: String(leg['departureAirport'] ?? ''),
+        departureDate: String(leg['departureDate'] ?? ''),
+        departureTime: String(leg['departureTime'] ?? ''),
+        flightNo: String(leg['flightNo'] ?? ''),
+      };
+    };
+    return {
+      inbound: toLeg(data['inbound']),
+      outbound: toLeg(data['outbound']),
+      updatedAt: typeof data['updatedAt'] === 'string' ? data['updatedAt'] : undefined,
+    };
+  }
+
   private createProjectId(name: string): string {
     const id = name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
     if (!id) {
@@ -387,11 +459,13 @@ export class AdminService {
 
   private async loadMainProjectUsers(): Promise<AdminAttendee[]> {
     const snapshot = await getDocs(collection(this.firestore, 'users'));
-    return snapshot.docs
-      .map((userDocument) => {
+    const attendees = await Promise.all(snapshot.docs
+      .map(async (userDocument) => {
         const data = userDocument.data() as {
           displayName?: unknown;
           name?: unknown;
+          emailAddress?: unknown;
+          plantVisit?: unknown;
           day2?: { group?: unknown };
           day3?: {
             type?: unknown;
@@ -402,9 +476,11 @@ export class AdminService {
         const asText = (value: unknown): string =>
           value == null ? '' : String(value);
 
-        return {
+        const attendee = {
           id: userDocument.id,
-          email: userDocument.id,
+          email: typeof data.emailAddress === 'string' && data.emailAddress.trim()
+            ? data.emailAddress.trim()
+            : userDocument.id,
           name: asText(data.displayName ?? data.name),
           day2Group: asText(data.day2?.group),
           day3Type: asText(data.day3?.type),
@@ -413,13 +489,24 @@ export class AdminService {
           hasPushToken:
             typeof (data as { fcmToken?: unknown }).fcmToken === 'string' &&
             (data as { fcmToken: string }).fcmToken.length > 0,
+          plantVisit: data.plantVisit === true,
           loggedIn: false,
           active: false,
           installed: false,
         };
-      })
+        const flightDetails = await this.loadFlightDetailsForUserId(userDocument.id);
+        return flightDetails ? { ...attendee, flightDetails } : attendee;
+      }));
+    return attendees
       .filter((user) => user.email.trim().length > 0)
       .sort((a, b) => a.email.localeCompare(b.email));
+  }
+
+  private async loadFlightDetailsForUserId(userId: string): Promise<FlightDetails | null> {
+    const flightDocument = await firebaseGetDoc(
+      firestoreDoc(this.firestore, 'users', userId, 'flightDetails', 'flightInfo')
+    );
+    return flightDocument.exists() ? this.toFlightDetails(flightDocument.data()) : null;
   }
 
   private async loadAppAnalytics(): Promise<

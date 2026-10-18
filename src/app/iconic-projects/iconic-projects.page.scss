@@ -135,6 +135,49 @@
   background: #183a52;
 }
 
+.asset-clickable {
+  cursor: zoom-in;
+}
+
+.asset-clickable:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 4px;
+}
+
+.asset-viewer-overlay {
+  position: fixed;
+  z-index: 1000;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 28px;
+  background: rgba(5, 18, 30, 0.92);
+}
+
+.asset-viewer-image {
+  display: block;
+  max-width: min(1100px, 94vw);
+  max-height: 90vh;
+  object-fit: contain;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+}
+
+.asset-viewer-close {
+  position: absolute;
+  top: 18px;
+  right: 22px;
+  width: 42px;
+  height: 42px;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.25);
+  color: #fff;
+  cursor: pointer;
+  font-size: 1.8rem;
+  line-height: 1;
+}
+
 .portfolio-image {
   position: relative;
   z-index: 1;
@@ -183,6 +226,24 @@
   margin: 0;
   color: rgba(255, 255, 255, 0.77);
   font-size: 0.91rem;
+}
+
+.asset-badge {
+  display: inline-block;
+  margin-top: 16px;
+  padding: 7px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  color: #fff;
+  font-size: 0.56rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+
+.asset-badge.dark {
+  flex: 0 0 auto;
+  margin-top: 2px;
+  border-color: #c5df9b;
+  color: #526d39;
 }
 
 .feature-metrics {
@@ -394,6 +455,22 @@
   color: var(--muted);
   font-size: 0.79rem;
   line-height: 1.6;
+}
+
+.project-description {
+  display: -webkit-box;
+  max-width: 560px;
+  margin: 10px 0 0;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 0.84rem;
+  line-height: 1.55;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.project-highlight p {
+  margin: 0;
 }
 
 .amea-section {

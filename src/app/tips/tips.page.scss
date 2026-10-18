@@ -179,6 +179,29 @@ $fixed-header-height: 65px;
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12);
   }
 
+  .extended-stay-card {
+    border-left: 5px solid $holcim-link-blue;
+
+    .recommendation {
+      padding: 0.75rem 0;
+      border-bottom: 1px solid $light-gray-line;
+
+      &:last-child {
+        border-bottom: 0;
+        padding-bottom: 0;
+      }
+
+      strong {
+        display: block;
+        color: $holcim-dark-blue;
+      }
+
+      p {
+        margin: 0.25rem 0 0;
+      }
+    }
+  }
+
   &.important {
     border-left: 5px solid $highlight-border;
   }
