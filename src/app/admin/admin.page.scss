@@ -383,6 +383,28 @@
   font-size: 0.75rem;
 }
 
+.resource-type-badge {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border-radius: 10px;
+  background: #edf4fc;
+  color: #1769e0;
+  font-weight: 750;
+}
+
+.resource-item {
+  grid-template-columns: 42px 1fr auto;
+}
+
+.resource-type-create {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: end;
+}
+
 .admin-project-list {
   display: grid;
   gap: 10px;

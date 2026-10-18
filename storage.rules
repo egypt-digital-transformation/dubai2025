@@ -9,5 +9,19 @@ service firebase.storage {
           /databases/(default)/documents/admins/$(request.auth.token.email)
         ).data.active != false;
     }
+    match /resources/{resourcePath=**} {
+      allow read: if true;
+      allow write: if request.auth != null
+        && firestore.get(
+          /databases/(default)/documents/admins/$(request.auth.token.email)
+        ).data.active != false;
+    }
+    match /resourceTypes/{typeId} {
+      allow read: if true;
+      allow write: if request.auth != null
+        && firestore.get(
+          /databases/(default)/documents/admins/$(request.auth.token.email)
+        ).data.active != false;
+    }
   }
 }

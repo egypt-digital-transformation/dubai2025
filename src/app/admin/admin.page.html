@@ -75,6 +75,20 @@
         <span>Projects</span>
       </button>
       <button
+        id="admin-tab-resources"
+        type="button"
+        role="tab"
+        aria-controls="admin-workspace"
+        [attr.aria-selected]="selectedSection === 'resources'"
+        [attr.tabindex]="selectedSection === 'resources' ? 0 : -1"
+        [class.active]="selectedSection === 'resources'"
+        (click)="selectSection('resources')"
+        (keydown)="onSectionTabKeydown($event, 'resources')"
+      >
+        <ion-icon name="folder-open-outline" aria-hidden="true"></ion-icon>
+        <span>Resources</span>
+      </button>
+      <button
         id="admin-tab-updates"
         type="button"
         role="tab"
@@ -342,6 +356,99 @@
               [attr.aria-label]="'Move ' + (project.title || project.name) + ' to recycle bin'"
               title="Move to recycle bin"
             >
+              <ion-icon slot="icon-only" name="trash-outline"></ion-icon>
+            </ion-button>
+          </div>
+        </article>
+      </div>
+    </section>
+    </ng-container>
+
+    <ng-container *ngIf="selectedSection === 'resources'">
+    <section id="resources" class="panel-card">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">CONTENT LIBRARY</p>
+          <h2>Approved resources</h2>
+          <p class="subtitle">Publish approved links and files to the attendee resource library.</p>
+        </div>
+        <ion-button fill="outline" class="project-add-button" (click)="startNewResource()">
+          <ion-icon slot="start" name="add-outline"></ion-icon>
+          Add resource
+        </ion-button>
+      </div>
+      <ion-note *ngIf="resourceNotice" color="success" class="message success-message">{{ resourceNotice }}</ion-note>
+      <ion-note *ngIf="resourceError && !isResourceFormOpen" color="danger" class="message error-message">{{ resourceError }}</ion-note>
+      <div *ngIf="isLoadingResources" class="loading-state">Loading resources?</div>
+      <div *ngIf="resourceLoadError" class="message error-message">{{ resourceLoadError }}</div>
+
+      <form *ngIf="isResourceFormOpen" class="notification-form project-form resource-form" (ngSubmit)="saveResource()">
+        <div class="project-editor-header">
+          <div>
+            <p class="eyebrow">RESOURCE EDITOR</p>
+            <h3>{{ editingResourceId ? 'Edit resource' : 'Add resource' }}</h3>
+          </div>
+          <ion-button type="button" fill="clear" class="project-close-button" (click)="cancelResourceEdit()" aria-label="Close resource editor">
+            <ion-icon slot="icon-only" name="close-outline"></ion-icon>
+          </ion-button>
+        </div>
+        <div *ngIf="resourceError" class="project-editor-error" role="alert">{{ resourceError }}</div>
+        <ion-input label="Title" labelPlacement="stacked" fill="outline" [(ngModel)]="resourceForm.title" name="resourceTitle" required></ion-input>
+        <ion-select label="Type" labelPlacement="stacked" fill="outline" [(ngModel)]="resourceForm.type" name="resourceType" required>
+          <ion-select-option *ngFor="let type of resourceTypes" [value]="type">{{ type }}</ion-select-option>
+        </ion-select>
+        <div class="resource-type-create">
+          <ion-input
+            label="Add a new type"
+            labelPlacement="stacked"
+            fill="outline"
+            [(ngModel)]="newResourceType"
+            name="newResourceType"
+            placeholder="For example: Workshop">
+          </ion-input>
+          <ion-button
+            type="button"
+            fill="outline"
+            class="project-edit-button"
+            [disabled]="isSavingResourceType"
+            (click)="addResourceType()">
+            <ion-spinner *ngIf="isSavingResourceType" name="crescent"></ion-spinner>
+            <span *ngIf="!isSavingResourceType">Add type</span>
+          </ion-button>
+        </div>
+        <ion-textarea label="Description" labelPlacement="stacked" fill="outline" autoGrow="true" [(ngModel)]="resourceForm.description" name="resourceDescription"></ion-textarea>
+        <ion-input label="HTTPS link (optional if uploading)" labelPlacement="stacked" fill="outline" [(ngModel)]="resourceForm.url" name="resourceUrl" type="url"></ion-input>
+        <div class="project-upload">
+          <ion-icon name="cloud-upload-outline" aria-hidden="true"></ion-icon>
+          <label for="resource-file-upload">{{ selectedResourceFile ? selectedResourceFile.name : 'Upload file' }}</label>
+          <input id="resource-file-upload" type="file" (change)="onResourceFileSelected($event)" />
+        </div>
+        <div class="send-row project-form-actions">
+          <span>
+            <ion-button type="button" fill="outline" class="project-cancel-button" (click)="cancelResourceEdit()">Cancel</ion-button>
+            <ion-button type="submit" class="project-save-button" [disabled]="isSavingResource">
+              <ion-spinner *ngIf="isSavingResource" name="crescent"></ion-spinner>
+              <span *ngIf="!isSavingResource">Save changes</span>
+            </ion-button>
+          </span>
+        </div>
+      </form>
+
+      <div *ngIf="!isLoadingResources && !resources.length" class="empty-state">
+        <strong>Your content library starts here.</strong>
+        <span>Add an approved link or upload a document using connected Firebase Storage.</span>
+      </div>
+      <div class="admin-project-list">
+        <article class="admin-project-item resource-item" *ngFor="let resource of resources">
+          <div class="resource-type-badge">{{ resource.type[0] }}</div>
+          <div>
+            <p class="eyebrow">{{ resource.type }}</p>
+            <h3>{{ resource.title }}</h3>
+            <p>{{ resource.description || resource.url }}</p>
+          </div>
+          <div class="activity-actions">
+            <ion-button fill="outline" class="project-edit-button" (click)="editResource(resource)">Edit</ion-button>
+            <ion-button fill="clear" color="danger" class="project-remove-button" [disabled]="isDeletingResource" (click)="removeResource(resource)" [attr.aria-label]="'Remove ' + resource.title">
               <ion-icon slot="icon-only" name="trash-outline"></ion-icon>
             </ion-button>
           </div>

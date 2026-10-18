@@ -10,6 +10,7 @@ import {
   closeOutline,
   createOutline,
   downloadOutline,
+  folderOpenOutline,
   gridOutline,
   notificationsOutline,
   peopleOutline,
@@ -26,8 +27,11 @@ import {
   AdminCampaign,
   AdminDashboard,
   AdminInteractiveActivity,
+  AdminResource,
   AdminService,
+  DEFAULT_RESOURCE_TYPES,
   NotificationTarget,
+  ResourceType,
 } from '../services/admin.service';
 import { IconicProject } from '../iconic-projects/models/project.model';
 import type { ProjectInput } from '../services/admin.service';
@@ -47,7 +51,7 @@ interface AudienceSegment {
   label: string;
 }
 
-type AdminSection = 'overview' | 'attendees' | 'engagement' | 'projects' | 'updates';
+type AdminSection = 'overview' | 'attendees' | 'engagement' | 'projects' | 'resources' | 'updates';
 type UpdateMode = 'now' | 'scheduled';
 type AttendeeStatusFilter = 'all' | 'active' | 'loggedIn' | 'installed' | 'pushReady';
 interface ProjectCountry {
@@ -114,6 +118,20 @@ export class AdminPage implements OnInit, OnDestroy {
   filteredProjectCountries = this.projectCountries;
   isCountryPickerOpen = false;
   countrySearch = '';
+  resources: AdminResource[] = [];
+  resourceLoadError = '';
+  resourceNotice = '';
+  resourceError = '';
+  isLoadingResources = false;
+  isSavingResource = false;
+  isDeletingResource = false;
+  editingResourceId: string | null = null;
+  isResourceFormOpen = false;
+  selectedResourceFile: File | null = null;
+  resourceForm = this.emptyResourceForm();
+  resourceTypes: ResourceType[] = [...DEFAULT_RESOURCE_TYPES];
+  newResourceType = '';
+  isSavingResourceType = false;
 
   private refreshTimer?: ReturnType<typeof setInterval>;
 
@@ -125,6 +143,7 @@ export class AdminPage implements OnInit, OnDestroy {
       closeOutline,
       createOutline,
       downloadOutline,
+      folderOpenOutline,
       gridOutline,
       notificationsOutline,
       peopleOutline,
@@ -145,10 +164,13 @@ export class AdminPage implements OnInit, OnDestroy {
     if (section === 'projects' && !this.projects.length && !this.isLoadingProjects) {
       void this.loadProjects();
     }
+    if (section === 'resources' && !this.resources.length && !this.isLoadingResources) {
+      void this.loadResources();
+    }
   }
 
   onSectionTabKeydown(event: KeyboardEvent, currentSection: AdminSection): void {
-    const sections: AdminSection[] = ['overview', 'attendees', 'engagement', 'projects', 'updates'];
+    const sections: AdminSection[] = ['overview', 'attendees', 'engagement', 'projects', 'resources', 'updates'];
     const currentIndex = sections.indexOf(currentSection);
     let nextIndex: number;
 
@@ -228,6 +250,159 @@ export class AdminPage implements OnInit, OnDestroy {
       this.isLoadingProjects = false;
     }
 
+  }
+
+  async loadResources(): Promise<void> {
+    this.isLoadingResources = true;
+    this.resourceLoadError = '';
+    try {
+      const [resources, resourceTypes] = await Promise.all([
+        this.adminService.loadResources(),
+        this.adminService.loadResourceTypes(),
+      ]);
+      this.resources = resources;
+      this.resourceTypes = resourceTypes;
+    } catch (error) {
+      console.error('[AdminPage] Failed to load resources:', error);
+      this.resourceLoadError = 'Could not load resources. Check your connection and try again.';
+    } finally {
+      this.isLoadingResources = false;
+    }
+  }
+
+  async addResourceType(): Promise<void> {
+    const type = this.newResourceType.trim().replace(/\s+/g, ' ');
+    if (!type) {
+      this.resourceError = 'Enter a type name first.';
+      return;
+    }
+    if (this.resourceTypes.some((existingType) => existingType.toLowerCase() === type.toLowerCase())) {
+      this.resourceForm.type = this.resourceTypes.find(
+        (existingType) => existingType.toLowerCase() === type.toLowerCase()
+      ) ?? type;
+      this.newResourceType = '';
+      return;
+    }
+    this.isSavingResourceType = true;
+    this.resourceError = '';
+    try {
+      const savedType = await this.adminService.saveResourceType(type);
+      this.resourceTypes = [...this.resourceTypes, savedType].sort((a, b) => a.localeCompare(b));
+      this.resourceForm.type = savedType;
+      this.newResourceType = '';
+    } catch (error) {
+      console.error('[AdminPage] Failed to save resource type:', error);
+      this.resourceError = 'Could not add this resource type. Please try again.';
+    } finally {
+      this.isSavingResourceType = false;
+    }
+  }
+
+  startNewResource(): void {
+    this.editingResourceId = null;
+    this.isResourceFormOpen = true;
+    this.resourceForm = this.emptyResourceForm();
+    this.selectedResourceFile = null;
+    this.resourceError = '';
+  }
+
+  editResource(resource: AdminResource): void {
+    this.editingResourceId = resource.id;
+    this.isResourceFormOpen = true;
+    this.resourceForm = {
+      title: resource.title,
+      type: resource.type,
+      description: resource.description,
+      url: resource.url,
+    };
+    this.selectedResourceFile = null;
+    this.resourceError = '';
+  }
+
+  cancelResourceEdit(): void {
+    this.editingResourceId = null;
+    this.isResourceFormOpen = false;
+    this.selectedResourceFile = null;
+    this.resourceError = '';
+  }
+
+  onResourceFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    this.selectedResourceFile = input.files?.[0] ?? null;
+    if (this.selectedResourceFile) {
+      this.resourceForm.url = '';
+    }
+  }
+
+  async saveResource(): Promise<void> {
+    const form = this.resourceForm;
+    if (!form.title.trim() || !form.type) {
+      this.resourceError = 'Title and type are required.';
+      return;
+    }
+    if (!this.selectedResourceFile && !form.url.trim()) {
+      this.resourceError = 'Provide an HTTPS link or upload a file.';
+      return;
+    }
+    if (!this.selectedResourceFile && !/^https:\/\//i.test(form.url.trim())) {
+      this.resourceError = 'Resource links must use HTTPS.';
+      return;
+    }
+    this.isSavingResource = true;
+    this.resourceError = '';
+    try {
+      const url = this.selectedResourceFile
+        ? await this.adminService.uploadResource(this.selectedResourceFile, form.title.trim())
+        : form.url.trim();
+      const saved = await this.adminService.saveResource({
+        id: this.editingResourceId ?? undefined,
+        title: form.title.trim(),
+        type: form.type,
+        description: form.description.trim(),
+        url,
+      });
+      const index = this.resources.findIndex((resource) => resource.id === saved.id);
+      this.resources = index < 0
+        ? [...this.resources, saved]
+        : this.resources.map((resource) => resource.id === saved.id ? saved : resource);
+      this.resources.sort((a, b) => a.title.localeCompare(b.title));
+      this.resourceNotice = `${saved.title} saved.`;
+      this.cancelResourceEdit();
+    } catch (error) {
+      console.error('[AdminPage] Failed to save resource:', error);
+      this.resourceError = 'Could not save this resource. Please try again.';
+    } finally {
+      this.isSavingResource = false;
+    }
+  }
+
+  async removeResource(resource: AdminResource): Promise<void> {
+    const confirmation = await this.alertController.create({
+      header: 'Remove resource?',
+      message: `Remove "${resource.title}" from the resource library?`,
+      buttons: [
+        { text: 'Cancel', role: 'cancel' },
+        { text: 'Remove', role: 'confirm', cssClass: 'danger-button' },
+      ],
+    });
+    await confirmation.present();
+    const { role } = await confirmation.onDidDismiss();
+    if (role !== 'confirm') return;
+    this.isDeletingResource = true;
+    try {
+      await this.adminService.deleteResource(resource.id);
+      this.resources = this.resources.filter((item) => item.id !== resource.id);
+      this.resourceNotice = `${resource.title} removed.`;
+    } catch (error) {
+      console.error('[AdminPage] Failed to remove resource:', error);
+      this.resourceError = 'Could not remove this resource. Please try again.';
+    } finally {
+      this.isDeletingResource = false;
+    }
+  }
+
+  private emptyResourceForm() {
+    return { title: '', type: 'Presentation' as ResourceType, description: '', url: '' };
   }
 
   async importCurrentPortfolio(): Promise<void> {

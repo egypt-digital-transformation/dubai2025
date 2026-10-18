@@ -36,13 +36,24 @@
       </label>
     </section>
 
-    <section class="resource-empty" aria-live="polite">
+    <section *ngIf="isLoading || !filteredResources.length" class="resource-empty" aria-live="polite">
       <ion-icon name="folder-open-outline" aria-hidden="true"></ion-icon>
       <h2>Good ideas are worth keeping.</h2>
-      <p>
+      <p *ngIf="isLoading">
+        Loading approved resources?
+      </p>
+      <p *ngIf="!isLoading">
         The event team will publish approved presentations, recordings and photos here.
         No files have been uploaded yet.
       </p>
+    </section>
+    <section *ngIf="!isLoading && filteredResources.length" class="resource-grid" aria-label="Published resources">
+      <article class="resource-card" *ngFor="let resource of filteredResources">
+        <p class="resource-card-type">{{ resource.type }}</p>
+        <h2>{{ resource.title }}</h2>
+        <p>{{ resource.description }}</p>
+        <a [href]="resource.url" target="_blank" rel="noopener noreferrer">Open resource</a>
+      </article>
     </section>
   </main>
 </ion-content>

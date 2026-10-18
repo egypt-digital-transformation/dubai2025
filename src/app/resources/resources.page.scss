@@ -132,6 +132,43 @@ $holcim-light-green: #eaf5df; // Subtle background highlight
   text-align: center;
 }
 
+.resource-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  padding: 8px 0 32px;
+}
+
+.resource-card {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 20px;
+  background: #fff;
+  box-shadow: 0 8px 20px rgb(23 43 77 / 6%);
+
+  h2 {
+    margin: 6px 0 8px;
+  }
+
+  p:not(.resource-card-type) {
+    min-height: 2.8em;
+  }
+
+  a {
+    color: #1769e0;
+    font-weight: 700;
+  }
+}
+
+.resource-card-type {
+  margin: 0;
+  color: #57708f;
+  font-size: 0.7rem;
+  font-weight: 750;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
 .resource-empty ion-icon {
   color: #079db4;
   font-size: 2.75rem;

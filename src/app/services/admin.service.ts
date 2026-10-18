@@ -54,6 +54,23 @@ export interface AdminDashboard {
   campaigns: AdminCampaign[];
 }
 
+export type ResourceType = string;
+export const DEFAULT_RESOURCE_TYPES: ResourceType[] = [
+  'Presentation',
+  'Video',
+  'Document',
+  'Photo',
+];
+
+export interface AdminResource {
+  id: string;
+  title: string;
+  type: ResourceType;
+  description: string;
+  url: string;
+  createdAt?: string;
+}
+
 export type ProjectInput = Omit<IconicProject, 'id'> & { id?: string };
 
 export interface InteractiveActivity {
@@ -185,6 +202,66 @@ export class AdminService {
     await deleteDoc(firestoreDoc(this.firestore, 'projects', projectId));
   }
 
+  async loadResources(): Promise<AdminResource[]> {
+    const snapshot = await getDocs(collection(this.firestore, 'resources'));
+    return snapshot.docs
+      .map((resourceDocument) => ({
+        id: resourceDocument.id,
+        ...(resourceDocument.data() as Omit<AdminResource, 'id'>),
+      }))
+      .sort((a, b) => a.title.localeCompare(b.title));
+  }
+
+  async loadResourceTypes(): Promise<ResourceType[]> {
+    const [typeSnapshot, resourceSnapshot] = await Promise.all([
+      getDocs(collection(this.firestore, 'resourceTypes')),
+      getDocs(collection(this.firestore, 'resources')),
+    ]);
+    const types = typeSnapshot.docs.map((typeDocument) => {
+      const data = typeDocument.data() as { name?: string };
+      return data.name?.trim() || typeDocument.id;
+    });
+    const usedTypes = resourceSnapshot.docs.map((resourceDocument) =>
+      (resourceDocument.data() as Partial<AdminResource>).type
+    );
+    return this.uniqueResourceTypes([...DEFAULT_RESOURCE_TYPES, ...types, ...usedTypes]);
+  }
+
+  async saveResourceType(name: string): Promise<ResourceType> {
+    const normalizedName = name.trim().replace(/\s+/g, ' ');
+    if (!normalizedName) {
+      throw new Error('Resource type name is required.');
+    }
+    const id = this.createProjectId(normalizedName);
+    await setDoc(firestoreDoc(this.firestore, 'resourceTypes', id), {
+      name: normalizedName,
+    });
+    return normalizedName;
+  }
+
+  async saveResource(resource: Omit<AdminResource, 'id'> & { id?: string }): Promise<AdminResource> {
+    const id = resource.id?.trim() || this.createProjectId(resource.title);
+    const savedResource: AdminResource = { ...resource, id };
+    await setDoc(firestoreDoc(this.firestore, 'resources', id), savedResource);
+    return savedResource;
+  }
+
+  async deleteResource(resourceId: string): Promise<void> {
+    await deleteDoc(firestoreDoc(this.firestore, 'resources', resourceId));
+  }
+
+  async uploadResource(file: File, resourceTitle: string): Promise<string> {
+    const storage = getStorage(
+      getApp(),
+      `gs://${environment.hsefirebaseConfig.storageBucket}`
+    );
+    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '-');
+    const resourceId = this.createProjectId(resourceTitle);
+    const resourceRef = ref(storage, `resources/${resourceId}-${Date.now()}-${safeName}`);
+    await uploadBytes(resourceRef, file, { contentType: file.type || undefined });
+    return getDownloadURL(resourceRef);
+  }
+
   async uploadProjectAsset(
     file: File,
     assetType: 'image' | 'model',
@@ -295,6 +372,17 @@ export class AdminService {
       throw new Error('A project name is required.');
     }
     return id;
+  }
+
+  private uniqueResourceTypes(types: Array<string | undefined>): ResourceType[] {
+    const unique = new Map<string, string>();
+    for (const type of types) {
+      const normalizedType = type?.trim().replace(/\s+/g, ' ');
+      if (normalizedType) {
+        unique.set(normalizedType.toLowerCase(), normalizedType);
+      }
+    }
+    return [...unique.values()].sort((a, b) => a.localeCompare(b));
   }
 
   private async loadMainProjectUsers(): Promise<AdminAttendee[]> {
