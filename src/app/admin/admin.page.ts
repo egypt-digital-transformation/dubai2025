@@ -218,6 +218,10 @@ export class AdminPage implements OnInit, OnDestroy {
     }, 30_000);
   }
 
+  ionViewDidEnter(): void {
+    document.getElementById('admin-title')?.focus();
+  }
+
   async loadRequests(): Promise<void> {
     try {
       this.requests = await this.adminService.loadAdminRequests();

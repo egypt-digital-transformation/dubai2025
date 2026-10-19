@@ -1,12 +1,8 @@
 import { Component, ViewChild, ElementRef } from '@angular/core';
 import { Router } from '@angular/router';
 import {
-  IonHeader,
-  IonToolbar,
-  IonTitle,
   IonContent,
   IonButton,
-  IonText,
   IonIcon,
   AlertController,
 } from '@ionic/angular/standalone';
@@ -28,12 +24,8 @@ import {
   styleUrls: ['./hse-induction.page.scss'],
   imports: [
     CommonModule,
-    IonHeader,
-    IonToolbar,
-    IonTitle,
     IonContent,
     IonButton,
-    IonText,
     IonIcon,
   ],
 })

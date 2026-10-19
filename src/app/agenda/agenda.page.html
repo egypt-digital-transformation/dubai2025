@@ -45,7 +45,7 @@
         <article
           *ngFor="let session of filteredSessions; let i = index"
           class="session-card"
-          [id]="session.id ?? ('session-' + i)"
+          [id]="session.id"
           [style.--session-accent]="session.color || '#087f78'"
         >
           <div class="session-content">

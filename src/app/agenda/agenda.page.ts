@@ -7,8 +7,8 @@ import {
   ViewChildren,
   ViewChild,
 } from '@angular/core';
-import { CommonModule, DatePipe } from '@angular/common';
-import { IonContent, IonIcon, IonModal } from '@ionic/angular/standalone';
+import { CommonModule } from '@angular/common';
+import { IonContent, IonIcon } from '@ionic/angular/standalone';
 import {
   Firestore,
   collection,
@@ -52,7 +52,7 @@ interface Session {
   standalone: true,
   templateUrl: './agenda.page.html',
   styleUrls: ['./agenda.page.scss'],
-  imports: [IonModal, IonContent, IonIcon, CommonModule, DatePipe, FormsModule],
+  imports: [IonContent, IonIcon, CommonModule, FormsModule],
 })
 export class AgendaPage implements OnInit, OnDestroy {
   selectedDay = '1';

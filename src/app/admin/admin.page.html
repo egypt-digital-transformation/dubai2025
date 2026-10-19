@@ -13,7 +13,7 @@
 
     <section class="admin-hero" aria-labelledby="admin-title">
       <p class="hero-eyebrow">Admin Panel</p>
-      <h1 id="admin-title">Every detail,<br />in good hands.</h1>
+      <h1 id="admin-title" tabindex="-1">Every detail,<br />in good hands.</h1>
       <p>Attendee experience, engagement and communications at a glance.</p>
     </section>
 
@@ -374,7 +374,7 @@
           </ion-select>
           <ion-input label="GLB / GLTF model URL" labelPlacement="stacked" fill="outline" [(ngModel)]="projectForm.assetUrl" name="projectAssetUrl" type="url"></ion-input>
           <p *ngIf="projectForm.assetUrl" class="project-current-asset">
-            Current {{ projectForm.modelFormat?.toUpperCase() }} model is configured.
+            Current {{ projectForm.modelFormat.toUpperCase() }} model is configured.
           </p>
           <div class="project-upload">
             <ion-icon name="cloud-upload-outline" aria-hidden="true"></ion-icon>
@@ -503,7 +503,6 @@
 
       <div *ngIf="!isLoadingResources && !resources.length" class="empty-state">
         <strong>Your content library starts here.</strong>
-        <span>Add an approved link or upload a document using connected Firebase Storage.</span>
       </div>
       <div class="admin-project-list">
         <article class="admin-project-item resource-item" *ngFor="let resource of resources">

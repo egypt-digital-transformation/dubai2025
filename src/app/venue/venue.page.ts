@@ -1,9 +1,8 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { IonHeader, IonToolbar, IonTitle, IonContent, IonCard, IonCardContent, IonIcon, IonGrid, IonRow, IonCol } from '@ionic/angular/standalone';
+import { IonContent, IonButton, IonCard, IonCardContent, IonIcon, IonGrid, IonRow, IonCol } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import { mapOutline, chevronForwardOutline } from 'ionicons/icons';
-import { IonButtons, IonButton } from '@ionic/angular/standalone';
 import { closeOutline } from 'ionicons/icons';
 import { Router } from '@angular/router';
 
@@ -27,18 +26,14 @@ interface Room {
   standalone: true,
 imports: [
   CommonModule,
-  IonHeader,
-  IonToolbar,
-  IonTitle,
   IonContent,
+  IonButton,
   IonCard,
   IonCardContent,
   IonIcon,
   IonGrid,
   IonRow,
   IonCol,
-  IonButtons,
-  IonButton
 ]
 })
 export class VenuePage {

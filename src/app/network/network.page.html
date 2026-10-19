@@ -65,7 +65,7 @@
           />
           <div class="post-user-info">
             <h3>{{ post.userName }}</h3>
-            <p class="timestamp">{{ post.timestamp?.toDate() | date: 'medium' }}</p>
+            <p class="timestamp">{{ post.timestamp.toDate() | date: 'medium' }}</p>
           </div>
         </div>
 
@@ -102,7 +102,7 @@
             <div class="comment-content">
               <strong>{{ comment.userName }}</strong>
               <p>{{ comment.text }}</p>
-              <span class="comment-time">{{ comment.timestamp?.toDate() | date: 'short' }}</span>
+              <span class="comment-time">{{ comment.timestamp.toDate() | date: 'short' }}</span>
             </div>
           </div>
 

@@ -82,7 +82,10 @@ export class MorePage {
     void this.router.navigateByUrl('/tabs/projects');
   }
 
-  openAdmin(): void {
+  openAdmin(event: MouseEvent): void {
+    if (event.currentTarget instanceof HTMLElement) {
+      event.currentTarget.blur();
+    }
     void this.router.navigateByUrl('/admin');
   }
 

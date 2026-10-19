@@ -1,3 +1,5 @@
+@use "sass:color";
+
 ion-content {
   --background: #f9fafb;
 }
@@ -992,7 +994,7 @@ ion-header {
 
 /* If you want the color to change on hover/tap (optional) */
 .deeplink-text:hover {
-  color: darken(#00A9E0, 10%); 
+  color: color.adjust(#00A9E0, $lightness: -10%);
 }
 
 .logout-btn {

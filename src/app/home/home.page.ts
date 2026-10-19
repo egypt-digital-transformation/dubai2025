@@ -5,10 +5,6 @@ import {
   IonContent,
   IonIcon,
   IonModal,
-  IonButton,
-  IonCardTitle,
-  IonCard,
-  IonCardHeader,
   IonCardContent,
 } from '@ionic/angular/standalone';
 import { Auth, signOut, onAuthStateChanged } from '@angular/fire/auth';
@@ -86,10 +82,6 @@ const DAY_MS = 24 * 60 * 60 * 1000;
   templateUrl: 'home.page.html',
   styleUrls: ['home.page.scss'],
   imports: [
-    IonCardHeader,
-    IonCard,
-    IonCardTitle,
-    IonButton,
     IonModal,
     IonContent,
     IonIcon,
