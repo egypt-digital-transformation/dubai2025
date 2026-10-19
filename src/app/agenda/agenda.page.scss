@@ -1,5 +1,5 @@
 .agenda-content {
-  --background: #f8f9fa;
+  --background: var(--app-background);
 }
 
 .pb-20 {
@@ -10,7 +10,7 @@
 // HEADER SECTION  (mobile-first)
 // ============================================
 .header-gradient {
-  background: linear-gradient(to bottom right, #041739 0%, #041739 40%, #1d4370 100%);
+  background: linear-gradient(to bottom right, #041739 0%, #041739 40%, var(--app-primary) 100%);
   padding: 4.5rem 1.25rem 3rem;  // ⬆️ more vertical padding on mobile
   position: relative;
   overflow: hidden;
@@ -176,7 +176,7 @@
   padding: 0.35rem;
   display: flex;
   box-shadow: 0 3px 6px rgba(29, 67, 112, 0.15);
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--app-border);
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   transition: box-shadow 0.3s ease;
@@ -219,11 +219,11 @@
   }
 
   &:hover:not(.active) {
-    background: #f3f4f6;
+    background: var(--app-background);
   }
 
   &.active {
-    background: #1D4370;
+    background: var(--app-primary);
     color: white;
     box-shadow: 0 2px 4px rgba(0, 169, 224, 0.25);
   }
@@ -266,11 +266,11 @@
 
 // Session Card
 .session-card {
-  background: white;
+  background: var(--app-surface);
   border-radius: 16px;
   margin-bottom: 20px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-  border-left: 5px solid #1d4370;
+  border-left: 5px solid var(--app-primary);
   overflow: hidden;
   transition: all 0.3s ease;
 
@@ -282,7 +282,7 @@
 
 // Time Badge
 .time-badge {
-  background: #1d4370;
+  background: var(--app-primary);
   color: white;
   padding: 10px 18px;
   font-size: 13px;
@@ -338,38 +338,25 @@
   }
 }
 
-.speaker-avatar,
-.speaker-avatar-img {
-  width: 46px;
-  height: 46px;
-  border-radius: 50%;
-  flex-shrink: 0;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-}
-
-.speaker-avatar {
-  background: linear-gradient(135deg, #1d4370, #00a9e0);
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  font-size: 16px;
-}
-
-.speaker-avatar-img {
-  object-fit: cover;
-}
-
 .speaker-details {
   flex: 1;
 }
 
 .speaker-name {
+  display: inline-block;
   font-size: 15px;
   font-weight: 700;
-  color: #1d4370;
+  color: var(--app-text);
   margin-bottom: 2px;
+}
+
+.speaker-label {
+  color: #71808d;
+  display: inline;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.035em;
+  margin-right: 0.3rem;
 }
 
 .speaker-role {
@@ -396,7 +383,7 @@
 
   .meta-icon {
     font-size: 14px;
-    color: #00a9e0;
+    color: var(--app-action);
   }
 
   .meta-value {
@@ -408,29 +395,29 @@
     cursor: pointer;
 
     .meta-value {
-      color: #00a9e0;
+      color: var(--app-action);
       transition: color 0.2s;
     }
 
     &:hover .meta-value {
-      color: #007fb4;
+      color: var(--app-primary);
     }
   }
 }
 
 // Clickable styling (no underline)
 .clickable {
-  color: #00a9e0;
+  color: var(--app-action);
   text-decoration: none;
   cursor: pointer;
   transition: color 0.2s;
 
   &:hover {
-    color: #007fb4;
+    color: var(--app-primary);
   }
 }
 
-$holcim-green: #7ab023;
+$holcim-green: var(--app-accent);
 
 .materials-section {
   margin-top: 1rem;
@@ -575,6 +562,187 @@ $holcim-green: #7ab023;
 
     ion-icon {
       font-size: 1.125rem;
+    }
+  }
+
+  // Agenda cards use a compact, consistent hierarchy for both shared and personal schedules.
+  .tabs-container {
+    top: 0;
+  }
+
+  .sessions-container {
+    padding: 0.5rem 1rem 1.5rem;
+  }
+
+  .session-card {
+    --session-accent: var(--holcim-dark-turquoise);
+    background: var(--app-surface);
+    border: 1px solid var(--app-border);
+    border-left: 3px solid var(--session-accent);
+    border-radius: 1rem;
+    box-shadow: 0 5px 18px rgba(15, 45, 62, 0.055);
+    margin-bottom: 0.9rem;
+    transition: box-shadow 160ms ease, transform 160ms ease;
+  }
+
+  .session-card:hover {
+    box-shadow: 0 8px 22px rgba(15, 45, 62, 0.09);
+    transform: translateY(-1px);
+  }
+
+  .session-content {
+    padding: 1rem 1.05rem;
+  }
+
+  .session-card-topline {
+    align-items: center;
+    display: flex;
+    gap: 0.65rem;
+    justify-content: space-between;
+    min-width: 0;
+  }
+
+  .session-card-topline .category-tag {
+    background: color-mix(in srgb, var(--holcim-bright-turquoise) 9%, white);
+    border-radius: 999px;
+    color: var(--holcim-dark-turquoise);
+    display: block;
+    flex: 0 1 auto;
+    font-size: 0.61rem;
+    font-weight: 750;
+    letter-spacing: 0.055em;
+    max-width: 52%;
+    overflow: hidden;
+    padding: 0.35rem 0.6rem;
+    text-overflow: ellipsis;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .session-time {
+    align-items: center;
+    background: var(--app-background);
+    border-radius: 999px;
+    color: #365365;
+    display: inline-flex;
+    flex: 0 0 auto;
+    font-size: 0.72rem;
+    font-weight: 700;
+    gap: 0.35rem;
+    padding: 0.38rem 0.6rem;
+    white-space: nowrap;
+  }
+
+  .session-time ion-icon {
+    color: var(--session-accent);
+    font-size: 0.9rem;
+  }
+
+  .session-title {
+    color: var(--app-text);
+    font-size: 1.08rem;
+    font-weight: 720;
+    letter-spacing: -0.015em;
+    line-height: 1.35;
+    margin: 0.75rem 0 0;
+    overflow-wrap: anywhere;
+  }
+
+  .speaker-info {
+    align-items: center;
+    cursor: default;
+    margin: 0.85rem 0 0;
+    min-width: 0;
+  }
+
+  .speaker-info:hover {
+    transform: none;
+  }
+
+  .speaker-avatar,
+  .speaker-avatar-img {
+    box-shadow: none;
+    height: 2.25rem;
+    width: 2.25rem;
+  }
+
+  .speaker-avatar {
+    background: #e8f1f3;
+    color: #315a6d;
+    font-size: 0.75rem;
+  }
+
+  .speaker-details {
+    min-width: 0;
+  }
+
+  .speaker-name {
+    color: #31576b;
+    font-size: 0.8rem;
+    line-height: 1.35;
+    margin: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .speaker-role {
+    font-size: 0.72rem;
+    margin-top: 0.15rem;
+  }
+
+  .session-meta.sleek {
+    border-top: 1px solid #edf1f2;
+    display: flex;
+    margin: 0.85rem 0 0;
+    padding: 0.75rem 0 0;
+  }
+
+  .session-meta .meta-item {
+    align-items: flex-start;
+    font-size: 0.78rem;
+    line-height: 1.45;
+    min-width: 0;
+  }
+
+  .session-meta .meta-icon {
+    color: var(--session-accent);
+    flex: 0 0 auto;
+    margin-top: 0.1rem;
+  }
+
+  .session-meta .meta-value {
+    color: #526977;
+    font-weight: 500;
+    overflow-wrap: anywhere;
+  }
+
+  .session-meta .meta-item.clickable {
+    cursor: default;
+  }
+
+  .session-meta .meta-item.clickable .meta-value {
+    color: #526977;
+  }
+
+  .session-meta .meta-item.clickable:hover .meta-value {
+    color: #526977;
+  }
+
+  @media (max-width: 480px) {
+    .sessions-container {
+      padding: 0.25rem 0.85rem 1rem;
+    }
+
+    .session-content {
+      padding: 0.9rem;
+    }
+
+    .session-card-topline .category-tag {
+      max-width: 48%;
+    }
+
+    .session-time {
+      font-size: 0.68rem;
+      padding: 0.34rem 0.5rem;
     }
   }
 
@@ -752,7 +920,7 @@ $holcim-green: #7ab023;
   align-items: center;
   gap: 0.75rem;
   padding: 0.875rem;
-  background: #f8f9fa;
+  background: var(--app-background);
   border-radius: 12px;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -1263,7 +1431,7 @@ $holcim-green: #7ab023;
   background: transparent;
   border: none;
   padding: 8px;
-  color: #1d4370;
+  color: var(--app-text);
   font-size: 24px;
   cursor: pointer;
   display: flex;
@@ -1280,7 +1448,7 @@ $holcim-green: #7ab023;
 .viewer-content {
   flex: 1;
   overflow: auto;
-  background: #f8f9fa;
+  background: var(--app-background);
 }
 
 .pdf-viewer {
@@ -1318,7 +1486,7 @@ $holcim-green: #7ab023;
   }
 
   .download-btn {
-    background: #1d4370;
+    background: var(--app-primary);
     color: white;
     border: none;
     padding: 12px 24px;

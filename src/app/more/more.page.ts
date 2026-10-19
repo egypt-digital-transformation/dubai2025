@@ -46,9 +46,8 @@ export class MorePage {
   ];
 
   readonly eventItems: MoreItem[] = [
-    { title: 'Networking', description: 'Digital contact cards', icon: 'people-outline', route: '/tabs/networking' },
+    { title: 'Find my colleagues', description: 'Connect with fellow attendees', icon: 'people-outline', route: '/tabs/networking' },
     { title: 'Concierge & support', description: 'A helping hand', icon: 'call-outline', route: '/tabs/support' },
-    { title: 'My profile', description: 'Your delegate details', icon: 'person-outline', route: '/tabs/home' },
   ];
 
   constructor() {

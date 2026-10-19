@@ -1,14 +1,3 @@
-/*
- * App Global CSS
- * ----------------------------------------------------------------------------
- * Put style rules here that you want to apply globally. These styles are for
- * the entire app and not just one component. Additionally, this file can be
- * used as an entry point to import other CSS/Sass files to be included in the
- * output CSS.
- * For more information on global stylesheets, visit the documentation:
- * https://ionicframework.com/docs/layout/global-stylesheets
- */
-
 /* =========================================
    ✅ CORE IONIC STYLES
    ========================================= */
@@ -39,18 +28,18 @@ ion-label {
   display: block !important;
   opacity: 1 !important;
   visibility: visible !important;
-  color: #1d4370 !important;
+  color: var(--app-text) !important;
 }
 
 ion-input::part(native),
 input {
-  color: #1d4370 !important;
+  color: var(--app-text) !important;
   opacity: 1 !important;
 }
 
 ion-item {
-  --background: #f1f9ff !important;
-  --highlight-color-focused: #00a9e0 !important;
+  --background: var(--app-surface) !important;
+  --highlight-color-focused: var(--app-action) !important;
   border-radius: 0.75rem !important;
 }
 
@@ -58,22 +47,22 @@ ion-item {
    ✅ TOAST STYLES (Unified)
    ========================================= */
 .toast-success {
-  --background: #28a745;
+  --background: var(--app-success);
   --color: #fff;
 }
 
 .toast-error {
-  --background: #dc3545;
+  --background: var(--app-error);
   --color: #fff;
 }
 
 .toast-warning {
-  --background: #ffc107;
-  --color: #000;
+  --background: var(--app-warning);
+  --color: var(--app-text);
 }
 
 .toast-info {
-  --background: #007bff;
+  --background: var(--app-action);
   --color: #fff;
 }
 
@@ -100,7 +89,7 @@ ion-item {
     width: 64px;
     height: 64px;
     color: var(--spinner-color);
-    filter: drop-shadow(0 4px 12px rgba(0, 169, 224, 0.3));
+    filter: drop-shadow(0 4px 12px rgba(4, 187, 241, 0.3));
     animation: smoothSpin 1s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite;
   }
 }
@@ -159,11 +148,11 @@ ion-item {
    ✅ TAB BAR STYLES
    ========================================= */
 ion-tab-bar {
-  --background: #ffffff;
-  --color: #6b7280;
-  --color-selected: #1d4370;
+  --background: var(--app-surface);
+  --color: var(--app-text-subtle);
+  --color-selected: var(--app-primary);
   --border: none;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--app-border);
 }
 
 ion-tab-button {
@@ -191,7 +180,7 @@ ion-input {
     min-height: 40px !important;
     opacity: 1 !important;
     visibility: visible !important;
-    color: #1d4370 !important;
+    color: var(--app-text) !important;
     padding: 10px 0 !important;
     display: block !important;
   }
@@ -209,23 +198,16 @@ ion-label {
   display: block !important;
   opacity: 1 !important;
   visibility : visible !important;
-  color: #1d4370 !important;
-}
-
-// Add this to your global.scss or theme/variables.scss file
-
-// Force light mode for entire app
-:root {
-  color-scheme: light !important;
+  color: var(--app-text) !important;
 }
 
 // Override Ionic's dark mode variables
 body {
-  --ion-background-color: #ffffff !important;
+  --ion-background-color: var(--app-surface) !important;
   --ion-background-color-rgb: 255, 255, 255 !important;
   
-  --ion-text-color: #000000 !important;
-  --ion-text-color-rgb: 0, 0, 0 !important;
+  --ion-text-color: var(--app-text) !important;
+  --ion-text-color-rgb: 29, 67, 112 !important;
   
   --ion-color-step-50: #f2f2f2 !important;
   --ion-color-step-100: #e6e6e6 !important;
@@ -248,14 +230,14 @@ body {
   --ion-color-step-950: #0d0d0d !important;
 
   // Card and item backgrounds
-  --ion-item-background: #ffffff !important;
-  --ion-card-background: #ffffff !important;
-  --ion-toolbar-background: #ffffff !important;
+  --ion-item-background: var(--app-surface) !important;
+  --ion-card-background: var(--app-surface) !important;
+  --ion-toolbar-background: var(--app-surface) !important;
 }
 
 // Force white background on all pages
 ion-content {
-  --background: #ffffff !important;
+  --background: var(--app-background) !important;
 }
 
 // Ensure all modals and overlays are light
@@ -265,48 +247,48 @@ ion-alert,
 ion-action-sheet,
 ion-loading,
 ion-toast {
-  --background: #ffffff !important;
-  --ion-background-color: #ffffff !important;
+  --background: var(--app-surface) !important;
+  --ion-background-color: var(--app-surface) !important;
 }
 
 // Override any dark mode media queries
 @media (prefers-color-scheme: dark) {
   body {
-    --ion-background-color: #ffffff !important;
+    --ion-background-color: var(--app-surface) !important;
     --ion-background-color-rgb: 255, 255, 255 !important;
-    --ion-text-color: #000000 !important;
-    --ion-text-color-rgb: 0, 0, 0 !important;
+    --ion-text-color: var(--app-text) !important;
+    --ion-text-color-rgb: 29, 67, 112 !important;
   }
 
   ion-content {
-    --background: #ffffff !important;
+    --background: var(--app-background) !important;
   }
 
   // Ensure toolbars and headers stay light
   ion-toolbar,
   ion-header {
-    --background: #ffffff !important;
+    --background: var(--app-surface) !important;
   }
 
   // Cards and items
   ion-card,
   ion-item {
-    --background: #ffffff !important;
+    --background: var(--app-surface) !important;
   }
 }
 
 ion-tab-bar {
-  --background: #ffffff;
-  --border: 1px solid #e5e7eb;
+  --background: var(--app-surface);
+  --border: 1px solid var(--app-border);
   box-shadow: 0 -2px 6px rgba(0, 0, 0, 0.05);
   height: 68px; // ⬆️ slightly taller for mobile touch targets
   padding-bottom: env(safe-area-inset-bottom);
 }
 
 ion-tab-button {
-  --color: #6b7280;
-  --color-selected: #1D4370;
-  --ripple-color: rgba(0, 169, 224, 0.15);
+  --color: var(--app-text-subtle);
+  --color-selected: var(--app-primary);
+  --ripple-color: rgba(4, 187, 241, 0.15);
   flex-direction: column;
   justify-content: center;
   align-items: center;
@@ -335,11 +317,11 @@ ion-tab-button {
   &.tab-selected {
     ion-icon {
       transform: scale(1.1);
-      color: #1D4370;
+      color: var(--app-primary);
     }
 
     ion-label {
-      color: #1D4370;
+      color: var(--app-primary);
     }
   }
 
@@ -377,8 +359,8 @@ ion-fab-button {
 
 // FAB Button - Global Styles (REQUIRED for PWA)
 ion-fab-button {
-  --background: #0a2a5a !important;
-  --background-activated: #082243 !important;
+  --background: var(--app-primary) !important;
+  --background-activated: var(--ion-color-primary-shade) !important;
   --color: white !important;
   --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
   --border-radius: 50% !important;
@@ -388,7 +370,7 @@ ion-fab-button {
 }
 
 ion-fab-button::part(native) {
-  background-color: #0a2a5a !important;
+  background-color: var(--app-primary) !important;
   color: white !important;
   border-radius: 50% !important;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;

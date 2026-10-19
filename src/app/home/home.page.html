@@ -10,8 +10,7 @@
             Everything you need. One memorable journey.
           </p>
           <div class="welcome-meta">
-            <span class="welcome-day" *ngIf="currentDay > 0">DAY {{ currentDay }}</span>
-            <span class="welcome-day" *ngIf="currentDay === 0">COMING SOON</span>
+            <span class="welcome-day">{{ eventDayLabel }}</span>
             <span>Egypt · 2026</span>
           </div>
         </div>
@@ -44,7 +43,7 @@
           <button type="button" class="action-card" (click)="openQRCode()" [disabled]="isPreviewingUser">
             <span class="action-content">
               <span class="action-icon qr"><ion-icon name="qr-code-outline"></ion-icon></span>
-              <span class="action-title">My QR</span>
+              <span class="action-title">My Business card</span>
               <span class="action-desc">Share contact</span>
             </span>
           </button>
@@ -243,7 +242,7 @@
         AMEA 2026 Starts Soon
       </h3>
 <p class="session-text" *ngIf="messageType === 'before'">
-  You’re a bit early! The event kicks off on November 10th. Stay tuned for an amazing experience.
+  You’re a bit early! The event kicks off on {{ eventStartDate | date:'MMMM d' }}. Stay tuned for an amazing experience.
 </p>
 
       <h3 class="session-title" *ngIf="messageType === 'today'">
@@ -360,9 +359,35 @@
         <div class="qr-card-content">
           <div class="qr-display">
             <div class="qr-frame">
-              <img src="assets/qr.png" alt="QR Code" class="qr-image" />
+              <img
+                *ngIf="profileQrCode; else qrLoading"
+                [src]="profileQrCode"
+                [alt]="'Contact QR code for ' + (profileName || 'attendee')"
+                class="qr-image"
+              />
+              <ng-template #qrLoading>
+                <span class="qr-loading">Preparing contact QR…</span>
+              </ng-template>
             </div>
-            <p class="qr-instruction">Scan to exchange contact information</p>
+            <p class="qr-instruction">Scan to save my contact details</p>
+            <label class="qr-sharing-control">
+              <input
+                type="checkbox"
+                [checked]="shareContactCard"
+                [disabled]="isContactSharingDisabled"
+                (change)="setContactCardSharing($event)"
+              />
+              <span>
+                <strong>Share my contact card with attendees</strong>
+                <small>{{ isSavingContactSharing ? 'Saving preference…' : 'Your details will appear in the colleague directory.' }}</small>
+              </span>
+            </label>
+            <p class="qr-sharing-error" *ngIf="contactSharingError" role="alert">
+              {{ contactSharingError }}
+            </p>
+            <p class="qr-sharing-preview" *ngIf="isPreviewingUser">
+              Sharing preferences are read-only while previewing another attendee.
+            </p>
           </div>
 
           <div class="user-info">
@@ -388,11 +413,21 @@
 
             <div class="info-row">
               <div class="info-icon">
-                <ion-icon name="globe-outline"></ion-icon>
+                <ion-icon name="call-outline"></ion-icon>
               </div>
               <div class="info-text">
-                <div class="info-label">Country</div>
-                <div class="info-value">{{ profileCountry || '—' }}</div>
+                <div class="info-label">Mobile</div>
+                <div class="info-value">{{ profileMobile || '—' }}</div>
+              </div>
+            </div>
+
+            <div class="info-row">
+              <div class="info-icon">
+                <ion-icon name="mail-outline"></ion-icon>
+              </div>
+              <div class="info-text">
+                <div class="info-label">Email</div>
+                <div class="info-value">{{ profileEmail || '—' }}</div>
               </div>
             </div>
           </div>

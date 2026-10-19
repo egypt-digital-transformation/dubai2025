@@ -16,9 +16,6 @@ import {
   query,
   where,
   getDocs,
-  doc,
-  writeBatch,
-  setDoc,
 } from '@angular/fire/firestore';
 import { Auth } from '@angular/fire/auth';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
@@ -59,6 +56,7 @@ interface Session {
 })
 export class AgendaPage implements OnInit, OnDestroy {
   selectedDay = '1';
+  availableDays: string[] = [];
   isTransitioning = false;
 
   @ViewChildren('sessionCard') sessionCards!: QueryList<ElementRef>;
@@ -77,6 +75,9 @@ export class AgendaPage implements OnInit, OnDestroy {
   private navigationSubscription?: Subscription;
   private previewSubscription?: Subscription;
   private sessionsSubscription?: Subscription;
+  private userAgendaSubscription?: Subscription;
+  private agendaLoadId = 0;
+  private hasUserAgenda = false;
 
   constructor(
     private firestore: Firestore,
@@ -112,9 +113,18 @@ export class AgendaPage implements OnInit, OnDestroy {
     }
     this.previewSubscription?.unsubscribe();
     this.sessionsSubscription?.unsubscribe();
+    this.userAgendaSubscription?.unsubscribe();
   }
 
   async initializeAgenda(emailOverride?: string) {
+    const loadId = ++this.agendaLoadId;
+    this.sessionsSubscription?.unsubscribe();
+    this.userAgendaSubscription?.unsubscribe();
+    this.sessionsSubscription = undefined;
+    this.userAgendaSubscription = undefined;
+    this.hasUserAgenda = false;
+    this.availableDays = [];
+
     try {
       this.currentUser = null;
       this.sessions = [];
@@ -132,9 +142,11 @@ export class AgendaPage implements OnInit, OnDestroy {
       const usersRef = collection(this.firestore, 'users');
       const emailAddressQuery = query(usersRef, where('emailAddress', '==', this.userEmail));
       let snapshot = await getDocs(emailAddressQuery);
+      if (loadId !== this.agendaLoadId) return;
       if (snapshot.empty) {
         const emailQuery = query(usersRef, where('email', '==', this.userEmail));
         snapshot = await getDocs(emailQuery);
+        if (loadId !== this.agendaLoadId) return;
       }
 
       if (snapshot.empty) {
@@ -142,14 +154,64 @@ export class AgendaPage implements OnInit, OnDestroy {
         return;
       }
 
-      this.currentUser = snapshot.docs[0].data();
+      const userDoc = snapshot.docs[0];
+      this.currentUser = userDoc.data();
       console.log('[DEBUG] Loaded user:', this.currentUser);
 
-      const sessionsRef = collection(this.firestore, 'sessions');
-      this.sessionsSubscription?.unsubscribe();
-      this.sessionsSubscription = collectionData(sessionsRef, { idField: 'id' }).subscribe((data: any[]) => {
+      const userAgendaRef = collection(this.firestore, 'users', userDoc.id, 'agenda');
+      this.userAgendaSubscription = collectionData(userAgendaRef, { idField: 'id' }).subscribe({
+        next: (documents: any[]) => {
+          if (loadId !== this.agendaLoadId) return;
+          const dayDocuments = documents.filter(
+            (document) =>
+              typeof document.dayNumber === 'number' &&
+              Array.isArray(document.sessions)
+          );
+
+          if (dayDocuments.length) {
+            this.sessionsSubscription?.unsubscribe();
+            this.sessionsSubscription = undefined;
+            this.hasUserAgenda = true;
+            this.availableDays = [...new Set(
+              dayDocuments.map((dayDocument) => String(dayDocument.dayNumber))
+            )].sort((a, b) => Number(a) - Number(b));
+            this.keepSelectedDayAvailable();
+            this.sessions = [];
+            dayDocuments.forEach((dayDocument) => {
+              this.sessions.push(...this.mapUserAgendaSessions(dayDocument));
+            });
+            this.applyFilters();
+            return;
+          }
+
+          this.hasUserAgenda = false;
+          if (!this.sessionsSubscription) this.subscribeToSharedSessions();
+        },
+        error: (error) => {
+          console.error('[AgendaPage] Failed to load the user agenda:', error);
+          this.hasUserAgenda = false;
+          if (loadId === this.agendaLoadId && !this.sessionsSubscription) {
+            this.subscribeToSharedSessions();
+          }
+        },
+      });
+    } catch (err) {
+      console.error('[DEBUG] Error initializing agenda:', err);
+    }
+  }
+
+  private subscribeToSharedSessions() {
+    const sessionsRef = collection(this.firestore, 'sessions');
+    this.sessionsSubscription = collectionData(sessionsRef, { idField: 'id' }).subscribe({
+      next: (data: any[]) => {
         this.sessions = data || [];
-        console.log('[DEBUG] Total sessions loaded:', this.sessions.length);
+        this.availableDays = [...new Set(
+          this.sessions
+            .map((session) => String(session.day ?? ''))
+            .filter((day) => day !== '')
+        )].sort((a, b) => Number(a) - Number(b));
+        this.keepSelectedDayAvailable();
+        console.log('[DEBUG] Total shared sessions loaded:', this.sessions.length);
         this.applyFilters();
 
         this.route.queryParams.subscribe((params) => {
@@ -158,10 +220,99 @@ export class AgendaPage implements OnInit, OnDestroy {
             setTimeout(() => this.scrollToSession(targetSessionId), 150);
           }
         });
+      },
+      error: (error) => {
+        console.error('[AgendaPage] Failed to load shared sessions:', error);
+      },
+    });
+  }
+
+  private mapUserAgendaSessions(dayDocument: any): Session[] {
+    const day = String(dayDocument.dayNumber);
+    const dayDate = dayDocument.date;
+    return dayDocument.sessions
+      .filter((session: any) => session && typeof session === 'object')
+      .map((session: any, index: number) => {
+        const speaker =
+          typeof session.speaker === 'string'
+            ? {
+                name: session.speaker,
+                title: '',
+                photoURL: null,
+                userID: '',
+              }
+            : session.speaker;
+        const startTime = this.combineAgendaDateAndTime(dayDate, session.timeFrom);
+        const endTime = this.combineAgendaDateAndTime(dayDate, session.timeTo);
+
+        return {
+          ...session,
+          id: session.sessionId || `${day}-${index}`,
+          title: session.title || session.label || session.content || session.description || 'Session',
+          startTime,
+          endTime,
+          location: session.location || '',
+          day,
+          description: session.description || session.content || '',
+          category: session.track || 'general',
+          color: session.color || '#0f766e',
+          isGeneral: true,
+          speaker,
+          material: session.material || session.attachment || '',
+          qnaLink: session.qnaLink || '',
+        } as Session;
       });
-    } catch (err) {
-      console.error('[DEBUG] Error initializing agenda:', err);
+  }
+
+  private combineAgendaDateAndTime(dayDate: unknown, timeValue: unknown): Date | null {
+    if (timeValue && typeof timeValue === 'object' && 'toDate' in timeValue) {
+      const timeDate = (timeValue as { toDate: () => Date }).toDate();
+      if (Number.isNaN(timeDate.getTime())) return null;
+      if (typeof dayDate !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(dayDate)) {
+        return timeDate;
+      }
+      const [, year, month, day] = dayDate.match(/^(\d{4})-(\d{2})-(\d{2})$/)!;
+      return new Date(
+        Number(year),
+        Number(month) - 1,
+        Number(day),
+        timeDate.getHours(),
+        timeDate.getMinutes(),
+        timeDate.getSeconds()
+      );
     }
+
+    if (typeof timeValue !== 'string') return null;
+    const timeMatch = timeValue.match(/(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM)?/i);
+    if (!timeMatch) {
+      const parsed = new Date(timeValue);
+      return Number.isNaN(parsed.getTime()) ? null : parsed;
+    }
+
+    let hours = Number(timeMatch[1]);
+    const minutes = Number(timeMatch[2]);
+    const seconds = Number(timeMatch[3] || 0);
+    const meridiem = timeMatch[4]?.toUpperCase();
+    if (meridiem === 'PM' && hours < 12) hours += 12;
+    if (meridiem === 'AM' && hours === 12) hours = 0;
+    if (hours > 23 || minutes > 59 || seconds > 59) return null;
+
+    if (typeof dayDate === 'string') {
+      const dayMatch = dayDate.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      if (dayMatch) {
+        return new Date(
+          Number(dayMatch[1]),
+          Number(dayMatch[2]) - 1,
+          Number(dayMatch[3]),
+          hours,
+          minutes,
+          seconds
+        );
+      }
+    }
+
+    const parsed = new Date(timeValue);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
   }
 
   private applyFilters() {
@@ -169,7 +320,7 @@ export class AgendaPage implements OnInit, OnDestroy {
 
     let filtered = this.sessions.filter((s) => s.day === this.selectedDay);
 
-    filtered = filtered.filter((session) => {
+    if (!this.hasUserAgenda) filtered = filtered.filter((session) => {
       if (session.isGeneral) return true;
 
       if (this.selectedDay === '2') {
@@ -202,7 +353,7 @@ export class AgendaPage implements OnInit, OnDestroy {
       return false;
     });
 
-    let mappedSessions = filtered.map((session) => {
+    let mappedSessions = this.hasUserAgenda ? filtered : filtered.map((session) => {
       if (session.isGeneral) return session;
 
       if (this.selectedDay === '2') {
@@ -254,12 +405,8 @@ export class AgendaPage implements OnInit, OnDestroy {
     }
 
     this.filteredSessions = mappedSessions.sort((a, b) => {
-      const aTime = a.startTime?.toDate
-        ? a.startTime.toDate().getTime()
-        : new Date(a.startTime).getTime();
-      const bTime = b.startTime?.toDate
-        ? b.startTime.toDate().getTime()
-        : new Date(b.startTime).getTime();
+      const aTime = this.asDate(a.startTime)?.getTime() ?? Number.POSITIVE_INFINITY;
+      const bTime = this.asDate(b.startTime)?.getTime() ?? Number.POSITIVE_INFINITY;
       return aTime - bTime;
     });
 
@@ -290,6 +437,7 @@ export class AgendaPage implements OnInit, OnDestroy {
   }
 
   setSelectedDay(day: string) {
+    if (!this.availableDays.includes(day)) return;
     if (this.selectedDay === day) return;
     this.isTransitioning = true;
     this.selectedDay = day;
@@ -305,6 +453,12 @@ export class AgendaPage implements OnInit, OnDestroy {
     });
   }
 
+  private keepSelectedDayAvailable() {
+    if (this.availableDays.length && !this.availableDays.includes(this.selectedDay)) {
+      this.selectedDay = this.availableDays[0];
+    }
+  }
+
   onSearchChange(query: string) {
     this.searchQuery = query;
     this.applyFilters();
@@ -316,12 +470,9 @@ export class AgendaPage implements OnInit, OnDestroy {
   }
 
   formatSessionTime(session: Session): string {
-    const start = session.startTime?.toDate
-      ? session.startTime.toDate()
-      : new Date(session.startTime);
-    const end = session.endTime?.toDate
-      ? session.endTime.toDate()
-      : new Date(session.endTime);
+    const start = this.asDate(session.startTime);
+    const end = this.asDate(session.endTime);
+    if (!start || !end) return '';
     const opts: Intl.DateTimeFormatOptions = {
       hour: 'numeric',
       minute: '2-digit',
@@ -331,6 +482,15 @@ export class AgendaPage implements OnInit, OnDestroy {
       'en-US',
       opts
     )}`;
+  }
+
+  getSessionStartTime(session: Session): Date | null {
+    return this.asDate(session.startTime);
+  }
+
+  private asDate(value: any): Date | null {
+    const date = value?.toDate ? value.toDate() : value instanceof Date ? value : new Date(value);
+    return Number.isNaN(date.getTime()) ? null : date;
   }
 
   // Material viewer methods

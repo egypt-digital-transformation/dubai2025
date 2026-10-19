@@ -1,2 +1,105 @@
-// For information on how to create your own theme, please see:
-// http://ionicframework.com/docs/theming/
+:root {
+  --holcim-dark-blue: #1d4370;
+  --holcim-bright-green: #94c12e;
+  --holcim-bright-blue: #04bbf1;
+  --holcim-yellow: #ffd100;
+  --holcim-bright-red: #e4002b;
+  --holcim-fuchsia: #e6007e;
+  --holcim-orange: #ff671f;
+  --holcim-dark-red: #9a0039;
+  --holcim-violet: #662483;
+  --holcim-green: #009a44;
+  --holcim-dark-turquoise: #006d68;
+  --holcim-bright-turquoise: #00a499;
+
+  --app-background: #f5f6fa;
+  --app-surface: #ffffff;
+  --app-text: var(--holcim-dark-blue);
+  --app-text-muted: #575757;
+  --app-text-subtle: #8c8c8c;
+  --app-border: #e1e8ed;
+  --app-primary: var(--holcim-dark-blue);
+  --app-action: var(--holcim-bright-blue);
+  --app-accent: var(--holcim-bright-green);
+  --app-success: var(--holcim-green);
+  --app-warning: var(--holcim-yellow);
+  --app-error: var(--holcim-bright-red);
+
+  --ion-color-primary: var(--app-primary);
+  --ion-color-primary-rgb: 29, 67, 112;
+  --ion-color-primary-contrast: #ffffff;
+  --ion-color-primary-contrast-rgb: 255, 255, 255;
+  --ion-color-primary-shade: #193a63;
+  --ion-color-primary-tint: #34557e;
+  --ion-color-secondary: var(--holcim-bright-green);
+  --ion-color-secondary-rgb: 148, 193, 46;
+  --ion-color-secondary-contrast: var(--holcim-dark-blue);
+  --ion-color-secondary-contrast-rgb: 29, 67, 112;
+  --ion-color-secondary-shade: #82aa28;
+  --ion-color-secondary-tint: #a0c743;
+  --ion-color-success: var(--app-success);
+  --ion-color-success-rgb: 0, 154, 68;
+  --ion-color-success-contrast: #ffffff;
+  --ion-color-success-contrast-rgb: 255, 255, 255;
+  --ion-color-success-shade: #00883c;
+  --ion-color-success-tint: #1aa557;
+  --ion-color-warning: var(--app-warning);
+  --ion-color-warning-rgb: 255, 209, 0;
+  --ion-color-warning-contrast: var(--holcim-dark-blue);
+  --ion-color-warning-contrast-rgb: 29, 67, 112;
+  --ion-color-warning-shade: #e0b800;
+  --ion-color-warning-tint: #ffd61a;
+  --ion-color-danger: var(--app-error);
+  --ion-color-danger-rgb: 228, 0, 43;
+  --ion-color-danger-contrast: #ffffff;
+  --ion-color-danger-contrast-rgb: 255, 255, 255;
+  --ion-color-danger-shade: #c90026;
+  --ion-color-danger-tint: #e71940;
+
+  color-scheme: light;
+}
+
+.ion-color-primary {
+  --ion-color-base: var(--ion-color-primary);
+  --ion-color-base-rgb: var(--ion-color-primary-rgb);
+  --ion-color-contrast: var(--ion-color-primary-contrast);
+  --ion-color-contrast-rgb: var(--ion-color-primary-contrast-rgb);
+  --ion-color-shade: var(--ion-color-primary-shade);
+  --ion-color-tint: var(--ion-color-primary-tint);
+}
+
+.ion-color-secondary {
+  --ion-color-base: var(--ion-color-secondary);
+  --ion-color-base-rgb: var(--ion-color-secondary-rgb);
+  --ion-color-contrast: var(--ion-color-secondary-contrast);
+  --ion-color-contrast-rgb: var(--ion-color-secondary-contrast-rgb);
+  --ion-color-shade: var(--ion-color-secondary-shade);
+  --ion-color-tint: var(--ion-color-secondary-tint);
+}
+
+.ion-color-success {
+  --ion-color-base: var(--ion-color-success);
+  --ion-color-base-rgb: var(--ion-color-success-rgb);
+  --ion-color-contrast: var(--ion-color-success-contrast);
+  --ion-color-contrast-rgb: var(--ion-color-success-contrast-rgb);
+  --ion-color-shade: var(--ion-color-success-shade);
+  --ion-color-tint: var(--ion-color-success-tint);
+}
+
+.ion-color-warning {
+  --ion-color-base: var(--ion-color-warning);
+  --ion-color-base-rgb: var(--ion-color-warning-rgb);
+  --ion-color-contrast: var(--ion-color-warning-contrast);
+  --ion-color-contrast-rgb: var(--ion-color-warning-contrast-rgb);
+  --ion-color-shade: var(--ion-color-warning-shade);
+  --ion-color-tint: var(--ion-color-warning-tint);
+}
+
+.ion-color-danger {
+  --ion-color-base: var(--ion-color-danger);
+  --ion-color-base-rgb: var(--ion-color-danger-rgb);
+  --ion-color-contrast: var(--ion-color-danger-contrast);
+  --ion-color-contrast-rgb: var(--ion-color-danger-contrast-rgb);
+  --ion-color-shade: var(--ion-color-danger-shade);
+  --ion-color-tint: var(--ion-color-danger-tint);
+}

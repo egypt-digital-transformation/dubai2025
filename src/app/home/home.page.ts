@@ -36,8 +36,10 @@ import {
   query,
   where,
   getDocs,
+  doc,
   orderBy,
   Timestamp,
+  updateDoc,
 } from '@angular/fire/firestore';
 
 import {
@@ -53,6 +55,7 @@ import {
 import { RouterModule } from '@angular/router';
 import { greetingForNationality } from '../shared/nationality-greetings';
 import { AdminPreviewService } from '../services/admin-preview.service';
+import QRCode from 'qrcode';
 
 interface Session {
   id: string;
@@ -75,7 +78,7 @@ interface Session {
 
 type MessageType = 'today' | 'over' | 'before' | null;
 const EVENT_START = new Date(2026, 10, 9);
-const EVENT_END_EXCLUSIVE = new Date(2026, 10, 12);
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 @Component({
   selector: 'app-home',
@@ -101,6 +104,8 @@ export class HomePage implements OnInit, OnDestroy {
   public todaySessions$!: Observable<Session[]>;
   public messageType: MessageType = null;
   public currentDay = 0;
+  public eventStartDate = EVENT_START;
+  private agendaDayDates: { dayNumber: number; date: Date }[] = [];
   public showQR = false;
   public displayName: string | null = null;
   public firstName: string | null = null;
@@ -108,6 +113,12 @@ export class HomePage implements OnInit, OnDestroy {
   public profileName = '';
   public profilePosition = '';
   public profileCountry = '';
+  public profileEmail = '';
+  public profileMobile = '';
+  public profileQrCode = '';
+  public shareContactCard = false;
+  public isSavingContactSharing = false;
+  public contactSharingError = '';
   readonly safetyInductions: SafetyInductions = {
     sokhnaplant: {
       completed: false,
@@ -127,6 +138,7 @@ export class HomePage implements OnInit, OnDestroy {
   private readonly TICK_MS = 1000;
   private safetyInductionUnsubscribe?: Unsubscribe;
   private viewGeneration = 0;
+  private profileDocumentId = '';
 
   constructor(
     private router: Router,
@@ -206,6 +218,47 @@ this.showQR = false;
     return this.adminPreview.isPreviewing;
   }
 
+  get isContactSharingDisabled(): boolean {
+    return this.isPreviewingUser || this.isSavingContactSharing || !this.profileDocumentId;
+  }
+
+  async setContactCardSharing(event: Event): Promise<void> {
+    const checkbox = event.target as HTMLInputElement;
+    const nextValue = checkbox.checked;
+    if (this.isPreviewingUser || !this.profileDocumentId || this.isSavingContactSharing) {
+      checkbox.checked = this.shareContactCard;
+      return;
+    }
+
+    const previousValue = this.shareContactCard;
+    this.shareContactCard = nextValue;
+    this.isSavingContactSharing = true;
+    this.contactSharingError = '';
+    try {
+      await updateDoc(doc(this.firestore, 'users', this.profileDocumentId), {
+        shareContactCard: nextValue,
+      });
+    } catch (error) {
+      console.error('[HomePage] Failed to update contact-card sharing:', error);
+      this.shareContactCard = previousValue;
+      checkbox.checked = previousValue;
+      this.contactSharingError = 'Could not update your sharing preference. Please try again.';
+    } finally {
+      this.isSavingContactSharing = false;
+    }
+  }
+
+  get eventDayLabel(): string {
+    if (this.currentDay > 0) return `DAY ${this.currentDay}`;
+
+    const today = this.startOfDay(new Date());
+    const start = this.startOfDay(this.eventStartDate);
+    const daysLeft = Math.ceil((start.getTime() - today.getTime()) / DAY_MS);
+    return daysLeft > 0
+      ? `${daysLeft} DAY${daysLeft === 1 ? '' : 'S'} LEFT`
+      : 'STARTS TODAY';
+  }
+
   private applyViewingProfile(authEmail: string | null, uid: string | null): void {
     const previewUser = this.adminPreview.selectedUser;
     const email = previewUser?.email ?? authEmail;
@@ -214,7 +267,15 @@ this.showQR = false;
     this.profileName = previewUser?.name ?? '';
     this.profilePosition = previewUser?.currentPosition ?? '';
     this.profileCountry = previewUser?.locationCountry ?? '';
+    this.profileEmail = previewUser?.email ?? authEmail ?? '';
+    this.profileMobile = '';
+    this.profileQrCode = '';
+    this.profileDocumentId = '';
+    this.shareContactCard = false;
+    this.contactSharingError = '';
     this.welcomeGreeting = 'Ahlan';
+    this.eventStartDate = EVENT_START;
+    this.agendaDayDates = [];
     this.isPlantVisitRequired = false;
     if (!email) {
       this.updateSafetyInductionStatus();
@@ -235,17 +296,38 @@ this.showQR = false;
   private async loadWelcomeProfile(email: string, uid: string | null, generation: number): Promise<void> {
 
     try {
-      const usersQuery = query(
-        collection(this.firestore, 'users'),
-        where('emailAddress', '==', email)
-      );
-      const snapshot = await getDocs(usersQuery);
-      const data = snapshot.docs[0]?.data() as {
+      const users = collection(this.firestore, 'users');
+      const normalizedEmail = email.trim().toLowerCase();
+      let snapshot = await getDocs(query(users, where('emailAddress', '==', normalizedEmail)));
+      if (snapshot.empty && email.trim() !== normalizedEmail) {
+        snapshot = await getDocs(query(users, where('emailAddress', '==', email.trim())));
+      }
+      if (snapshot.empty) {
+        snapshot = await getDocs(query(users, where('email', '==', normalizedEmail)));
+      }
+      if (snapshot.empty && email.trim() !== normalizedEmail) {
+        snapshot = await getDocs(query(users, where('email', '==', email.trim())));
+      }
+      const userDocument = snapshot.docs[0];
+      const data = userDocument?.data() as {
         firstName?: unknown;
         lastName?: unknown;
         nationality?: unknown;
         currentPosition?: unknown;
         locationCountry?: unknown;
+        emailAddress?: unknown;
+        email?: unknown;
+        mobileNumber?: unknown;
+        mobile?: unknown;
+        mobileNo?: unknown;
+        phoneNumber?: unknown;
+        phone?: unknown;
+        phoneNo?: unknown;
+        telephone?: unknown;
+        contactNumber?: unknown;
+        shareContactCard?: unknown;
+        'Mobile Number'?: unknown;
+        'Phone Number'?: unknown;
       } | undefined;
       if (!data || !this.isCurrentViewingUser(email, uid, generation)) {
         return;
@@ -253,16 +335,140 @@ this.showQR = false;
       const firstName = String(data.firstName ?? '').trim();
       const nationality = String(data.nationality ?? '').trim();
       const lastName = String(data.lastName ?? '').trim();
+      const profileEmail = String(data.emailAddress ?? data.email ?? email).trim();
+      const profileMobile = this.firstProfileString(data, [
+        'mobileNumber',
+        'mobile',
+        'mobileNo',
+        'phoneNumber',
+        'phone',
+        'phoneNo',
+        'telephone',
+        'contactNumber',
+        'Mobile Number',
+        'Phone Number',
+      ]);
+      const profilePosition = String(data.currentPosition ?? '').trim();
+      const profileName = [firstName, lastName].filter(Boolean).join(' ');
+      const profileQrCode = await QRCode.toDataURL(
+        this.createContactVCard(
+          firstName,
+          lastName,
+          profileEmail,
+          profileMobile,
+          profilePosition
+        ),
+        {
+          errorCorrectionLevel: 'M',
+          margin: 2,
+          width: 240,
+          color: { dark: '#1D4370', light: '#FFFFFF' },
+        }
+      );
+      if (!this.isCurrentViewingUser(email, uid, generation)) return;
       this.zone.run(() => {
+        this.profileDocumentId = userDocument?.id ?? '';
+        this.shareContactCard = data.shareContactCard === true;
         this.firstName = firstName || null;
-        this.profileName = [firstName, lastName].filter(Boolean).join(' ');
-        this.profilePosition = String(data.currentPosition ?? '').trim();
+        this.profileName = profileName;
+        this.profileEmail = profileEmail;
+        this.profileMobile = profileMobile;
+        this.profileQrCode = profileQrCode;
+        this.profilePosition = profilePosition;
         this.profileCountry = String(data.locationCountry ?? '').trim();
         this.welcomeGreeting = nationality ? greetingForNationality(nationality) : 'Ahlan';
       });
+      if (userDocument) {
+        await this.loadAgendaStartDate(userDocument.id, email, uid, generation);
+      }
     } catch (error) {
       console.error('[HomePage] Failed to load welcome profile:', error);
     }
+  }
+
+  private firstProfileString(
+    data: Record<string, unknown>,
+    fields: string[]
+  ): string {
+    for (const field of fields) {
+      const value = data[field];
+      if (typeof value === 'string' && value.trim()) return value.trim();
+    }
+    return '';
+  }
+
+  private createContactVCard(
+    firstName: string,
+    lastName: string,
+    email: string,
+    mobile: string,
+    position: string
+  ): string {
+    const escape = (value: string) =>
+      value.replace(/\\/g, '\\\\').replace(/\n/g, '\\n').replace(/,/g, '\\,').replace(/;/g, '\\;');
+    const fullName = [firstName, lastName].filter(Boolean).join(' ');
+    return [
+      'BEGIN:VCARD',
+      'VERSION:3.0',
+      `N:${escape(lastName)};${escape(firstName)};;;`,
+      `FN:${escape(fullName)}`,
+      `TITLE:${escape(position)}`,
+      `TEL;TYPE=CELL:${escape(mobile)}`,
+      `EMAIL;TYPE=INTERNET:${escape(email)}`,
+      'END:VCARD',
+    ].join('\r\n');
+  }
+
+  private async loadAgendaStartDate(
+    userId: string,
+    email: string,
+    uid: string | null,
+    generation: number
+  ): Promise<void> {
+    try {
+      const agendaSnapshot = await getDocs(
+        collection(this.firestore, 'users', userId, 'agenda')
+      );
+      const agendaDays = agendaSnapshot.docs
+        .map((agendaDocument) => agendaDocument.data())
+        .filter(
+          (day) =>
+            typeof day['dayNumber'] === 'number' &&
+            Array.isArray(day['sessions'])
+        )
+        .map((day) => ({
+          dayNumber: Number(day['dayNumber']),
+          date: this.parseAgendaDate(day['date']),
+        }))
+        .filter(
+          (day): day is { dayNumber: number; date: Date } =>
+            Number.isInteger(day.dayNumber) &&
+            day.dayNumber > 0 &&
+            day.date !== null
+        )
+        .sort((a, b) => a.date.getTime() - b.date.getTime());
+
+      if (agendaDays.length && this.isCurrentViewingUser(email, uid, generation)) {
+        this.zone.run(() => {
+          this.agendaDayDates = agendaDays;
+          this.eventStartDate = agendaDays[0].date;
+        });
+      }
+    } catch (error) {
+      console.error('[HomePage] Failed to load the agenda start date:', error);
+    }
+  }
+
+  private parseAgendaDate(value: unknown): Date | null {
+    if (typeof value !== 'string') return null;
+    const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!match) return null;
+    const date = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+    return date.getFullYear() === Number(match[1]) &&
+      date.getMonth() === Number(match[2]) - 1 &&
+      date.getDate() === Number(match[3])
+      ? date
+      : null;
   }
 
   private async loadPlantVisitRequirement(email: string, uid: string | null, generation: number): Promise<void> {
@@ -400,54 +606,50 @@ this.showQR = false;
     return new Date(tsOrDate);
   }
 
-  /** Calculate event "current day" from the confirmed November 9–11, 2026 dates. */
+  private startOfDay(date: Date): Date {
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  }
+
+  private getEventDays(sessions: Session[]): { dayNumber: number; date: Date }[] {
+    if (this.agendaDayDates.length) return this.agendaDayDates;
+
+    const sessionDays = new Map<number, Date>();
+    for (const session of sessions || []) {
+      const dayNumber = this.parseDayToInt(session.day);
+      const sessionDate = this.toDate(session.startTime);
+      if (Number.isNaN(sessionDate.getTime())) continue;
+      const date = this.startOfDay(sessionDate);
+      const existing = sessionDays.get(dayNumber);
+      if (!existing || date < existing) sessionDays.set(dayNumber, date);
+    }
+
+    if (sessionDays.size) {
+      return Array.from(sessionDays, ([dayNumber, date]) => ({ dayNumber, date }))
+        .sort((a, b) => a.date.getTime() - b.date.getTime());
+    }
+
+    return [1, 2, 3].map((dayNumber) => ({
+      dayNumber,
+      date: new Date(
+        EVENT_START.getFullYear(),
+        EVENT_START.getMonth(),
+        EVENT_START.getDate() + dayNumber - 1
+      ),
+    }));
+  }
+
   private calculateCurrentDayFromSessions(sessions: Session[], now = new Date()): number {
-    if (now < EVENT_START) return 0;
-    if (now >= EVENT_END_EXCLUSIVE) return 3;
+    const eventDays = this.getEventDays(sessions);
+    const today = this.startOfDay(now);
+    const firstDay = eventDays[0];
+    if (today < firstDay.date) return 0;
 
-    const calendarDay = Math.floor(
-      (new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime() - EVENT_START.getTime()) /
-        (24 * 60 * 60 * 1000)
-    ) + 1;
-    if (!sessions || sessions.length === 0) return calendarDay;
-
-    // Group sessions by day number
-    const byDay = new Map<number, { start: Date; end: Date }[]>();
-    for (const s of sessions) {
-      const dayNum = this.parseDayToInt(s.day);
-      const start = this.toDate(s.startTime);
-      const end = this.toDate(s.endTime);
-      if (!byDay.has(dayNum)) byDay.set(dayNum, []);
-      byDay.get(dayNum)!.push({ start, end });
+    let currentDay = firstDay.dayNumber;
+    for (const eventDay of eventDays) {
+      if (today < eventDay.date) break;
+      currentDay = eventDay.dayNumber;
     }
-
-    const dayNums = Array.from(byDay.keys()).sort((a, b) => a - b);
-    if (dayNums.length === 0) return calendarDay;
-
-    // Determine day's earliest start and latest end (per day)
-    const ranges = dayNums.map((n) => {
-      const entries = byDay.get(n)!;
-      const starts = entries.map((e) => e.start.getTime());
-      const ends = entries.map((e) => e.end.getTime());
-      const start = new Date(Math.min(...starts));
-      const end = new Date(Math.max(...ends));
-      return { dayNum: n, start, end };
-    });
-
-    // Find if now is within any day's range. If exactly between days but before 06:00, keep previous day.
-    for (let i = 0; i < ranges.length; i++) {
-      const { dayNum, start, end } = ranges[i];
-      if (now >= start && now <= end) return dayNum;
-      const next = ranges[i + 1];
-      if (next && now > end && now < next.start) {
-        if (now.getDate() === end.getDate() + 1 && now.getHours() < 6) {
-          return dayNum;
-        }
-        return next.dayNum;
-      }
-    }
-
-    return calendarDay;
+    return currentDay;
   }
 
   /**
@@ -455,10 +657,19 @@ this.showQR = false;
    * Returns { primary, secondary, messageType } - pure function.
    */
   private evaluateSessionsForDay(sessions: Session[], now: Date, currentDay: number) {
-    if (now < EVENT_START) {
+    const eventDays = this.getEventDays(sessions);
+    const firstEventDate = eventDays[0].date;
+    const lastEventDate = eventDays[eventDays.length - 1].date;
+    const eventEndExclusive = new Date(
+      lastEventDate.getFullYear(),
+      lastEventDate.getMonth(),
+      lastEventDate.getDate() + 1
+    );
+
+    if (now < firstEventDate) {
       return { primary: null, secondary: null, messageType: 'before' as MessageType };
     }
-    if (now >= EVENT_END_EXCLUSIVE) {
+    if (now >= eventEndExclusive) {
       return { primary: null, secondary: null, messageType: 'over' as MessageType };
     }
     if (!sessions || sessions.length === 0) {

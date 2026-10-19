@@ -1474,12 +1474,82 @@ ion-modal {
         height: 8.5rem;
         object-fit: contain;
       }
+
+      .qr-loading {
+        align-items: center;
+        color: var(--app-text-muted);
+        display: flex;
+        font-size: 0.75rem;
+        height: 8.5rem;
+        justify-content: center;
+        text-align: center;
+        width: 8.5rem;
+      }
     }
 
     .qr-instruction {
       margin-top: 0.75rem;
       color: #6b7280;
       font-size: 0.85rem;
+    }
+
+    .qr-sharing-control {
+      align-items: flex-start;
+      border-top: 1px solid var(--app-border);
+      color: var(--app-text);
+      cursor: pointer;
+      display: flex;
+      gap: 0.55rem;
+      margin-top: 0.85rem;
+      padding-top: 0.85rem;
+      text-align: left;
+      width: 100%;
+
+      input {
+        accent-color: var(--app-primary);
+        flex: 0 0 auto;
+        height: 1rem;
+        margin: 0.12rem 0 0;
+        width: 1rem;
+      }
+
+      span,
+      strong,
+      small {
+        display: block;
+      }
+
+      strong {
+        font-size: 0.76rem;
+        line-height: 1.35;
+      }
+
+      small {
+        color: var(--app-text-muted);
+        font-size: 0.68rem;
+        line-height: 1.4;
+        margin-top: 0.25rem;
+      }
+    }
+
+    .qr-sharing-control input:disabled {
+      cursor: not-allowed;
+    }
+
+    .qr-sharing-error,
+    .qr-sharing-preview {
+      font-size: 0.68rem;
+      line-height: 1.4;
+      margin: 0.6rem 0 0;
+      text-align: left;
+    }
+
+    .qr-sharing-error {
+      color: var(--app-error);
+    }
+
+    .qr-sharing-preview {
+      color: var(--app-text-muted);
     }
   }
 

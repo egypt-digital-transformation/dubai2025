@@ -29,7 +29,7 @@
     <div class="tabs-container">
       <div class="tabs-wrapper">
         <button
-          *ngFor="let day of ['1', '2', '3']"
+          *ngFor="let day of availableDays"
           class="tab-btn"
           [class.active]="selectedDay === day"
           (click)="setSelectedDay(day)"
@@ -42,28 +42,24 @@
     <!-- Sessions List -->
 <div class="sessions-container" [class.transitioning]="isTransitioning">
       <ng-container *ngIf="filteredSessions.length > 0; else noSessions">
-        <div
+        <article
           *ngFor="let session of filteredSessions; let i = index"
           class="session-card"
           [id]="session.id ?? ('session-' + i)"
-          [style.border-left-color]="session.color"
+          [style.--session-accent]="session.color || '#087f78'"
         >
-          <!-- Session Time Badge -->
-          <div class="time-badge" [style.background-color]="session.color">
-            <ion-icon name="time-outline" class="time-icon"></ion-icon>
-            {{ session.startTime.toDate() | date: 'shortTime' }}
-          </div>
-
-          <!-- Session Content -->
           <div class="session-content">
-            <!-- Category Tag -->
-            <div class="session-tags">
+            <div class="session-card-topline">
               <span
                 class="category-tag"
-                [style.background-color]="session.color + '20'"
-                [style.color]="session.color"
+                *ngIf="session.category && session.category !== 'general'"
+                [title]="formatCategory(session.category)"
               >
                 {{ formatCategory(session.category) }}
+              </span>
+              <span class="session-time" *ngIf="getSessionStartTime(session)">
+                <ion-icon name="time-outline" aria-hidden="true"></ion-icon>
+                {{ formatSessionTime(session) }}
               </span>
             </div>
 
@@ -75,24 +71,8 @@
               class="speaker-info"
               *ngIf="session.speaker?.name && session.speaker?.name?.toLowerCase() !== 'all'"
             >
-              <div
-                class="speaker-avatar"
-                *ngIf="!session.speaker?.photoURL || session.speaker?.photoURL === 'null'"
-              >
-                {{
-                  session.speaker?.name?.[0] ||
-                  ''
-                }}{{
-                  (session.speaker?.name?.split(' ')?.[1] || '')?.[0] || ''
-                }}
-              </div>
-              <img
-                *ngIf="session.speaker?.photoURL && session.speaker?.photoURL !== 'null'"
-                [src]="session.speaker?.photoURL"
-                alt="{{ session.speaker?.name }}"
-                class="speaker-avatar-img"
-              />
               <div class="speaker-details">
+                <span class="speaker-label">Speaker/s:</span>
                 <div class="speaker-name clickable">
                   {{ session.speaker?.name }}
                 </div>
@@ -103,11 +83,7 @@
             </div>
 
             <!-- Session Meta Info -->
-            <div class="session-meta sleek">
-              <div class="meta-item">
-                <ion-icon name="time-outline" class="meta-icon"></ion-icon>
-                <span class="meta-value">{{ formatSessionTime(session) }}</span>
-              </div>
+            <div class="session-meta sleek" *ngIf="session.location">
               <div
                 class="meta-item clickable"
               >
@@ -205,7 +181,7 @@
               </div>
             </div>
           </div>
-        </div>
+        </article>
       </ng-container>
 
       <!-- No Sessions -->
@@ -238,4 +214,3 @@
     </div>
   </div>
 </ion-content>
-
