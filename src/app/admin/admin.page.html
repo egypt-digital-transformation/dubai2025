@@ -137,6 +137,9 @@
       <span>{{ errorMessage }}</span>
       <span class="error-hint">You can still prepare a quiz or poll. Audience targeting will be available when attendee data loads.</span>
     </div>
+    <div *ngIf="formControlsError" class="message error-message" role="alert">
+      {{ formControlsError }}
+    </div>
     <ion-note *ngIf="noticeMessage" color="success" class="message success-message">
       {{ noticeMessage }}
     </ion-note>

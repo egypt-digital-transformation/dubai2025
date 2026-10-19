@@ -104,6 +104,7 @@ export class AdminPage implements OnInit, OnDestroy {
   savingRequestId: string | null = null;
   requestLoadError = '';
   activityLoadError = '';
+  formControlsError = '';
   selectedSection: AdminSection = 'overview';
   updateMode: UpdateMode = 'now';
   attendeeSearch = '';
@@ -207,6 +208,10 @@ export class AdminPage implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    void this.registerFormControls().catch((error: unknown) => {
+      console.error('[AdminPage] Failed to register admin form controls:', error);
+      this.formControlsError = 'Admin forms could not be loaded. Reload the page and try again.';
+    });
     void this.loadDashboard();
     void this.loadAdminActivities();
     void this.loadRequests();
@@ -216,6 +221,19 @@ export class AdminPage implements OnInit, OnDestroy {
         void this.loadRequests();
       }
     }, 30_000);
+  }
+
+  private async registerFormControls(): Promise<void> {
+    const [input, select, selectOption, textarea] = await Promise.all([
+      import('@ionic/core/components/ion-input.js'),
+      import('@ionic/core/components/ion-select.js'),
+      import('@ionic/core/components/ion-select-option.js'),
+      import('@ionic/core/components/ion-textarea.js'),
+    ]);
+    input.defineCustomElement();
+    select.defineCustomElement();
+    selectOption.defineCustomElement();
+    textarea.defineCustomElement();
   }
 
   ionViewDidEnter(): void {
