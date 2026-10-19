@@ -2,26 +2,28 @@ rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
-    match /projects/{projectId}/{allPaths=**} {
-      allow read: if true;
-      allow write: if request.auth != null
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return signedIn()
         && firestore.get(
-          /databases/(default)/documents/admins/$(request.auth.token.email)
-        ).data.active != false;
+          /databases/(default)/documents/admins/$(request.auth.token.email.lower())
+        ).data.active == true;
+    }
+
+    match /projects/{projectId}/{allPaths=**} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
     }
     match /resources/{resourcePath=**} {
-      allow read: if true;
-      allow write: if request.auth != null
-        && firestore.get(
-          /databases/(default)/documents/admins/$(request.auth.token.email)
-        ).data.active != false;
+      allow read: if signedIn();
+      allow write: if isAdmin();
     }
     match /resourceTypes/{typeId} {
-      allow read: if true;
-      allow write: if request.auth != null
-        && firestore.get(
-          /databases/(default)/documents/admins/$(request.auth.token.email)
-        ).data.active != false;
+      allow read: if signedIn();
+      allow write: if isAdmin();
     }
   }
 }

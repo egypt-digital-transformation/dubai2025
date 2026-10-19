@@ -1,6 +1,6 @@
 import { HttpsError, onCall } from "firebase-functions/v2/https";
 import { FieldValue, getMessaging, db, CAMPAIGN_COLLECTION } from "../shared/firebase.js";
-import { requireAuthenticatedUser } from "../shared/admin-auth.js";
+import { requireAdminUser, requireAuthenticatedUser } from "../shared/admin-auth.js";
 import {
   emailDocumentId,
   matchesNotificationTarget,
@@ -10,7 +10,7 @@ import {
 export const sendTargetedNotification = onCall(
   { region: "europe-west1" },
   async (request) => {
-    requireAuthenticatedUser(request);
+    await requireAdminUser(request);
 
     const rawTitle = request.data?.title;
     const rawBody = request.data?.body;

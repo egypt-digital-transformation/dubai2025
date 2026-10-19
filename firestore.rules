@@ -2,24 +2,141 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return signedIn()
+        && exists(/databases/$(database)/documents/admins/$(request.auth.token.email.lower()))
+        && get(/databases/$(database)/documents/admins/$(request.auth.token.email.lower())).data.active == true;
+    }
+
+    function isOwnUser(userData) {
+      return signedIn()
+        && (
+          userData.get('email', '').lower() == request.auth.token.email.lower()
+          || userData.get('emailAddress', '').lower() == request.auth.token.email.lower()
+        );
+    }
 
     match /admins/{email} {
-      allow get: if request.auth != null
-        && request.auth.token.email == email;
+      allow get: if signedIn() && request.auth.token.email.lower() == email;
       allow list, create, update, delete: if false;
     }
 
-    // This rule allows anyone with your Firestore database reference to view, edit,
-    // and delete all data in your Firestore database. It is useful for getting
-    // started, but it is configured to expire after 30 days because it
-    // leaves your app open to attackers. At that time, all client
-    // requests to your Firestore database will be denied.
-    //
-    // Make sure to write security rules for your app before that time, or else
-    // all client requests to your Firestore database will be denied until you Update
-    // your rules
-    match /{document=**} {
-      allow read, write: if request.time < timestamp.date(2026, 12, 19);
+    match /users/{userId} {
+      allow get, list: if isAdmin()
+        || isOwnUser(resource.data);
+      allow create, delete: if isAdmin();
+      allow update: if isAdmin()
+        || (
+          isOwnUser(resource.data)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['shareContactCard'])
+          && request.resource.data.shareContactCard is bool
+        );
+
+      match /agenda/{agendaId} {
+        allow read: if isAdmin()
+          || (
+            exists(/databases/$(database)/documents/users/$(userId))
+            && isOwnUser(get(/databases/$(database)/documents/users/$(userId)).data)
+          );
+        allow write: if isAdmin()
+          || (
+            exists(/databases/$(database)/documents/users/$(userId))
+            && isOwnUser(get(/databases/$(database)/documents/users/$(userId)).data)
+          );
+      }
+    }
+
+    match /sessions/{sessionId} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+
+    match /announcements/{announcementId} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+
+    match /projects/{projectId} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+
+    match /resources/{resourceId} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+
+    match /resourceTypes/{typeId} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+
+    match /requests/{requestId} {
+      allow read: if isAdmin()
+        || (
+          signedIn()
+          && resource.data.get('userEmail', '').lower() == request.auth.token.email.lower()
+        );
+      allow create: if signedIn()
+        && request.resource.data.get('userId', '') == request.auth.uid
+        && request.resource.data.get('userEmail', '').lower() == request.auth.token.email.lower()
+        && request.resource.data.get('status', '') == 'Open'
+        && request.resource.data.get('adminComment', '') == ''
+        && request.resource.data.keys().hasOnly([
+          'userId', 'userEmail', 'userName', 'type', 'details',
+          'status', 'adminComment', 'createdAt', 'updatedAt'
+        ]);
+      allow update, delete: if isAdmin();
+    }
+
+    match /posts/{postId} {
+      allow read: if signedIn();
+      allow create: if signedIn()
+        && request.resource.data.get('userId', '') == request.auth.uid
+        && request.resource.data.get('caption', '').size() <= 2000
+        && request.resource.data.get('likes', []) == []
+        && request.resource.data.get('comments', []) == [];
+      allow update: if signedIn()
+        && (
+          (
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes'])
+            && request.resource.data.likes.toSet().difference(resource.data.likes.toSet()).hasOnly([request.auth.uid])
+            && resource.data.likes.toSet().difference(request.resource.data.likes.toSet()).hasOnly([request.auth.uid])
+          )
+          || (
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['comments'])
+            && request.resource.data.comments.size() == resource.data.comments.size() + 1
+            && request.resource.data.comments.hasAll(resource.data.comments)
+            && request.resource.data.comments[request.resource.data.comments.size() - 1].get('userId', '') == request.auth.uid
+            && request.resource.data.comments[request.resource.data.comments.size() - 1].get('text', '').size() <= 2000
+          )
+        );
+      allow delete: if isAdmin()
+        || (signedIn() && resource.data.get('userId', '') == request.auth.uid);
+    }
+
+    match /appAnalytics/{userId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /notificationCampaigns/{campaignId} {
+      allow read, write: if isAdmin();
+
+      match /deliveries/{deliveryId} {
+        allow read, write: if isAdmin();
+      }
+    }
+
+    match /interactiveActivities/{activityId} {
+      allow read, write: if isAdmin();
+
+      match /responses/{responseId} {
+        allow read, write: if isAdmin();
+      }
     }
   }
 }

@@ -2,6 +2,7 @@ import { getAuth } from "firebase-admin/auth";
 import { onRequest } from "firebase-functions/v2/https";
 import { onSchedule } from "firebase-functions/v2/scheduler";
 import { db, Timestamp } from "../shared/firebase.js";
+import { requireAdminIdentity } from "../shared/admin-auth.js";
 import { sendSessionReminderNotification } from "../shared/session-notification.js";
 
 export const sendSessionReminders = onSchedule(
@@ -86,6 +87,15 @@ export const sendSessionRemindersManual = onRequest(
         decodedToken = await getAuth().verifyIdToken(authorization.slice(7));
       } catch (error) {
         return res.status(401).json({ error: "Authentication is invalid" });
+      }
+
+      try {
+        await requireAdminIdentity(decodedToken);
+      } catch (error) {
+        if (error.code === "permission-denied") {
+          return res.status(403).json({ error: "Administrator access is required" });
+        }
+        throw error;
       }
 
       const now = Timestamp.now();

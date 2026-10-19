@@ -258,6 +258,7 @@ async createPost(caption: string, photoURL?: string) {
 
     try {
       await this.postService.addComment(post.id, {
+        userId: this.currentUserId,
         userName: this.currentUserName,
         userPhoto: this.currentUserPhoto,
         text: post.newComment,
@@ -318,4 +319,3 @@ async createPost(caption: string, photoURL?: string) {
     }
   }
 }
-

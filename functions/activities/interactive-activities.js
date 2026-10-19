@@ -1,6 +1,9 @@
 import { HttpsError, onCall } from "firebase-functions/v2/https";
 import { db, FieldValue } from "../shared/firebase.js";
-import { requireAuthenticatedUser } from "../shared/admin-auth.js";
+import {
+  requireAdminUser,
+  requireAuthenticatedUser,
+} from "../shared/admin-auth.js";
 import {
   matchesNotificationTarget,
   SEGMENT_FIELDS,
@@ -26,7 +29,7 @@ function validateTarget(target) {
 export const createInteractiveActivity = onCall(
   { region: "europe-west1" },
   async (request) => {
-    requireAuthenticatedUser(request);
+    await requireAdminUser(request);
     const { title, question, options, kind, target, correctOptionIndex } =
       request.data ?? {};
 
@@ -193,7 +196,7 @@ export const submitInteractiveActivityResponse = onCall(
 export const listAdminInteractiveActivities = onCall(
   { region: "europe-west1" },
   async (request) => {
-    requireAuthenticatedUser(request);
+    await requireAdminUser(request);
     const snapshot = await db.collection(ACTIVITY_COLLECTION)
       .orderBy("createdAt", "desc")
       .limit(50)

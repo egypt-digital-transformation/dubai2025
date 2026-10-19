@@ -6,6 +6,85 @@ import {
 } from "../shared/firebase.js";
 import { requireAuthenticatedUser } from "../shared/admin-auth.js";
 
+export const listSharedContactCards = onCall(
+  { region: "europe-west1" },
+  async (request) => {
+    const user = requireAuthenticatedUser(request);
+    const email = user.email.trim().toLowerCase();
+    const adminSnapshot = await db.collection("admins").doc(email).get();
+
+    if (adminSnapshot.data()?.active !== true) {
+      const usersRef = db.collection("users");
+      let profileSnapshot = await usersRef
+        .where("emailAddress", "==", email)
+        .limit(2)
+        .get();
+      if (profileSnapshot.empty) {
+        profileSnapshot = await usersRef
+          .where("email", "==", email)
+          .limit(2)
+          .get();
+      }
+      if (profileSnapshot.empty && email !== user.email) {
+        profileSnapshot = await usersRef
+          .where("emailAddress", "==", user.email)
+          .limit(2)
+          .get();
+      }
+      if (profileSnapshot.empty && email !== user.email) {
+        profileSnapshot = await usersRef
+          .where("email", "==", user.email)
+          .limit(2)
+          .get();
+      }
+      if (profileSnapshot.size !== 1) {
+        throw new HttpsError(
+          "permission-denied",
+          "An attendee profile is required to view the directory."
+        );
+      }
+    }
+
+    const contactsSnapshot = await db
+      .collection("users")
+      .where("shareContactCard", "==", true)
+      .get();
+    const contacts = contactsSnapshot.docs
+      .map((document) => {
+        const data = document.data();
+        const value = (field) =>
+          typeof data[field] === "string" ? data[field].trim() : "";
+        const firstName = value("firstName");
+        const lastName = value("lastName");
+        const mobileFields = [
+          "mobileNumber",
+          "mobile",
+          "mobileNo",
+          "phoneNumber",
+          "phone",
+          "phoneNo",
+          "telephone",
+          "contactNumber",
+          "Mobile Number",
+          "Phone Number",
+        ];
+
+        return {
+          name:
+            [firstName, lastName].filter(Boolean).join(" ") ||
+            value("displayName") ||
+            "Attendee",
+          email: value("emailAddress") || value("email"),
+          mobile: mobileFields.map(value).find(Boolean) || "",
+          position: value("currentPosition"),
+        };
+      })
+      .filter((contact) => contact.email);
+
+    return { contacts };
+  }
+);
+
 export const recordAppActivity = onCall(
   { region: "europe-west1" },
   async (request) => {

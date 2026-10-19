@@ -10,6 +10,8 @@ import {
   where as angularWhere,
 } from '@angular/fire/firestore';
 import {
+  DocumentData,
+  QueryDocumentSnapshot,
   addDoc,
   collection,
   deleteDoc,
@@ -17,9 +19,11 @@ import {
   getDoc as firebaseGetDoc,
   getDocs,
   getFirestore,
+  query,
   serverTimestamp,
   setDoc,
   updateDoc,
+  where,
 } from 'firebase/firestore';
 import { getApp, getApps, initializeApp } from 'firebase/app';
 import { getFunctions, httpsCallable } from 'firebase/functions';
@@ -161,7 +165,7 @@ export class AdminService {
       return false;
     }
     const snapshot = await getDoc(doc(this.firestore, 'admins', adminEmail));
-    return snapshot.exists() && snapshot.data()['active'] !== false;
+    return snapshot.exists() && snapshot.data()['active'] === true;
   }
 
   async recordAppActivity(installed: boolean): Promise<void> {
@@ -170,6 +174,17 @@ export class AdminService {
 
   async registerPushToken(token: string): Promise<void> {
     await this.call<void>('registerPushToken', { token });
+  }
+
+  async listSharedContactCards(): Promise<{
+    contacts: Array<{
+      name: string;
+      email: string;
+      mobile: string;
+      position: string;
+    }>;
+  }> {
+    return this.call('listSharedContactCards', {});
   }
 
   async loadDashboard(): Promise<AdminDashboard> {
@@ -317,11 +332,31 @@ export class AdminService {
   async loadFlightDetails(email: string): Promise<FlightDetails | null> {
     const normalizedEmail = email.trim().toLowerCase();
     if (!normalizedEmail) return null;
-    const usersSnapshot = await getDocs(collection(this.firestore, 'users'));
-    const userDocument = usersSnapshot.docs.find((candidate) => {
-      const data = candidate.data() as { emailAddress?: unknown };
-      return String(data.emailAddress ?? candidate.id).trim().toLowerCase() === normalizedEmail;
-    });
+
+    let userDocument: QueryDocumentSnapshot<DocumentData> | undefined;
+    if (await this.isAdmin()) {
+      const usersSnapshot = await getDocs(collection(this.firestore, 'users'));
+      userDocument = usersSnapshot.docs.find((candidate) => {
+        const data = candidate.data() as { emailAddress?: unknown; email?: unknown };
+        return String(data.emailAddress ?? data.email ?? candidate.id)
+          .trim()
+          .toLowerCase() === normalizedEmail;
+      });
+    } else {
+      const users = collection(this.firestore, 'users');
+      let userSnapshot = await getDocs(query(users, where('emailAddress', '==', normalizedEmail)));
+      if (userSnapshot.empty) {
+        userSnapshot = await getDocs(query(users, where('email', '==', normalizedEmail)));
+      }
+      if (userSnapshot.empty && email.trim() !== normalizedEmail) {
+        userSnapshot = await getDocs(query(users, where('emailAddress', '==', email.trim())));
+      }
+      if (userSnapshot.empty && email.trim() !== normalizedEmail) {
+        userSnapshot = await getDocs(query(users, where('email', '==', email.trim())));
+      }
+      userDocument = userSnapshot.docs[0];
+    }
+
     if (!userDocument) return null;
     return this.loadFlightDetailsForUserId(userDocument.id);
   }

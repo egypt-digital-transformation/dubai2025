@@ -5,13 +5,13 @@ import {
   db,
   FieldValue,
 } from "../shared/firebase.js";
-import { requireAuthenticatedUser } from "../shared/admin-auth.js";
+import { requireAdminUser } from "../shared/admin-auth.js";
 import { timestampToIso } from "../shared/notification-utils.js";
 
 export const createAdminAnnouncement = onCall(
   { region: "europe-west1" },
   async (request) => {
-    requireAuthenticatedUser(request);
+    await requireAdminUser(request);
 
     const rawTitle = request.data?.title;
     const rawDescription = request.data?.description;
@@ -43,7 +43,7 @@ export const createAdminAnnouncement = onCall(
 export const getAdminDashboard = onCall(
   { region: "europe-west1" },
   async (request) => {
-    requireAuthenticatedUser(request);
+    await requireAdminUser(request);
 
     const [activitySnapshot, attendeesSnapshot, campaignsSnapshot] = await Promise.all([
       db.collection(APP_ANALYTICS_COLLECTION).get(),

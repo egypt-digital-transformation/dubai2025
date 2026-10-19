@@ -107,6 +107,7 @@ export class PostService {
   async addComment(
     postId: string,
     comment: {
+      userId: string;
       userName: string;
       userPhoto?: string;
       text: string;
@@ -116,6 +117,7 @@ export class PostService {
     
     await updateDoc(postRef, {
       comments: arrayUnion({
+        userId: comment.userId,
         userName: comment.userName,
         userPhoto: comment.userPhoto || '',
         text: comment.text,

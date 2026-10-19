@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject } from '@angular/core';
-import { Auth, signOut } from '@angular/fire/auth';
+import { Component, inject, OnDestroy, OnInit } from '@angular/core';
+import { Auth, onAuthStateChanged, signOut, Unsubscribe } from '@angular/fire/auth';
 import { IonicModule } from '@ionic/angular';
 import { addIcons } from 'ionicons';
 import {
@@ -21,6 +21,7 @@ import {
   shieldCheckmarkOutline,
 } from 'ionicons/icons';
 import { Router } from '@angular/router';
+import { AdminService } from '../services/admin.service';
 
 interface MoreItem {
   title: string;
@@ -36,9 +37,13 @@ interface MoreItem {
   styleUrls: ['./more.page.scss'],
   imports: [CommonModule, IonicModule],
 })
-export class MorePage {
+export class MorePage implements OnInit, OnDestroy {
   private readonly auth = inject(Auth);
   private readonly router = inject(Router);
+  private readonly adminService = inject(AdminService);
+  private authUnsubscribe?: Unsubscribe;
+
+  isAdmin = false;
 
   readonly journeyItems: MoreItem[] = [
     { title: 'Help requests', description: 'Create & track a concierge request', icon: 'chatbubbles-outline', route: '/tabs/requests' },
@@ -68,6 +73,27 @@ export class MorePage {
       qrCodeOutline,
       shieldCheckmarkOutline,
     });
+  }
+
+  ngOnInit(): void {
+    this.authUnsubscribe = onAuthStateChanged(this.auth, (user) => {
+      this.isAdmin = false;
+      if (!user?.email) {
+        return;
+      }
+
+      void this.adminService.isAdmin(user.email).then((isAdmin) => {
+        if (this.auth.currentUser?.uid === user.uid) {
+          this.isAdmin = isAdmin;
+        }
+      }).catch((error) => {
+        console.error('[MorePage] Failed to verify admin access:', error);
+      });
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.authUnsubscribe?.();
   }
 
   open(item: MoreItem): void {

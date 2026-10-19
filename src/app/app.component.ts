@@ -5,11 +5,12 @@ import { AuthService } from './services/auth.service';
 import { AgendaService } from './services/agenda.service';
 import { FcmService } from './services/fcm.service';
 import { AdminService } from './services/admin.service';
-import { IonApp, IonRouterOutlet, Platform } from '@ionic/angular/standalone';
+import { IonApp, IonRouterOutlet, Platform, ToastController } from '@ionic/angular/standalone';
 import { CommonModule } from '@angular/common';
 import { EMPTY, filter, interval, startWith, switchMap, tap } from 'rxjs';
 import { Auth } from '@angular/fire/auth';
 import { NavigationEnd } from '@angular/router';
+import { SwUpdate } from '@angular/service-worker';
 
 @Component({
   selector: 'app-root',
@@ -27,6 +28,8 @@ export class AppComponent implements OnInit {
   private fcmService = inject(FcmService);
   private adminService = inject(AdminService);
   private auth = inject(Auth);
+  private swUpdate = inject(SwUpdate);
+  private toastCtrl = inject(ToastController);
 
   isIos = false;
   showInstallBanner = false;
@@ -47,6 +50,9 @@ export class AppComponent implements OnInit {
 
     // ✅ Initialize Firebase Cloud Messaging push notifications
     this.fcmService.initPushNotifications();
+
+    // ✅ Watch for new deploys and update installed home-screen apps automatically
+    this.watchForPwaUpdates();
 
     // ✅ Handle PWA install banners
     this.checkInstallSupport();
@@ -148,6 +154,43 @@ export class AppComponent implements OnInit {
       this.openedCampaigns.delete(campaignId);
       console.error('[APP] Failed to record notification open:', error);
     });
+  }
+
+  private watchForPwaUpdates(): void {
+    if (!this.swUpdate.isEnabled) {
+      return;
+    }
+
+    this.swUpdate.versionUpdates
+      .pipe(filter((event) => event.type === 'VERSION_READY'))
+      .subscribe(async () => {
+        const toast = await this.toastCtrl.create({
+          header: 'App update ready',
+          message: 'A new version is available. Reload to apply the update?',
+          position: 'top',
+          duration: 0,
+          buttons: [
+            {
+              text: 'Later',
+              role: 'cancel',
+            },
+            {
+              text: 'Update',
+              handler: async () => {
+                await this.swUpdate.activateUpdate();
+                window.location.reload();
+              },
+            },
+          ],
+        });
+
+        await toast.present();
+      });
+
+    void this.swUpdate.checkForUpdate();
+    setInterval(() => {
+      void this.swUpdate.checkForUpdate();
+    }, 60 * 1000);
   }
 
   /** ✅ Trigger PWA install prompt */
