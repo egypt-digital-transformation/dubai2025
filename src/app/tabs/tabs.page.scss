@@ -50,6 +50,95 @@
   font-weight: 600;
 }
 
+.act-as-button {
+  --border-color: #c8d8e2;
+  --border-radius: 999px;
+  --color: #123b5d;
+  font-size: .72rem;
+  font-weight: 700;
+  margin-inline-end: .25rem;
+}
+
+.act-as-button.preview-active {
+  --background: #fff4d6;
+  --border-color: #e9c76b;
+  --color: #725214;
+  max-width: 9rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.preview-picker {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 1.25rem;
+}
+
+.preview-picker header {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+.preview-picker header p {
+  color: #087f9f;
+  font-size: .65rem;
+  font-weight: 800;
+  letter-spacing: .13em;
+  margin: 0 0 .3rem;
+}
+
+.preview-picker header h2 {
+  color: #123b5d;
+  font-size: 1.35rem;
+  margin: 0;
+}
+
+.preview-safety-note,
+.preview-message {
+  color: #6a7b87;
+  font-size: .86rem;
+  line-height: 1.45;
+}
+
+.preview-user-list {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.preview-user-list button {
+  background: #fff;
+  border: 0;
+  border-bottom: 1px solid #e7edf0;
+  color: #123b5d;
+  display: block;
+  padding: .85rem .35rem;
+  text-align: left;
+  width: 100%;
+}
+
+.preview-user-list button strong,
+.preview-user-list button span {
+  display: block;
+}
+
+.preview-user-list button span {
+  color: #71808d;
+  font-size: .78rem;
+  margin-top: .2rem;
+}
+
+.preview-error {
+  color: #a33f35;
+}
+
+ion-modal.preview-picker-modal {
+  --width: min(94vw, 480px);
+  --height: min(82vh, 720px);
+  --border-radius: 1.25rem;
+}
+
 ion-tabs {
   bottom: 0;
   height: calc(100% - 3.35rem);

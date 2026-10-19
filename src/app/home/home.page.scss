@@ -1590,7 +1590,6 @@ ion-modal::part(content) {
   color: #fff;
   isolation: isolate;
   margin-bottom: 1rem;
-  min-height: 13.5rem;
   overflow: hidden;
   padding: clamp(1.35rem, 4vw, 2rem);
   position: relative;
@@ -1690,20 +1689,19 @@ ion-modal::part(content) {
 }
 
 .ahlan-card {
-  align-items: center;
-  display: flex;
-  min-height: 8.5rem;
   margin-bottom: 1.5rem;
+  min-height: 0;
   position: relative;
 }
 
 .ahlan-card-character {
-  align-self: flex-end;
-  flex: 0 0 7rem;
-  height: 8.5rem;
-  margin-right: -1rem;
-  position: relative;
-  z-index: 2;
+  height: 7rem;
+  left: 0;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 5.5rem;
+  z-index: 1;
 
   img {
     width: 100%;
@@ -1718,9 +1716,11 @@ ion-modal::part(content) {
   border: 1px solid #e2e8ec;
   border-radius: 1.25rem;
   box-shadow: 0 8px 24px rgba(12, 47, 75, 0.07);
-  flex: 1;
   min-width: 0;
-  padding: 1.25rem 1.5rem 1.25rem 2.25rem;
+  margin-left: 5.75rem;
+  padding: 0.65rem 0.85rem;
+  position: relative;
+  z-index: 2;
 }
 
 .ahlan-card-copy {
@@ -1915,22 +1915,15 @@ ion-modal::part(content) {
     padding: 1.75rem 1.5rem 2.5rem;
   }
 
-  .welcome-hero {
-    min-height: 15rem;
-  }
-
-  .ahlan-card {
-    min-height: 8rem;
-  }
-
   .ahlan-card-character {
-    flex-basis: 5.25rem;
-    height: 7.25rem;
-    margin-right: -0.75rem;
+    height: 8rem;
+    left: 0;
+    width: 6.5rem;
   }
 
   .ahlan-card-copy-box {
-    padding: 1rem 1rem 1rem 1.5rem;
+    margin-left: 6.75rem;
+    padding: 0.7rem 0.9rem;
   }
 
   .quick-actions {

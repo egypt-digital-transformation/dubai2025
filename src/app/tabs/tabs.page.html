@@ -8,6 +8,33 @@
       </span>
     </div>
     <ion-buttons slot="end">
+      <ion-button
+        *ngIf="isAdmin && !preview.isPreviewing"
+        fill="outline"
+        class="act-as-button"
+        aria-label="Preview app as a selected user"
+        (click)="openPreviewPicker()"
+      >
+        Act as
+      </ion-button>
+      <ion-button
+        *ngIf="isAdmin && preview.selectedUser as previewUser"
+        fill="outline"
+        class="act-as-button preview-active"
+        aria-label="Change preview user"
+        (click)="openPreviewPicker()"
+      >
+        Preview: {{ previewUser.firstName || previewUser.name || previewUser.email }}
+      </ion-button>
+      <ion-button
+        *ngIf="isAdmin && preview.isPreviewing"
+        fill="clear"
+        aria-label="Stop user preview"
+        title="Stop preview"
+        (click)="stopPreview()"
+      >
+        <ion-icon slot="icon-only" name="close-outline"></ion-icon>
+      </ion-button>
       <ion-button fill="clear" aria-label="Notifications" (click)="openNotifications()">
         <ion-icon slot="icon-only" name="notifications-outline"></ion-icon>
       </ion-button>
@@ -17,6 +44,49 @@
     </ion-buttons>
   </ion-toolbar>
 </ion-header>
+
+<ion-modal
+  [isOpen]="showPreviewPicker"
+  (didDismiss)="showPreviewPicker = false"
+  class="preview-picker-modal"
+>
+  <ng-template>
+    <div class="preview-picker">
+      <header>
+        <div>
+          <p>ADMIN PREVIEW</p>
+          <h2>Act as a user</h2>
+        </div>
+        <ion-button fill="clear" aria-label="Close user picker" (click)="showPreviewPicker = false">
+          <ion-icon slot="icon-only" name="close-outline"></ion-icon>
+        </ion-button>
+      </header>
+      <p class="preview-safety-note">
+        View the app using this attendee’s profile. Your admin sign-in and permissions do not change.
+      </p>
+      <ion-searchbar
+        [(ngModel)]="previewSearch"
+        placeholder="Search name or email"
+        aria-label="Search users to preview"
+      ></ion-searchbar>
+      <p *ngIf="isLoadingPreviewUsers" class="preview-message">Loading users…</p>
+      <p *ngIf="previewError" class="preview-message preview-error">{{ previewError }}</p>
+      <div class="preview-user-list" *ngIf="!isLoadingPreviewUsers">
+        <button
+          type="button"
+          *ngFor="let user of filteredPreviewUsers"
+          (click)="selectPreviewUser(user)"
+        >
+          <strong>{{ user.name || user.email }}</strong>
+          <span>{{ user.email }}</span>
+        </button>
+        <p *ngIf="!previewError && !filteredPreviewUsers.length" class="preview-message">
+          No matching users.
+        </p>
+      </div>
+    </div>
+  </ng-template>
+</ion-modal>
 
 <ion-tabs>
   <ion-tab-bar slot="bottom">

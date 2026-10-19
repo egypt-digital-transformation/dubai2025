@@ -1,8 +1,10 @@
-import { Component } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { IonicModule } from '@ionic/angular';
 import { Auth } from '@angular/fire/auth';
 import { AdminService, FlightDetails } from '../services/admin.service';
+import { AdminPreviewService } from '../services/admin-preview.service';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-journey',
@@ -11,27 +13,44 @@ import { AdminService, FlightDetails } from '../services/admin.service';
   styleUrls: ['../more/more-module.page.scss'],
   imports: [IonicModule, CommonModule],
 })
-export class JourneyPage {
+export class JourneyPage implements OnInit, OnDestroy {
   flightDetails: FlightDetails | null = null;
   isLoadingFlightDetails = true;
+  private previewSubscription?: Subscription;
+  private loadGeneration = 0;
 
   constructor(
     private readonly auth: Auth,
-    private readonly adminService: AdminService
-  ) {
-    void this.loadFlightDetails();
+    private readonly adminService: AdminService,
+    private readonly adminPreview: AdminPreviewService
+  ) {}
+
+  ngOnInit(): void {
+    this.previewSubscription = this.adminPreview.selectedUser$.subscribe((previewUser) => {
+      void this.loadFlightDetails(previewUser?.email ?? this.auth.currentUser?.email ?? '');
+    });
   }
 
-  private async loadFlightDetails(): Promise<void> {
+  ngOnDestroy(): void {
+    this.previewSubscription?.unsubscribe();
+  }
+
+  private async loadFlightDetails(email: string): Promise<void> {
+    const generation = ++this.loadGeneration;
+    this.isLoadingFlightDetails = true;
+    this.flightDetails = null;
     try {
       await this.auth.authStateReady();
-      this.flightDetails = await this.adminService.loadFlightDetails(
-        this.auth.currentUser?.email ?? ''
-      );
+      const details = await this.adminService.loadFlightDetails(email);
+      if (generation === this.loadGeneration) {
+        this.flightDetails = details;
+      }
     } catch (error) {
       console.error('[JourneyPage] Failed to load flight details:', error);
     } finally {
-      this.isLoadingFlightDetails = false;
+      if (generation === this.loadGeneration) {
+        this.isLoadingFlightDetails = false;
+      }
     }
   }
 }

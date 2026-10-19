@@ -26,6 +26,7 @@ import { ActivatedRoute, Router, NavigationStart } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
 import { filter } from 'rxjs/operators';
+import { AdminPreviewService } from '../services/admin-preview.service';
 
 interface Session {
   id: string;
@@ -74,18 +75,27 @@ export class AgendaPage implements OnInit, OnDestroy {
   selectedMaterial: { url: string; name: string; type: string } | null = null;
 
   private navigationSubscription?: Subscription;
+  private previewSubscription?: Subscription;
+  private sessionsSubscription?: Subscription;
 
   constructor(
     private firestore: Firestore,
     private auth: Auth,
     private sanitizer: DomSanitizer,
     private route: ActivatedRoute,
-    private router: Router
+    private router: Router,
+    private readonly adminPreview: AdminPreviewService
   ) {}
 
   ngOnInit() {
     console.log('[DEBUG] Initializing AgendaPage...');
-    this.initializeAgenda();
+    void this.auth.authStateReady().then(() => {
+      this.previewSubscription = this.adminPreview.selectedUser$.subscribe((previewUser) => {
+        void this.initializeAgenda(previewUser?.email ?? this.auth.currentUser?.email ?? undefined);
+      });
+    }).catch((error) => {
+      console.error('[AgendaPage] Failed to initialize authentication state:', error);
+    });
 
     this.navigationSubscription = this.router.events
       .pipe(filter((event) => event instanceof NavigationStart))
@@ -100,22 +110,32 @@ export class AgendaPage implements OnInit, OnDestroy {
     if (this.navigationSubscription) {
       this.navigationSubscription.unsubscribe();
     }
+    this.previewSubscription?.unsubscribe();
+    this.sessionsSubscription?.unsubscribe();
   }
 
-  async initializeAgenda() {
+  async initializeAgenda(emailOverride?: string) {
     try {
+      this.currentUser = null;
+      this.sessions = [];
+      this.filteredSessions = [];
       const user = this.auth.currentUser;
-      if (!user) {
+      const email = emailOverride ?? user?.email?.toLowerCase() ?? null;
+      if (!email) {
         console.warn('[DEBUG] No authenticated user found.');
         return;
       }
 
-      this.userEmail = user.email?.toLowerCase() || null;
+      this.userEmail = email.toLowerCase();
       console.log('[DEBUG] Authenticated user email:', this.userEmail);
 
       const usersRef = collection(this.firestore, 'users');
-      const q = query(usersRef, where('email', '==', this.userEmail));
-      const snapshot = await getDocs(q);
+      const emailAddressQuery = query(usersRef, where('emailAddress', '==', this.userEmail));
+      let snapshot = await getDocs(emailAddressQuery);
+      if (snapshot.empty) {
+        const emailQuery = query(usersRef, where('email', '==', this.userEmail));
+        snapshot = await getDocs(emailQuery);
+      }
 
       if (snapshot.empty) {
         console.warn(`[DEBUG] No user found with email ${this.userEmail}`);
@@ -126,7 +146,8 @@ export class AgendaPage implements OnInit, OnDestroy {
       console.log('[DEBUG] Loaded user:', this.currentUser);
 
       const sessionsRef = collection(this.firestore, 'sessions');
-      collectionData(sessionsRef, { idField: 'id' }).subscribe((data: any[]) => {
+      this.sessionsSubscription?.unsubscribe();
+      this.sessionsSubscription = collectionData(sessionsRef, { idField: 'id' }).subscribe((data: any[]) => {
         this.sessions = data || [];
         console.log('[DEBUG] Total sessions loaded:', this.sessions.length);
         this.applyFilters();

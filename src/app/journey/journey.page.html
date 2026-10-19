@@ -6,30 +6,76 @@
       <p>Your travel and stay, together in one place.</p>
     </header>
 
-    <section *ngIf="flightDetails" class="module-card">
-      <h2>Flight details</h2>
-      <div class="module-row">
+    <section *ngIf="flightDetails" class="module-card flight-details-card">
+      <div class="flight-card-heading">
         <div>
-          <strong>Inbound · Arrival</strong>
-          <small>
-            {{ flightDetails.inbound.flightNo || 'Flight' }} ·
-            {{ flightDetails.inbound.arrivalAirport || flightDetails.inbound.departureAirport || 'Airport' }}<br />
-            {{ flightDetails.inbound.arrivalDate || flightDetails.inbound.departureDate }}
-            {{ flightDetails.inbound.arrivalTime || flightDetails.inbound.departureTime }}
-          </small>
+          <p class="flight-eyebrow">YOUR ITINERARY</p>
+          <h2>Flight details</h2>
         </div>
+        <span class="flight-heading-mark" aria-hidden="true">✦</span>
       </div>
-      <div class="module-row">
-        <div>
-          <strong>Outbound · Departure</strong>
-          <small>
-            {{ flightDetails.outbound.flightNo || 'Flight' }} ·
-            {{ flightDetails.outbound.arrivalAirport || flightDetails.outbound.departureAirport || 'Airport' }}<br />
-            {{ flightDetails.outbound.arrivalDate || flightDetails.outbound.departureDate }}
-            {{ flightDetails.outbound.arrivalTime || flightDetails.outbound.departureTime }}
-          </small>
+
+      <article class="flight-leg">
+        <div class="flight-leg-heading">
+          <div class="flight-leg-direction">
+            <span class="flight-direction-icon" aria-hidden="true">↘</span>
+            <div>
+              <span class="flight-eyebrow">INBOUND</span>
+              <h3>Arrival</h3>
+            </div>
+          </div>
+          <span class="flight-number">{{ flightDetails.inbound.flightNo || 'Flight details' }}</span>
         </div>
-      </div>
+        <div class="flight-route">
+          <span class="route-marker" aria-hidden="true"></span>
+          <div>
+            <strong>{{ flightDetails.inbound.arrivalAirport || flightDetails.inbound.departureAirport || 'Airport to be confirmed' }}</strong>
+            <small>Arrival airport</small>
+          </div>
+        </div>
+        <div class="flight-schedule">
+          <div>
+            <span class="flight-eyebrow">DATE</span>
+            <strong>{{ flightDetails.inbound.arrivalDate || flightDetails.inbound.departureDate || 'To be confirmed' }}</strong>
+          </div>
+          <div>
+            <span class="flight-eyebrow">TIME</span>
+            <strong>{{ flightDetails.inbound.arrivalTime || flightDetails.inbound.departureTime || 'To be confirmed' }}</strong>
+          </div>
+        </div>
+      </article>
+
+      <div class="flight-journey-divider" aria-hidden="true"><span></span><i>✦</i><span></span></div>
+
+      <article class="flight-leg">
+        <div class="flight-leg-heading">
+          <div class="flight-leg-direction">
+            <span class="flight-direction-icon outbound" aria-hidden="true">↗</span>
+            <div>
+              <span class="flight-eyebrow">OUTBOUND</span>
+              <h3>Departure</h3>
+            </div>
+          </div>
+          <span class="flight-number">{{ flightDetails.outbound.flightNo || 'Flight details' }}</span>
+        </div>
+        <div class="flight-route">
+          <span class="route-marker" aria-hidden="true"></span>
+          <div>
+            <strong>{{ flightDetails.outbound.arrivalAirport || flightDetails.outbound.departureAirport || 'Airport to be confirmed' }}</strong>
+            <small>Airport</small>
+          </div>
+        </div>
+        <div class="flight-schedule">
+          <div>
+            <span class="flight-eyebrow">DATE</span>
+            <strong>{{ flightDetails.outbound.arrivalDate || flightDetails.outbound.departureDate || 'To be confirmed' }}</strong>
+          </div>
+          <div>
+            <span class="flight-eyebrow">TIME</span>
+            <strong>{{ flightDetails.outbound.arrivalTime || flightDetails.outbound.departureTime || 'To be confirmed' }}</strong>
+          </div>
+        </div>
+      </article>
     </section>
 
     <section class="module-card">

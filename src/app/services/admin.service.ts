@@ -27,6 +27,7 @@ import { getDownloadURL, getStorage, ref, uploadBytes } from 'firebase/storage';
 import { Observable, map } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { IconicProject, HolcimProduct, ProjectStats } from '../iconic-projects/models/project.model';
+import { PreviewUser } from './admin-preview.service';
 
 export interface AdminAttendee {
   id: string;
@@ -238,6 +239,30 @@ export class AdminService {
     return snapshot.docs
       .map((projectDocument) => this.toProject(projectDocument.id, projectDocument.data()))
       .sort((a, b) => a.order - b.order || a.name.localeCompare(b.name));
+  }
+
+  async loadPreviewUsers(): Promise<PreviewUser[]> {
+    const snapshot = await getDocs(collection(this.firestore, 'users'));
+    return snapshot.docs
+      .map((userDocument) => {
+        const data = userDocument.data();
+        const email = String(data['emailAddress'] ?? data['email'] ?? '').trim().toLowerCase();
+        const firstName = String(data['firstName'] ?? '').trim();
+        const lastName = String(data['lastName'] ?? '').trim();
+        const name = String(data['displayName'] ?? data['name'] ?? '').trim() ||
+          [firstName, lastName].filter(Boolean).join(' ');
+        return {
+          id: userDocument.id,
+          email,
+          name,
+          firstName,
+          lastName,
+          currentPosition: String(data['currentPosition'] ?? '').trim(),
+          locationCountry: String(data['locationCountry'] ?? '').trim(),
+        };
+      })
+      .filter((user) => user.email)
+      .sort((a, b) => (a.name || a.email).localeCompare(b.name || b.email));
   }
 
   async createUserRequest(request: {

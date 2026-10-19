@@ -33,6 +33,52 @@
         </div>
       </section>
 
+      <section class="home-section essentials-section" aria-labelledby="essentials-heading">
+        <div class="home-section-heading">
+          <div>
+            <p class="section-eyebrow">HERE WHEN YOU NEED THEM</p>
+            <h2 id="essentials-heading">Your event essentials</h2>
+          </div>
+        </div>
+        <div class="quick-actions">
+          <button type="button" class="action-card" (click)="openQRCode()" [disabled]="isPreviewingUser">
+            <span class="action-content">
+              <span class="action-icon qr"><ion-icon name="qr-code-outline"></ion-icon></span>
+              <span class="action-title">My QR</span>
+              <span class="action-desc">Share contact</span>
+            </span>
+          </button>
+
+          <button type="button" class="action-card" (click)="navigateToVenue()">
+            <span class="action-content">
+              <span class="action-icon venue"><ion-icon name="map-outline"></ion-icon></span>
+              <span class="action-title">Find your way</span>
+              <span class="action-desc">Venue &amp; maps</span>
+            </span>
+          </button>
+
+          <button type="button" class="action-card" (click)="openTips()">
+            <span class="action-content">
+              <span class="action-icon networking"><ion-icon name="bulb-outline"></ion-icon></span>
+              <span class="action-title">Tips</span>
+              <span class="action-desc">Local recommendations</span>
+            </span>
+          </button>
+
+          <button *ngIf="isPlantVisitRequired" type="button" class="action-card" [disabled]="isPreviewingUser" (click)="openSafetyInductionModal()">
+            <span class="action-content">
+              <span class="action-icon hse">
+                <img src="assets/safety.png" alt="" aria-hidden="true" />
+              </span>
+              <span class="action-title">Safety induction</span>
+              <span class="action-desc">
+                {{ completedInductionsCount }} of {{ totalInductionsRequired }} completed
+              </span>
+            </span>
+          </button>
+        </div>
+      </section>
+
       <div class="home-section-heading">
           <div>
             <p class="section-eyebrow">MAKE THE MOST OF TODAY</p>
@@ -221,53 +267,6 @@
 
       </section>
 
-        <section class="home-section essentials-section" aria-labelledby="essentials-heading">
-          <div class="home-section-heading">
-            <div>
-              <p class="section-eyebrow">HERE WHEN YOU NEED THEM</p>
-              <h2 id="essentials-heading">Your event essentials</h2>
-            </div>
-          </div>
-        <div class="quick-actions">
-          <button type="button" class="action-card" (click)="openQRCode()">
-            <span class="action-content">
-              <span class="action-icon qr"><ion-icon name="qr-code-outline"></ion-icon></span>
-              <span class="action-title">My QR</span>
-              <span class="action-desc">Share contact</span>
-            </span>
-          </button>
-
-          <button type="button" class="action-card" (click)="navigateToVenue()">
-            <span class="action-content">
-              <span class="action-icon venue"><ion-icon name="map-outline"></ion-icon></span>
-              <span class="action-title">Find your way</span>
-              <span class="action-desc">Venue &amp; maps</span>
-            </span>
-          </button>
-
-          <button type="button" class="action-card" (click)="openTips()">
-            <span class="action-content">
-              <span class="action-icon networking"><ion-icon name="bulb-outline"></ion-icon></span>
-              <span class="action-title">Tips</span>
-              <span class="action-desc">Local recommendations</span>
-            </span>
-          </button>
-
-          <button *ngIf="isPlantVisitRequired" type="button" class="action-card" (click)="openSafetyInductionModal()">
-            <span class="action-content">
-              <span class="action-icon hse">
-                <img src="assets/safety.png" alt="" aria-hidden="true" />
-              </span>
-              <span class="action-title">Safety induction</span>
-              <span class="action-desc">
-                {{ completedInductionsCount }} of {{ totalInductionsRequired }} completed
-              </span>
-            </span>
-          </button>
-
-        </div>
-        </section>
-
         <!-- My Agenda -->
         <section class="agenda-card home-section">
           <div class="card-content">
@@ -373,7 +372,7 @@
               </div>
               <div class="info-text">
                 <div class="info-label">Name</div>
-                <div class="info-value">Feda Khalid</div>
+                <div class="info-value">{{ profileName || firstName || displayName || 'Attendee' }}</div>
               </div>
             </div>
 
@@ -383,7 +382,7 @@
               </div>
               <div class="info-text">
                 <div class="info-label">Position</div>
-                <div class="info-value">Digital Strategy Specialist</div>
+                <div class="info-value">{{ profilePosition || '—' }}</div>
               </div>
             </div>
 
@@ -393,7 +392,7 @@
               </div>
               <div class="info-text">
                 <div class="info-label">Country</div>
-                <div class="info-value">Egypt</div>
+                <div class="info-value">{{ profileCountry || '—' }}</div>
               </div>
             </div>
           </div>

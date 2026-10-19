@@ -5,6 +5,7 @@ import { CommonModule } from '@angular/common';
 import { Auth, onAuthStateChanged, Unsubscribe } from '@angular/fire/auth';
 import { AdminRequest, AdminService } from '../services/admin.service';
 import { Subscription } from 'rxjs';
+import { AdminPreviewService } from '../services/admin-preview.service';
 
 @Component({
   selector: 'app-requests',
@@ -22,11 +23,14 @@ export class RequestsPage implements OnInit, OnDestroy {
   isSubmitting = false;
   errorMessage = '';
   private requestsSubscription?: Subscription;
+  private previewSubscription?: Subscription;
   private authUnsubscribe?: Unsubscribe;
+  isPreviewingUser = false;
 
   constructor(
     private readonly auth: Auth,
-    private readonly adminService: AdminService
+    private readonly adminService: AdminService,
+    private readonly adminPreview: AdminPreviewService
   ) {}
 
   ngOnInit(): void {
@@ -41,25 +45,37 @@ export class RequestsPage implements OnInit, OnDestroy {
         return;
       }
 
-      this.requestsSubscription = this.adminService.watchUserRequests(user.email).subscribe({
-        next: (requests) => {
-          this.requests = requests
-            .slice()
-            .sort((a, b) => this.requestTime(b.createdAt) - this.requestTime(a.createdAt));
-          this.isLoading = false;
-          this.errorMessage = '';
-        },
-        error: (error) => {
-          console.error('[RequestsPage] Failed to load requests:', error);
-          this.isLoading = false;
-          this.errorMessage = 'Could not load your requests. Please try again.';
-        },
+      this.previewSubscription?.unsubscribe();
+      this.previewSubscription = this.adminPreview.selectedUser$.subscribe((previewUser) => {
+        this.isPreviewingUser = previewUser !== null;
+        this.watchRequests(previewUser?.email ?? user.email!);
       });
+    });
+  }
+
+  private watchRequests(email: string): void {
+    this.requestsSubscription?.unsubscribe();
+    this.requests = [];
+    this.isLoading = true;
+    this.requestsSubscription = this.adminService.watchUserRequests(email).subscribe({
+      next: (requests) => {
+        this.requests = requests
+          .slice()
+          .sort((a, b) => this.requestTime(b.createdAt) - this.requestTime(a.createdAt));
+        this.isLoading = false;
+        this.errorMessage = '';
+      },
+      error: (error) => {
+        console.error('[RequestsPage] Failed to load requests:', error);
+        this.isLoading = false;
+        this.errorMessage = 'Could not load requests for this profile.';
+      },
     });
   }
 
   ngOnDestroy(): void {
     this.requestsSubscription?.unsubscribe();
+    this.previewSubscription?.unsubscribe();
     this.authUnsubscribe?.();
   }
 
@@ -72,7 +88,7 @@ export class RequestsPage implements OnInit, OnDestroy {
   async create(): Promise<void> {
     const details = this.details.trim();
     const user = this.auth.currentUser;
-    if (!details || !user?.email || this.isSubmitting) {
+    if (!details || !user?.email || this.isSubmitting || this.isPreviewingUser) {
       return;
     }
 

@@ -52,6 +52,7 @@ import {
 } from 'rxjs';
 import { RouterModule } from '@angular/router';
 import { greetingForNationality } from '../shared/nationality-greetings';
+import { AdminPreviewService } from '../services/admin-preview.service';
 
 interface Session {
   id: string;
@@ -73,6 +74,8 @@ interface Session {
 }
 
 type MessageType = 'today' | 'over' | 'before' | null;
+const EVENT_START = new Date(2026, 10, 9);
+const EVENT_END_EXCLUSIVE = new Date(2026, 10, 12);
 
 @Component({
   selector: 'app-home',
@@ -97,11 +100,14 @@ export class HomePage implements OnInit, OnDestroy {
   public secondarySession: Session | null = null;
   public todaySessions$!: Observable<Session[]>;
   public messageType: MessageType = null;
-  public currentDay = 1;
+  public currentDay = 0;
   public showQR = false;
   public displayName: string | null = null;
   public firstName: string | null = null;
   public welcomeGreeting = 'Ahlan';
+  public profileName = '';
+  public profilePosition = '';
+  public profileCountry = '';
   readonly safetyInductions: SafetyInductions = {
     sokhnaplant: {
       completed: false,
@@ -120,6 +126,7 @@ export class HomePage implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
   private readonly TICK_MS = 1000;
   private safetyInductionUnsubscribe?: Unsubscribe;
+  private viewGeneration = 0;
 
   constructor(
     private router: Router,
@@ -127,7 +134,8 @@ export class HomePage implements OnInit, OnDestroy {
     private auth: Auth,
     private data: DataService,
     private modalController: ModalController,
-    private zone: NgZone
+    private zone: NgZone,
+    private readonly adminPreview: AdminPreviewService
   ) {
   }
 
@@ -158,12 +166,10 @@ this.showQR = false;
 
     authState$.pipe(takeUntil(this.destroy$)).subscribe((user: any) => {
       this.displayName = user?.displayName ? this.formatDisplayName(user.displayName) : null;
-      this.firstName = null;
-      this.welcomeGreeting = 'Ahlan';
-      void this.loadWelcomeProfile(user?.email ?? null, user?.uid ?? null);
-      void this.loadPlantVisitRequirement(user?.email ?? null, user?.uid ?? null);
-      this.listenToSafetyInductionStatus(user?.email ?? null);
-
+      this.applyViewingProfile(user?.email ?? null, user?.uid ?? null);
+    });
+    this.adminPreview.selectedUser$.pipe(takeUntil(this.destroy$)).subscribe(() => {
+      this.applyViewingProfile(this.auth.currentUser?.email ?? null, this.auth.currentUser?.uid ?? null);
     });
 
     
@@ -196,10 +202,37 @@ this.showQR = false;
     );
   }
 
-  private async loadWelcomeProfile(email: string | null, uid: string | null): Promise<void> {
+  get isPreviewingUser(): boolean {
+    return this.adminPreview.isPreviewing;
+  }
+
+  private applyViewingProfile(authEmail: string | null, uid: string | null): void {
+    const previewUser = this.adminPreview.selectedUser;
+    const email = previewUser?.email ?? authEmail;
+    const generation = ++this.viewGeneration;
+    this.firstName = previewUser?.firstName || null;
+    this.profileName = previewUser?.name ?? '';
+    this.profilePosition = previewUser?.currentPosition ?? '';
+    this.profileCountry = previewUser?.locationCountry ?? '';
+    this.welcomeGreeting = 'Ahlan';
+    this.isPlantVisitRequired = false;
     if (!email) {
+      this.updateSafetyInductionStatus();
       return;
     }
+    void this.loadWelcomeProfile(email, uid, generation);
+    void this.loadPlantVisitRequirement(email, uid, generation);
+    this.listenToSafetyInductionStatus(email, generation);
+  }
+
+  private isCurrentViewingUser(email: string, uid: string | null, generation: number): boolean {
+    const currentEmail = this.adminPreview.selectedUser?.email ?? this.auth.currentUser?.email ?? '';
+    return this.viewGeneration === generation &&
+      this.auth.currentUser?.uid === uid &&
+      currentEmail.trim().toLowerCase() === email.trim().toLowerCase();
+  }
+
+  private async loadWelcomeProfile(email: string, uid: string | null, generation: number): Promise<void> {
 
     try {
       const usersQuery = query(
@@ -207,14 +240,24 @@ this.showQR = false;
         where('emailAddress', '==', email)
       );
       const snapshot = await getDocs(usersQuery);
-      const data = snapshot.docs[0]?.data() as { firstName?: unknown; nationality?: unknown } | undefined;
-      if (this.auth.currentUser?.uid !== uid || !data) {
+      const data = snapshot.docs[0]?.data() as {
+        firstName?: unknown;
+        lastName?: unknown;
+        nationality?: unknown;
+        currentPosition?: unknown;
+        locationCountry?: unknown;
+      } | undefined;
+      if (!data || !this.isCurrentViewingUser(email, uid, generation)) {
         return;
       }
       const firstName = String(data.firstName ?? '').trim();
       const nationality = String(data.nationality ?? '').trim();
+      const lastName = String(data.lastName ?? '').trim();
       this.zone.run(() => {
         this.firstName = firstName || null;
+        this.profileName = [firstName, lastName].filter(Boolean).join(' ');
+        this.profilePosition = String(data.currentPosition ?? '').trim();
+        this.profileCountry = String(data.locationCountry ?? '').trim();
         this.welcomeGreeting = nationality ? greetingForNationality(nationality) : 'Ahlan';
       });
     } catch (error) {
@@ -222,11 +265,8 @@ this.showQR = false;
     }
   }
 
-  private async loadPlantVisitRequirement(email: string | null, uid: string | null): Promise<void> {
+  private async loadPlantVisitRequirement(email: string, uid: string | null, generation: number): Promise<void> {
     this.isPlantVisitRequired = false;
-    if (!email) {
-      return;
-    }
 
     try {
       const usersQuery = query(
@@ -235,7 +275,7 @@ this.showQR = false;
       );
       const snapshot = await getDocs(usersQuery);
       const plantVisit = snapshot.docs[0]?.data()['plantVisit'] === true;
-      if (this.auth.currentUser?.uid === uid) {
+      if (this.isCurrentViewingUser(email, uid, generation)) {
         this.zone.run(() => {
           this.isPlantVisitRequired = plantVisit;
         });
@@ -251,14 +291,9 @@ this.showQR = false;
     this.destroy$.complete();
   }
 
-  private listenToSafetyInductionStatus(email: string | null): void {
+  private listenToSafetyInductionStatus(email: string, generation: number): void {
     this.safetyInductionUnsubscribe?.();
     this.safetyInductionUnsubscribe = undefined;
-
-    if (!email) {
-      this.updateSafetyInductionStatus();
-      return;
-    }
 
     const normalizedEmail = email.trim().toLowerCase();
     const hseApp =
@@ -271,11 +306,15 @@ this.showQR = false;
         const matchingProgress = snapshot.docs.find((progressDocument) =>
           String(progressDocument.data()['email'] ?? '').trim().toLowerCase() === normalizedEmail
         );
-        this.zone.run(() => this.updateSafetyInductionStatus(matchingProgress?.data()));
+        if (this.viewGeneration === generation) {
+          this.zone.run(() => this.updateSafetyInductionStatus(matchingProgress?.data()));
+        }
       },
       (error) => {
         console.error('[SafetyInduction] Failed to load induction progress:', error);
-        this.zone.run(() => this.updateSafetyInductionStatus());
+        if (this.viewGeneration === generation) {
+          this.zone.run(() => this.updateSafetyInductionStatus());
+        }
       }
     );
   }
@@ -297,6 +336,9 @@ this.showQR = false;
   }
 
   async openSafetyInductionModal(): Promise<void> {
+    if (this.isPreviewingUser) {
+      return;
+    }
     const modal = await this.modalController.create({
       component: SafetyInductionModalComponent,
       componentProps: {
@@ -358,9 +400,16 @@ this.showQR = false;
     return new Date(tsOrDate);
   }
 
-  /** Calculate event "current day" using sessions and a reference now time. Returns 0 for before event. */
+  /** Calculate event "current day" from the confirmed November 9–11, 2026 dates. */
   private calculateCurrentDayFromSessions(sessions: Session[], now = new Date()): number {
-    if (!sessions || sessions.length === 0) return 1;
+    if (now < EVENT_START) return 0;
+    if (now >= EVENT_END_EXCLUSIVE) return 3;
+
+    const calendarDay = Math.floor(
+      (new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime() - EVENT_START.getTime()) /
+        (24 * 60 * 60 * 1000)
+    ) + 1;
+    if (!sessions || sessions.length === 0) return calendarDay;
 
     // Group sessions by day number
     const byDay = new Map<number, { start: Date; end: Date }[]>();
@@ -373,7 +422,7 @@ this.showQR = false;
     }
 
     const dayNums = Array.from(byDay.keys()).sort((a, b) => a - b);
-    if (dayNums.length === 0) return 1;
+    if (dayNums.length === 0) return calendarDay;
 
     // Determine day's earliest start and latest end (per day)
     const ranges = dayNums.map((n) => {
@@ -384,9 +433,6 @@ this.showQR = false;
       const end = new Date(Math.max(...ends));
       return { dayNum: n, start, end };
     });
-
-    // Before event
-    if (now < ranges[0].start) return 0;
 
     // Find if now is within any day's range. If exactly between days but before 06:00, keep previous day.
     for (let i = 0; i < ranges.length; i++) {
@@ -401,8 +447,7 @@ this.showQR = false;
       }
     }
 
-    // After last day
-    return ranges[ranges.length - 1].dayNum;
+    return calendarDay;
   }
 
   /**
@@ -410,8 +455,14 @@ this.showQR = false;
    * Returns { primary, secondary, messageType } - pure function.
    */
   private evaluateSessionsForDay(sessions: Session[], now: Date, currentDay: number) {
-    if (!sessions || sessions.length === 0) {
+    if (now < EVENT_START) {
+      return { primary: null, secondary: null, messageType: 'before' as MessageType };
+    }
+    if (now >= EVENT_END_EXCLUSIVE) {
       return { primary: null, secondary: null, messageType: 'over' as MessageType };
+    }
+    if (!sessions || sessions.length === 0) {
+      return { primary: null, secondary: null, messageType: 'today' as MessageType };
     }
 
     // Sorted sessions expected but ensure stable ordering
