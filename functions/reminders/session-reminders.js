@@ -111,7 +111,7 @@ export const sendSessionReminders = onSchedule(
 );
 
 export const sendSessionRemindersManual = onRequest(
-  { region: "europe-west1" },
+  { region: "europe-west1", invoker: "private" },
   async (req, res) => {
     try {
       const authorization = req.get("authorization") || "";

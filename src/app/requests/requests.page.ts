@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, inject, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { IonicModule } from '@ionic/angular';
 import { CommonModule } from '@angular/common';
@@ -6,6 +6,7 @@ import { Auth, onAuthStateChanged, Unsubscribe } from '@angular/fire/auth';
 import { AdminRequest, AdminService } from '../services/admin.service';
 import { Subscription } from 'rxjs';
 import { AdminPreviewService } from '../services/admin-preview.service';
+import { FirebaseInjectionContext } from '../services/firebase-injection-context.service';
 
 @Component({
   selector: 'app-requests',
@@ -15,6 +16,7 @@ import { AdminPreviewService } from '../services/admin-preview.service';
   imports: [CommonModule, FormsModule, IonicModule],
 })
 export class RequestsPage implements OnInit, OnDestroy {
+  private readonly firebaseContext = inject(FirebaseInjectionContext);
   requestType = 'Transport';
   details = '';
   status = 'all';
@@ -34,23 +36,25 @@ export class RequestsPage implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    this.authUnsubscribe = onAuthStateChanged(this.auth, (user) => {
-      this.requestsSubscription?.unsubscribe();
-      this.requestsSubscription = undefined;
-      this.isLoading = true;
+    this.authUnsubscribe = this.firebaseContext.run(() =>
+      onAuthStateChanged(this.auth, (user) => {
+        this.requestsSubscription?.unsubscribe();
+        this.requestsSubscription = undefined;
+        this.isLoading = true;
 
-      if (!user?.email) {
-        this.isLoading = false;
-        this.errorMessage = 'Sign in to view and submit requests.';
-        return;
-      }
+        if (!user?.email) {
+          this.isLoading = false;
+          this.errorMessage = 'Sign in to view and submit requests.';
+          return;
+        }
 
-      this.previewSubscription?.unsubscribe();
-      this.previewSubscription = this.adminPreview.selectedUser$.subscribe((previewUser) => {
-        this.isPreviewingUser = previewUser !== null;
-        this.watchRequests(previewUser?.email ?? user.email!);
-      });
-    });
+        this.previewSubscription?.unsubscribe();
+        this.previewSubscription = this.adminPreview.selectedUser$.subscribe((previewUser) => {
+          this.isPreviewingUser = previewUser !== null;
+          this.watchRequests(previewUser?.email ?? user.email!);
+        })
+      })
+    );
   }
 
   private watchRequests(email: string): void {

@@ -7,6 +7,40 @@ import {
 } from "../shared/firebase.js";
 import { requireAuthenticatedUser } from "../shared/admin-auth.js";
 
+async function findDelegateProfiles(email) {
+  const users = db.collection("users");
+  const normalizedEmail = email.trim().toLowerCase();
+  const findByEmail = async (value) => {
+    const snapshots = await Promise.all([
+      users.where("email", "==", value).get(),
+      users.where("emailAddress", "==", value).get(),
+    ]);
+    return new Map(
+      snapshots.flatMap((snapshot) =>
+        snapshot.docs.map((userDocument) => [userDocument.id, userDocument])
+      )
+    );
+  };
+
+  let profiles = await findByEmail(normalizedEmail);
+  if (!profiles.size && email.trim() !== normalizedEmail) {
+    profiles = await findByEmail(email.trim());
+  }
+  if (!profiles.size) {
+    for (const documentId of new Set([email.trim(), normalizedEmail])) {
+      if (!documentId) {
+        continue;
+      }
+      const profile = await users.doc(documentId).get();
+      if (profile.exists) {
+        profiles.set(profile.id, profile);
+      }
+    }
+  }
+
+  return [...profiles.values()];
+}
+
 export const listSharedContactCards = onCall(
   { region: "europe-west1" },
   async (request) => {
@@ -92,6 +126,14 @@ export const recordAppActivity = onCall(
     const user = requireAuthenticatedUser(request);
     const installed = request.data?.installed === true;
     const activityRef = db.collection(APP_ANALYTICS_COLLECTION).doc(user.uid);
+    const profiles = await findDelegateProfiles(user.email);
+    if (profiles.length > 1) {
+      throw new HttpsError(
+        "failed-precondition",
+        "Your delegate profile matched more than one record."
+      );
+    }
+    const profileId = profiles[0]?.id;
 
     await db.runTransaction(async (transaction) => {
       const snapshot = await transaction.get(activityRef);
@@ -99,6 +141,7 @@ export const recordAppActivity = onCall(
         uid: user.uid,
         email: user.email,
         lastActiveAt: FieldValue.serverTimestamp(),
+        ...(profileId ? { profileId } : {}),
       };
 
       if (!snapshot.exists) {
@@ -139,19 +182,15 @@ export const registerPushToken = onCall(
       );
     }
 
-    const usersRef = db.collection("users");
-    let userSnapshot = await usersRef.where("email", "==", normalizedEmail).get();
-    if (userSnapshot.empty && user.email !== normalizedEmail) {
-      userSnapshot = await usersRef.where("email", "==", user.email).get();
-    }
-    if (userSnapshot.size > 1) {
+    const profiles = await findDelegateProfiles(user.email);
+    if (profiles.length > 1) {
       throw new HttpsError(
         "failed-precondition",
         "Your delegate profile matched more than one record."
       );
     }
-    if (userSnapshot.size === 1) {
-      await userSnapshot.docs[0].ref.set(
+    if (profiles.length === 1) {
+      await profiles[0].ref.set(
         {
           fcmToken: token,
           fcmProjectId: FCM_PROJECT_ID,

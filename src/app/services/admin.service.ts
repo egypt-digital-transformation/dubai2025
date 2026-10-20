@@ -32,6 +32,7 @@ import { Observable, map } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { IconicProject, HolcimProduct, ProjectStats } from '../iconic-projects/models/project.model';
 import { PreviewUser } from './admin-preview.service';
+import { FirebaseInjectionContext } from './firebase-injection-context.service';
 
 export interface AdminAttendee {
   id: string;
@@ -49,6 +50,7 @@ export interface AdminAttendee {
   active: boolean;
   installed: boolean;
   plantVisit: boolean;
+  authenticatedEmail?: string;
   safetyInductionCompleted?: boolean;
   safetyInductionStatus?: string;
   flightDetails?: FlightDetails;
@@ -170,6 +172,7 @@ export type NotificationTarget =
 export class AdminService {
   private readonly auth = inject(Auth);
   private readonly firestore = inject(Firestore);
+  private readonly firebaseContext = inject(FirebaseInjectionContext);
   private readonly functions = getFunctions(undefined, 'europe-west1');
 
   async isAdmin(email = this.auth.currentUser?.email): Promise<boolean> {
@@ -177,7 +180,9 @@ export class AdminService {
     if (!adminEmail) {
       return false;
     }
-    const snapshot = await getDoc(doc(this.firestore, 'admins', adminEmail));
+    const snapshot = await this.firebaseContext.run(() =>
+      getDoc(doc(this.firestore, 'admins', adminEmail))
+    );
     return snapshot.exists() && snapshot.data()['active'] === true;
   }
 
@@ -202,20 +207,23 @@ export class AdminService {
 
   async loadDashboard(): Promise<AdminDashboard> {
     const dashboard = await this.call<AdminDashboard>('getAdminDashboard', {});
-    const users = await this.loadMainProjectUsers();
-    const analytics = await this.loadAppAnalytics();
-    const attendees = await this.attachSafetyInductionStatus(
-      users.map((user) => {
-        const activity = analytics.get(user.email.toLowerCase());
-        return {
-          ...user,
-          loggedIn: activity?.loggedIn ?? false,
-          active: activity?.active ?? false,
-          installed: activity?.installed ?? false,
-          hasPushToken: user.hasPushToken,
-        };
-      })
-    );
+    const [profileAttendees, analytics] = await Promise.all([
+      this.loadMainProjectUsers(),
+      this.loadAppAnalytics(),
+    ]);
+    const attendeesWithStatus = profileAttendees.map((attendee) => {
+      const status = analytics.get(attendee.id) ??
+        analytics.get(attendee.email.trim().toLowerCase());
+      return {
+        ...attendee,
+        loggedIn: status?.loggedIn ?? false,
+        active: status?.active ?? false,
+        installed: status?.installed ?? false,
+        hasPushToken: attendee.hasPushToken,
+        authenticatedEmail: status?.email,
+      };
+    });
+    const attendees = await this.attachSafetyInductionStatus(attendeesWithStatus);
 
     return {
       ...dashboard,
@@ -577,7 +585,6 @@ export class AdminService {
       }
 
       return attendees.map((attendee) => {
-        const email = attendee.email.trim().toLowerCase();
         if (!attendee.plantVisit) {
           return {
             ...attendee,
@@ -585,18 +592,35 @@ export class AdminService {
             safetyInductionStatus: 'N/A',
           };
         }
-        const status = statusByEmail.get(email);
+        const matchingEmails = [
+          attendee.email,
+          attendee.id,
+          attendee.authenticatedEmail ?? '',
+        ]
+          .map((email) => email.trim().toLowerCase())
+          .filter(Boolean);
+        const status = matchingEmails
+          .map((email) => statusByEmail.get(email))
+          .find((value) => value !== undefined);
         return status
           ? {
               ...attendee,
               safetyInductionCompleted: status.completed,
               safetyInductionStatus: status.status,
             }
-          : { ...attendee, safetyInductionCompleted: false, safetyInductionStatus: 'Not started' };
+          : {
+              ...attendee,
+              safetyInductionCompleted: false,
+              safetyInductionStatus: 'No matching HSE record',
+            };
       });
     } catch (error) {
       console.error('[AdminService] Failed to load HSE induction status:', error);
-      return attendees;
+      return attendees.map((attendee) =>
+        attendee.plantVisit
+          ? { ...attendee, safetyInductionStatus: 'Unavailable' }
+          : { ...attendee, safetyInductionStatus: 'N/A' }
+      );
     }
   }
 
@@ -692,57 +716,6 @@ export class AdminService {
     return [...unique.values()].sort((a, b) => a.localeCompare(b));
   }
 
-  private async loadMainProjectUsers(): Promise<AdminAttendee[]> {
-    const snapshot = await getDocs(collection(this.firestore, 'users'));
-    const attendees = await Promise.all(snapshot.docs
-      .map(async (userDocument) => {
-        const data = userDocument.data() as {
-          displayName?: unknown;
-          name?: unknown;
-          firstName?: unknown;
-          nationality?: unknown;
-          emailAddress?: unknown;
-          plantVisit?: unknown;
-          day2?: { group?: unknown };
-          day3?: {
-            type?: unknown;
-            groupAM?: unknown;
-            groupPM?: unknown;
-          };
-          participantsGroup?: unknown;
-        };
-        const asText = (value: unknown): string =>
-          value == null ? '' : String(value);
-
-        const attendee = {
-          id: userDocument.id,
-          email: typeof data.emailAddress === 'string' && data.emailAddress.trim()
-            ? data.emailAddress.trim()
-            : userDocument.id,
-          name: asText(data.displayName ?? data.name),
-          firstName: asText(data.firstName),
-          nationality: asText(data.nationality),
-          day2Group: asText(data.day2?.group),
-          day3Type: asText(data.day3?.type),
-          day3GroupAM: asText(data.day3?.groupAM),
-          day3GroupPM: asText(data.day3?.groupPM),
-          participantsGroup: asText(data.participantsGroup),
-          hasPushToken:
-            typeof (data as { fcmToken?: unknown }).fcmToken === 'string' &&
-            (data as { fcmToken: string }).fcmToken.length > 0,
-          plantVisit: data.plantVisit === true,
-          loggedIn: false,
-          active: false,
-          installed: false,
-        };
-        const flightDetails = await this.loadFlightDetailsForUserId(userDocument.id);
-        return flightDetails ? { ...attendee, flightDetails } : attendee;
-      }));
-    return attendees
-      .filter((user) => user.email.trim().length > 0)
-      .sort((a, b) => a.email.localeCompare(b.email));
-  }
-
   private async loadFlightDetailsForUserId(userId: string): Promise<FlightDetails | null> {
     const flightDocument = await firebaseGetDoc(
       firestoreDoc(this.firestore, 'users', userId, 'flightDetails', 'flightInfo')
@@ -750,34 +723,79 @@ export class AdminService {
     return flightDocument.exists() ? this.toFlightDetails(flightDocument.data()) : null;
   }
 
+  private async loadMainProjectUsers(): Promise<AdminAttendee[]> {
+    const snapshot = await getDocs(collection(this.firestore, 'users'));
+    const attendees = await Promise.all(snapshot.docs.map(async (userDocument) => {
+      const data = userDocument.data();
+      const asText = (value: unknown): string =>
+        value == null ? '' : String(value);
+      const email = [data['emailAddress'], data['email']]
+        .find((value): value is string => typeof value === 'string' && value.trim().length > 0)
+        ?.trim() || userDocument.id.trim();
+      const name = asText(data['displayName'] ?? data['name']).trim() ||
+        [asText(data['firstName']).trim(), asText(data['lastName']).trim()]
+          .filter(Boolean)
+          .join(' ');
+      const attendee: AdminAttendee = {
+        id: userDocument.id,
+        email,
+        name,
+        firstName: asText(data['firstName']),
+        nationality: asText(data['nationality']),
+        day2Group: asText((data['day2'] as { group?: unknown } | undefined)?.group),
+        day3Type: asText((data['day3'] as { type?: unknown } | undefined)?.type),
+        day3GroupAM: asText((data['day3'] as { groupAM?: unknown } | undefined)?.groupAM),
+        day3GroupPM: asText((data['day3'] as { groupPM?: unknown } | undefined)?.groupPM),
+        participantsGroup: asText(data['participantsGroup']),
+        hasPushToken: typeof data['fcmToken'] === 'string' && data['fcmToken'].length > 0,
+        loggedIn: false,
+        active: false,
+        installed: false,
+        plantVisit: data['plantVisit'] === true,
+      };
+      const flightDetails = await this.loadFlightDetailsForUserId(userDocument.id);
+      return flightDetails ? { ...attendee, flightDetails } : attendee;
+    }));
+    return attendees
+      .filter((attendee) => attendee.email.trim().length > 0)
+      .sort((a, b) => a.email.localeCompare(b.email));
+  }
+
   private async loadAppAnalytics(): Promise<
-    Map<string, { loggedIn: boolean; active: boolean; installed: boolean }>
+    Map<string, { loggedIn: boolean; active: boolean; installed: boolean; email: string }>
   > {
     const snapshot = await getDocs(collection(this.firestore, 'appAnalytics'));
     const activeCutoff = Date.now() - 15 * 60 * 1000;
     const analytics = new Map<
       string,
-      { loggedIn: boolean; active: boolean; installed: boolean }
+      { loggedIn: boolean; active: boolean; installed: boolean; email: string }
     >();
 
     for (const activityDocument of snapshot.docs) {
       const data = activityDocument.data() as {
         email?: unknown;
+        profileId?: unknown;
         firstLoginAt?: { toMillis?: () => number };
         lastActiveAt?: { toMillis?: () => number };
         installedAt?: { toMillis?: () => number };
       };
       const email =
         typeof data.email === 'string' ? data.email.trim().toLowerCase() : '';
-      if (!email) {
-        continue;
-      }
       const lastActiveAt = data.lastActiveAt?.toMillis?.() ?? 0;
-      analytics.set(email, {
+      const status = {
         loggedIn: !!data.firstLoginAt,
         active: lastActiveAt >= activeCutoff,
         installed: !!data.installedAt,
-      });
+        email: typeof data.email === 'string' ? data.email.trim() : '',
+      };
+      const profileId =
+        typeof data.profileId === 'string' ? data.profileId.trim() : '';
+      if (profileId) {
+        analytics.set(profileId, status);
+      }
+      if (email) {
+        analytics.set(email, status);
+      }
     }
 
     return analytics;

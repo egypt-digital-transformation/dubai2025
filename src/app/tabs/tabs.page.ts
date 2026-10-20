@@ -29,6 +29,7 @@ import {
 import { Router } from '@angular/router';
 import { AdminService } from '../services/admin.service';
 import { AdminPreviewService, PreviewUser } from '../services/admin-preview.service';
+import { FirebaseInjectionContext } from '../services/firebase-injection-context.service';
 
 @Component({
   selector: 'app-tabs',
@@ -56,6 +57,7 @@ export class TabsPage implements OnInit, OnDestroy {
   private readonly auth = inject(Auth);
   private readonly router = inject(Router);
   private readonly adminService = inject(AdminService);
+  private readonly firebaseContext = inject(FirebaseInjectionContext);
   readonly preview = inject(AdminPreviewService);
   isAdmin = false;
   isLoadingPreviewUsers = false;
@@ -79,23 +81,25 @@ export class TabsPage implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.authUnsubscribe = onAuthStateChanged(this.auth, (user) => {
-      this.isAdmin = false;
-      if (!user?.email) {
-        this.preview.stopPreview();
-        return;
-      }
-      void this.adminService.isAdmin(user.email).then((isAdmin) => {
-        if (this.auth.currentUser?.uid === user.uid) {
-          this.isAdmin = isAdmin;
-          if (!isAdmin) {
-            this.preview.stopPreview();
-          }
+    this.authUnsubscribe = this.firebaseContext.run(() =>
+      onAuthStateChanged(this.auth, (user) => {
+        this.isAdmin = false;
+        if (!user?.email) {
+          this.preview.stopPreview();
+          return;
         }
-      }).catch((error) => {
-        console.error('[TabsPage] Failed to verify admin access:', error);
-      });
-    });
+        void this.adminService.isAdmin(user.email).then((isAdmin) => {
+          if (this.auth.currentUser?.uid === user.uid) {
+            this.isAdmin = isAdmin;
+            if (!isAdmin) {
+              this.preview.stopPreview();
+            }
+          }
+        }).catch((error) => {
+          console.error('[TabsPage] Failed to verify admin access:', error);
+        });
+      })
+    );
   }
 
   ngOnDestroy(): void {

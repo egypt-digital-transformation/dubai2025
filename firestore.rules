@@ -48,6 +48,15 @@ service cloud.firestore {
             && isOwnUser(get(/databases/$(database)/documents/users/$(userId)).data)
           );
       }
+
+      match /flightDetails/{flightId} {
+        allow read: if isAdmin()
+          || (
+            exists(/databases/$(database)/documents/users/$(userId))
+            && isOwnUser(get(/databases/$(database)/documents/users/$(userId)).data)
+          );
+        allow write: if isAdmin();
+      }
     }
 
     match /sessions/{sessionId} {

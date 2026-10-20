@@ -1,10 +1,11 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, inject, OnDestroy, OnInit } from '@angular/core';
 import { Auth, onAuthStateChanged, Unsubscribe } from '@angular/fire/auth';
 import { IonicModule } from '@ionic/angular';
 import { Subscription } from 'rxjs';
 import { AdminPreviewService } from '../services/admin-preview.service';
 import { AdminService } from '../services/admin.service';
+import { FirebaseInjectionContext } from '../services/firebase-injection-context.service';
 
 interface DirectoryContact {
   name: string;
@@ -21,6 +22,7 @@ interface DirectoryContact {
   imports: [CommonModule, IonicModule],
 })
 export class NetworkingPage implements OnInit, OnDestroy {
+  private readonly firebaseContext = inject(FirebaseInjectionContext);
   directoryContacts: DirectoryContact[] = [];
   isDirectoryLoading = true;
   directoryError = '';
@@ -35,12 +37,14 @@ export class NetworkingPage implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    this.authUnsubscribe = onAuthStateChanged(this.auth, (user) => {
-      this.previewSubscription?.unsubscribe();
-      this.previewSubscription = this.adminPreview.selectedUser$.subscribe((previewUser) => {
-        this.watchDirectory(previewUser?.email ?? user?.email ?? undefined);
-      });
-    });
+    this.authUnsubscribe = this.firebaseContext.run(() =>
+      onAuthStateChanged(this.auth, (user) => {
+        this.previewSubscription?.unsubscribe();
+        this.previewSubscription = this.adminPreview.selectedUser$.subscribe((previewUser) => {
+          this.watchDirectory(previewUser?.email ?? user?.email ?? undefined);
+        });
+      })
+    );
   }
 
   ngOnDestroy(): void {

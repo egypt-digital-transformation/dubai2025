@@ -1,12 +1,13 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, inject, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { IonicModule, ModalController } from '@ionic/angular';
 import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
 import { PostService, Post } from '../services/post.service';
 import { NewPostModalComponent } from './new-post-modal/new-post-modal.component';
-import { Auth } from '@angular/fire/auth';
+import { Auth, onAuthStateChanged } from '@angular/fire/auth';
 import { Timestamp } from 'firebase/firestore';
+import { FirebaseInjectionContext } from '../services/firebase-injection-context.service';
 
 interface PostDisplay extends Post {
   liked: boolean;
@@ -23,6 +24,7 @@ interface PostDisplay extends Post {
   styleUrls: ['./network.page.scss'],
 })
 export class NetworkPage implements OnInit, OnDestroy {
+  private readonly firebaseContext = inject(FirebaseInjectionContext);
   searchQuery = '';
   
   // Current user info from Google SSO
@@ -56,7 +58,7 @@ export class NetworkPage implements OnInit, OnDestroy {
     }, 5000); // 5 second timeout
 
     // Get current user info from Google SSO
-    this.auth.onAuthStateChanged((user) => {
+    this.firebaseContext.run(() => onAuthStateChanged(this.auth, (user) => {
       console.log('Auth state changed:', user ? 'User found' : 'No user');
       
       if (user) {
@@ -74,7 +76,7 @@ export class NetworkPage implements OnInit, OnDestroy {
           clearTimeout(this.authCheckTimeout);
         }
       }
-    });
+    }));
   }
 
   ngOnDestroy() {

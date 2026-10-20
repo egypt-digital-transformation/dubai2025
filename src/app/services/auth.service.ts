@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import {
   Auth,
   GoogleAuthProvider,
@@ -9,11 +9,13 @@ import {
 } from '@angular/fire/auth';
 import { BehaviorSubject } from 'rxjs';
 import { Preferences } from '@capacitor/preferences';
+import { FirebaseInjectionContext } from './firebase-injection-context.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
+  private readonly firebaseContext = inject(FirebaseInjectionContext);
   private _user = new BehaviorSubject<User | null>(null);
   public user$ = this._user.asObservable();
 
@@ -27,28 +29,30 @@ export class AuthService {
   /** Initialize Firebase Auth listener once */
   private async initializeAuth(): Promise<void> {
     return new Promise((resolve) => {
-      onAuthStateChanged(this.auth, async (user) => {
-        this._user.next(user);
+      this.firebaseContext.run(() =>
+        onAuthStateChanged(this.auth, async (user) => {
+          this._user.next(user);
 
-        if (user) {
-          await Preferences.set({
-            key: 'user',
-            value: JSON.stringify({
-              uid: user.uid,
-              email: user.email,
-              displayName: user.displayName,
-              photoURL: user.photoURL,
-            })
-          });
-        } else {
-          await Preferences.remove({ key: 'user' });
-        }
+          if (user) {
+            await Preferences.set({
+              key: 'user',
+              value: JSON.stringify({
+                uid: user.uid,
+                email: user.email,
+                displayName: user.displayName,
+                photoURL: user.photoURL,
+              }),
+            });
+          } else {
+            await Preferences.remove({ key: 'user' });
+          }
 
-        if (!this.authInitialized) {
-          this.authInitialized = true;
-          resolve();
-        }
-      });
+          if (!this.authInitialized) {
+            this.authInitialized = true;
+            resolve();
+          }
+        })
+      );
     });
   }
 
@@ -72,7 +76,7 @@ export class AuthService {
     try {
       const provider = new GoogleAuthProvider();
       provider.setCustomParameters({ prompt: 'select_account' });
-      const result = await signInWithPopup(this.auth, provider);
+      const result = await this.firebaseContext.run(() => signInWithPopup(this.auth, provider));
 
       if (!result?.user) throw new Error('No user returned from sign-in');
       return result.user;
@@ -85,7 +89,7 @@ export class AuthService {
   /** Logout and clear data */
   async logout(): Promise<void> {
     try {
-      await signOut(this.auth);
+      await this.firebaseContext.run(() => signOut(this.auth));
       await Preferences.remove({ key: 'user' });
       this._user.next(null);
     } catch (error) {

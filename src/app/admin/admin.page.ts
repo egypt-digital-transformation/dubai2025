@@ -931,7 +931,7 @@ export class AdminPage implements OnInit, OnDestroy {
 
   get filteredAttendees(): AdminAttendee[] {
     const query = this.attendeeSearch.trim().toLowerCase();
-    return this.attendees.filter((attendee) => {
+    return (this.dashboard?.attendees ?? []).filter((attendee) => {
       const matchesQuery =
         !query ||
         [attendee.name, attendee.email, attendee.id, attendee.day2Group, attendee.day3Type,
@@ -948,7 +948,7 @@ export class AdminPage implements OnInit, OnDestroy {
   }
 
   get attendeesWithFlights(): AdminAttendee[] {
-    return this.attendees.filter((attendee) => attendee.flightDetails);
+    return (this.dashboard?.attendees ?? []).filter((attendee) => attendee.flightDetails);
   }
 
   exportAttendees(): void {

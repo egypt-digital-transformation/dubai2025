@@ -6,6 +6,7 @@ import {
   QueryList,
   ViewChildren,
   ViewChild,
+  inject,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { IonContent, IonIcon } from '@ionic/angular/standalone';
@@ -24,6 +25,7 @@ import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
 import { filter } from 'rxjs/operators';
 import { AdminPreviewService } from '../services/admin-preview.service';
+import { FirebaseInjectionContext } from '../services/firebase-injection-context.service';
 
 interface Session {
   id: string;
@@ -55,6 +57,7 @@ interface Session {
   imports: [IonContent, IonIcon, CommonModule, FormsModule],
 })
 export class AgendaPage implements OnInit, OnDestroy {
+  private readonly firebaseContext = inject(FirebaseInjectionContext);
   selectedDay = '1';
   availableDays: string[] = [];
   isTransitioning = false;
@@ -141,11 +144,11 @@ export class AgendaPage implements OnInit, OnDestroy {
 
       const usersRef = collection(this.firestore, 'users');
       const emailAddressQuery = query(usersRef, where('emailAddress', '==', this.userEmail));
-      let snapshot = await getDocs(emailAddressQuery);
+      let snapshot = await this.firebaseContext.run(() => getDocs(emailAddressQuery));
       if (loadId !== this.agendaLoadId) return;
       if (snapshot.empty) {
         const emailQuery = query(usersRef, where('email', '==', this.userEmail));
-        snapshot = await getDocs(emailQuery);
+        snapshot = await this.firebaseContext.run(() => getDocs(emailQuery));
         if (loadId !== this.agendaLoadId) return;
       }
 

@@ -1,12 +1,24 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { AlertController } from '@ionic/angular';
+import { vi } from 'vitest';
 import { AdminDashboard, AdminService } from '../services/admin.service';
 import { AdminPage } from './admin.page';
 
 describe('AdminPage', () => {
   let fixture: ComponentFixture<AdminPage>;
   let component: AdminPage;
-  let adminService: jasmine.SpyObj<AdminService>;
+  let adminService: ReturnType<typeof createAdminServiceMock>;
+
+  const createAdminServiceMock = () => ({
+    loadDashboard: vi.fn<AdminService['loadDashboard']>(),
+    loadNotificationAudience: vi.fn<AdminService['loadNotificationAudience']>(),
+    sendNotification: vi.fn<AdminService['sendNotification']>(),
+    scheduleNotification: vi.fn<AdminService['scheduleNotification']>(),
+    listAdminInteractiveActivities: vi.fn<AdminService['listAdminInteractiveActivities']>(),
+    createInteractiveActivity: vi.fn<AdminService['createInteractiveActivity']>(),
+    loadAdminRequests: vi.fn<AdminService['loadAdminRequests']>(),
+    updateAdminRequest: vi.fn<AdminService['updateAdminRequest']>(),
+  });
 
   const dashboard: AdminDashboard = {
     refreshedAt: new Date().toISOString(),
@@ -55,23 +67,14 @@ describe('AdminPage', () => {
   };
 
   beforeEach(async () => {
-    adminService = jasmine.createSpyObj<AdminService>('AdminService', [
-      'loadDashboard',
-      'loadNotificationAudience',
-      'sendNotification',
-      'scheduleNotification',
-      'listAdminInteractiveActivities',
-      'createInteractiveActivity',
-      'loadAdminRequests',
-      'updateAdminRequest',
-    ]);
-    adminService.loadDashboard.and.resolveTo(dashboard);
-    adminService.loadNotificationAudience.and.resolveTo(dashboard.attendees);
-    adminService.loadAdminRequests.and.resolveTo([]);
-    adminService.updateAdminRequest.and.resolveTo(undefined);
-    adminService.listAdminInteractiveActivities.and.resolveTo({ activities: [] });
-    adminService.createInteractiveActivity.and.resolveTo({ id: 'activity-1' });
-    adminService.sendNotification.and.resolveTo({
+    adminService = createAdminServiceMock();
+    adminService.loadDashboard.mockResolvedValue(dashboard);
+    adminService.loadNotificationAudience.mockResolvedValue(dashboard.attendees);
+    adminService.loadAdminRequests.mockResolvedValue([]);
+    adminService.updateAdminRequest.mockResolvedValue(undefined);
+    adminService.listAdminInteractiveActivities.mockResolvedValue({ activities: [] });
+    adminService.createInteractiveActivity.mockResolvedValue({ id: 'activity-1' });
+    adminService.sendNotification.mockResolvedValue({
       campaignId: 'campaign-1',
       targetCount: 1,
       pushReadyCount: 1,
@@ -79,7 +82,7 @@ describe('AdminPage', () => {
       failedCount: 0,
       status: 'complete',
     });
-    adminService.scheduleNotification.and.resolveTo({
+    adminService.scheduleNotification.mockResolvedValue({
       campaignId: 'campaign-scheduled',
       targetCount: 2,
       pushReadyCount: 2,
@@ -90,8 +93,8 @@ describe('AdminPage', () => {
     });
 
     const alert = {
-      present: jasmine.createSpy().and.resolveTo(undefined),
-      onDidDismiss: jasmine.createSpy().and.resolveTo({ role: 'confirm' }),
+      present: vi.fn().mockResolvedValue(undefined),
+      onDidDismiss: vi.fn().mockResolvedValue({ role: 'confirm' }),
     };
 
     await TestBed.configureTestingModule({
@@ -100,7 +103,7 @@ describe('AdminPage', () => {
         { provide: AdminService, useValue: adminService },
         {
           provide: AlertController,
-          useValue: { create: jasmine.createSpy().and.resolveTo(alert) },
+          useValue: { create: vi.fn().mockResolvedValue(alert) },
         },
       ],
     }).compileComponents();
@@ -112,41 +115,44 @@ describe('AdminPage', () => {
     await component.loadNotificationAudience();
   });
 
-  afterEach(() => fixture.destroy());
+  afterEach(() => {
+    vi.restoreAllMocks();
+    fixture.destroy();
+  });
 
   it('builds group targeting options from the delegate profiles', () => {
-    expect(component.segments).toContain(
-      jasmine.objectContaining({
+    expect(component.segments).toEqual(expect.arrayContaining([
+      expect.objectContaining({
         field: 'day2.group',
         value: '1',
         label: 'Day 2 group: 1',
-      })
-    );
+      }),
+    ]));
     expect(component.notificationSegments.map((segment) => segment.label)).toEqual([
       'Participants group: Leadership',
       'Participants group: Operations',
     ]);
-    expect(component.segments).toContain(
-      jasmine.objectContaining({
+    expect(component.segments).toEqual(expect.arrayContaining([
+      expect.objectContaining({
         field: 'day3.type',
         value: 'SV',
         label: 'Day 3 track/type: SV',
-      })
-    );
-    expect(component.segments).toContain(
-      jasmine.objectContaining({
+      }),
+    ]));
+    expect(component.segments).toEqual(expect.arrayContaining([
+      expect.objectContaining({
         field: 'participantsGroup',
         value: 'Leadership',
         label: 'Participants group: Leadership',
-      })
-    );
-    expect(component.segments).toContain(
-      jasmine.objectContaining({
+      }),
+    ]));
+    expect(component.segments).toEqual(expect.arrayContaining([
+      expect.objectContaining({
         field: 'plantVisit',
         value: 'true',
         label: 'Plant visitors',
-      })
-    );
+      }),
+    ]));
   });
 
   it('loads the notification audience independently from Firestore', async () => {
@@ -158,6 +164,38 @@ describe('AdminPage', () => {
       'b@example.com',
     ]);
     expect(component.pushReadyRecipientCount).toBe(2);
+  });
+
+  it('shows flight records from dashboard attendees, not notification audience', () => {
+    const flightDetails = {
+      inbound: {
+        arrivalAirport: 'CAI',
+        arrivalDate: '2026-11-09',
+        arrivalTime: '10:00',
+        departureAirport: 'DXB',
+        departureDate: '2026-11-09',
+        departureTime: '07:00',
+        flightNo: 'TEST123',
+      },
+      outbound: {
+        arrivalAirport: 'DXB',
+        arrivalDate: '2026-11-12',
+        arrivalTime: '18:00',
+        departureAirport: 'CAI',
+        departureDate: '2026-11-12',
+        departureTime: '15:00',
+        flightNo: 'TEST456',
+      },
+    };
+    component.dashboard = {
+      ...dashboard,
+      attendees: [{ ...dashboard.attendees[0], flightDetails }],
+    };
+    component.notificationAudience = [dashboard.attendees[1]];
+
+    expect(component.attendeesWithFlights).toEqual([
+      { ...dashboard.attendees[0], flightDetails },
+    ]);
   });
 
   it('sends to any number of individually selected users', async () => {
@@ -314,7 +352,7 @@ describe('AdminPage', () => {
     await component.createInteractiveActivity();
 
     expect(adminService.createInteractiveActivity).toHaveBeenCalledWith(
-      jasmine.objectContaining({
+      expect.objectContaining({
         kind: 'poll',
         target: { kind: 'users', userIds: ['delegate-a', 'delegate-b'] },
       })
@@ -330,7 +368,7 @@ describe('AdminPage', () => {
     await component.createInteractiveActivity();
 
     expect(adminService.createInteractiveActivity).toHaveBeenCalledWith(
-      jasmine.objectContaining({
+      expect.objectContaining({
         target: { kind: 'segment', field: 'plantVisit', value: 'true' },
       })
     );
@@ -422,13 +460,52 @@ describe('AdminPage', () => {
     expect(component.filteredAttendees.map((attendee) => attendee.id)).toEqual(['delegate-b']);
   });
 
+  it('uses dashboard attendee statuses rather than notification-audience placeholders', () => {
+    component.dashboard = {
+      ...dashboard,
+      attendees: [
+        {
+          ...dashboard.attendees[0],
+          loggedIn: true,
+          installed: true,
+          hasPushToken: true,
+          safetyInductionCompleted: true,
+          safetyInductionStatus: 'Done',
+        },
+      ],
+    };
+    component.notificationAudience = [
+      {
+        ...dashboard.attendees[0],
+        loggedIn: false,
+        installed: false,
+        hasPushToken: false,
+        safetyInductionCompleted: false,
+        safetyInductionStatus: 'Not started',
+      },
+    ];
+    component.attendeeSearch = 'a@example.com';
+    component.attendeeStatusFilter = 'installed';
+
+    expect(component.filteredAttendees).toEqual([
+      {
+        ...dashboard.attendees[0],
+        loggedIn: true,
+        installed: true,
+        hasPushToken: true,
+        safetyInductionCompleted: true,
+        safetyInductionStatus: 'Done',
+      },
+    ]);
+  });
+
   it('exports the currently filtered attendees as CSV', () => {
     component.selectedSection = 'attendees';
     component.attendeeSearch = 'delegate-a';
-    const createObjectUrl = spyOn(URL, 'createObjectURL').and.returnValue('blob:test');
-    const revokeObjectUrl = spyOn(URL, 'revokeObjectURL');
-    const click = jasmine.createSpy('click');
-    spyOn(document, 'createElement').and.returnValue({
+    const createObjectUrl = vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:test');
+    const revokeObjectUrl = vi.spyOn(URL, 'revokeObjectURL');
+    const click = vi.fn();
+    vi.spyOn(document, 'createElement').mockReturnValue({
       click,
     } as unknown as HTMLAnchorElement);
 
@@ -440,7 +517,7 @@ describe('AdminPage', () => {
   });
 
   it('shows activity lifecycle status without offering unsupported close persistence', async () => {
-    adminService.listAdminInteractiveActivities.and.resolveTo({
+    adminService.listAdminInteractiveActivities.mockResolvedValue({
       activities: [
         {
           id: 'open-activity',

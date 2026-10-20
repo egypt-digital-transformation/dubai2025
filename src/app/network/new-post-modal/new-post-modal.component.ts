@@ -4,6 +4,7 @@ import { IonicModule, ModalController, ActionSheetController, LoadingController,
 import { FormsModule } from '@angular/forms';
 import { Auth, User, onAuthStateChanged } from '@angular/fire/auth';
 import { ImageUploadService } from '../../services/image-upload.service';
+import { FirebaseInjectionContext } from '../../services/firebase-injection-context.service';
 
 @Component({
   selector: 'app-new-post-modal',
@@ -20,6 +21,7 @@ export class NewPostModalComponent implements OnInit, OnDestroy {
   private loadingCtrl = inject(LoadingController);
   private alertCtrl = inject(AlertController);
   private imageUploadService = inject(ImageUploadService);
+  private firebaseContext = inject(FirebaseInjectionContext);
   private unsubscribeAuth?: () => void;
 
   userName = '';
@@ -36,16 +38,18 @@ export class NewPostModalComponent implements OnInit, OnDestroy {
       this.setUserData(currentUser);
     }
 
-    this.unsubscribeAuth = onAuthStateChanged(this.auth, (user: User | null) => {
-      this.zone.run(() => {
-        if (user) {
-          this.setUserData(user);
-        } else {
-          this.userName = 'Guest';
-          this.userPhoto = 'assets/user.png';
-        }
-      });
-    });
+    this.unsubscribeAuth = this.firebaseContext.run(() =>
+      onAuthStateChanged(this.auth, (user: User | null) => {
+        this.zone.run(() => {
+          if (user) {
+            this.setUserData(user);
+          } else {
+            this.userName = 'Guest';
+            this.userPhoto = 'assets/user.png';
+          }
+        });
+      })
+    );
   }
 
   ngOnDestroy() {

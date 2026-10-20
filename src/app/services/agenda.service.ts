@@ -11,6 +11,7 @@ import {
   CollectionReference,
 } from '@angular/fire/firestore';
 import { AuthService } from './auth.service';
+import { FirebaseInjectionContext } from './firebase-injection-context.service';
 
 interface Session {
   id: string;
@@ -28,7 +29,11 @@ interface Session {
   providedIn: 'root',
 })
 export class AgendaService {
-  constructor(private firestore: Firestore, private authService: AuthService) {}
+  constructor(
+    private firestore: Firestore,
+    private authService: AuthService,
+    private readonly firebaseContext: FirebaseInjectionContext
+  ) {}
 
   /** Generate a personalized agenda for the authenticated user */
 async generateUserAgenda(): Promise<void> {
@@ -40,7 +45,7 @@ async generateUserAgenda(): Promise<void> {
   // 1️⃣ Fetch user doc
   const usersRef = collection(this.firestore, 'users');
   const q = query(usersRef, where('email', '==', userEmail));
-  const userDocs = await getDocs(q);
+  const userDocs = await this.firebaseContext.run(() => getDocs(q));
   if (userDocs.empty) return;
 
   const userDocSnap = userDocs.docs[0];
@@ -48,7 +53,7 @@ async generateUserAgenda(): Promise<void> {
 
   // 2️⃣ Fetch all sessions
   const sessionsRef = collection(this.firestore, 'sessions') as CollectionReference<Session>;
-  const sessionDocs = await getDocs(sessionsRef);
+  const sessionDocs = await this.firebaseContext.run(() => getDocs(sessionsRef));
 
   // 3️⃣ Build personalized agenda
   const personalizedSessions: Session[] = [];
@@ -101,15 +106,15 @@ async generateUserAgenda(): Promise<void> {
   const userAgendaRef = collection(this.firestore, `users/${userDocSnap.id}/agenda`);
   for (const session of personalizedSessions) {
     const agendaDoc = doc(userAgendaRef, session.id);
-    const existingAgendaDoc = await getDoc(agendaDoc);
-    await setDoc(
+    const existingAgendaDoc = await this.firebaseContext.run(() => getDoc(agendaDoc));
+    await this.firebaseContext.run(() => setDoc(
       agendaDoc,
       {
         ...session,
         reminderSent: existingAgendaDoc.data()?.['reminderSent'] === true,
       },
       { merge: true }
-    );
+    ));
   }
 
   console.log(`[AgendaService] ✅ Saved ${personalizedSessions.length} sessions to ${userEmail}'s agenda`);

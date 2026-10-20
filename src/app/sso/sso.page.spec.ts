@@ -8,7 +8,6 @@ describe('SsoPage', () => {
   beforeEach(() => {
     fixture = TestBed.createComponent(SsoPage);
     component = fixture.componentInstance;
-    fixture.detectChanges();
   });
 
   it('should create', () => {

@@ -1,4 +1,5 @@
-import { Component, NgZone, OnInit, OnDestroy } from '@angular/core';
+import { Component, inject, NgZone, OnInit, OnDestroy } from '@angular/core';
+import { FirebaseInjectionContext } from '../services/firebase-injection-context.service';
 import { Router } from '@angular/router';
 import { CommonModule, DatePipe } from '@angular/common';
 import {
@@ -91,6 +92,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
   ],
 })
 export class HomePage implements OnInit, OnDestroy {
+  private readonly firebaseContext = inject(FirebaseInjectionContext);
   public primarySession: Session | null = null;
   public secondarySession: Session | null = null;
   public todaySessions$!: Observable<Session[]>;
@@ -164,7 +166,9 @@ this.showQR = false;
 
     // auth state - formatted displayName
     const authState$ = new Observable((sub) => {
-      const unsub = onAuthStateChanged(this.auth, (user) => sub.next(user ?? null));
+      const unsub = this.firebaseContext.run(() =>
+        onAuthStateChanged(this.auth, (user) => sub.next(user ?? null))
+      );
       return { unsubscribe: unsub };
     }).pipe(takeUntil(this.destroy$), shareReplay(1));
 
@@ -227,9 +231,9 @@ this.showQR = false;
     this.isSavingContactSharing = true;
     this.contactSharingError = '';
     try {
-      await updateDoc(doc(this.firestore, 'users', this.profileDocumentId), {
+      await this.firebaseContext.run(() => updateDoc(doc(this.firestore, 'users', this.profileDocumentId), {
         shareContactCard: nextValue,
-      });
+      }));
     } catch (error) {
       console.error('[HomePage] Failed to update contact-card sharing:', error);
       this.shareContactCard = previousValue;
@@ -290,15 +294,23 @@ this.showQR = false;
     try {
       const users = collection(this.firestore, 'users');
       const normalizedEmail = email.trim().toLowerCase();
-      let snapshot = await getDocs(query(users, where('emailAddress', '==', normalizedEmail)));
+      let snapshot = await this.firebaseContext.run(() =>
+        getDocs(query(users, where('emailAddress', '==', normalizedEmail)))
+      );
       if (snapshot.empty && email.trim() !== normalizedEmail) {
-        snapshot = await getDocs(query(users, where('emailAddress', '==', email.trim())));
+        snapshot = await this.firebaseContext.run(() =>
+          getDocs(query(users, where('emailAddress', '==', email.trim())))
+        );
       }
       if (snapshot.empty) {
-        snapshot = await getDocs(query(users, where('email', '==', normalizedEmail)));
+        snapshot = await this.firebaseContext.run(() =>
+          getDocs(query(users, where('email', '==', normalizedEmail)))
+        );
       }
       if (snapshot.empty && email.trim() !== normalizedEmail) {
-        snapshot = await getDocs(query(users, where('email', '==', email.trim())));
+        snapshot = await this.firebaseContext.run(() =>
+          getDocs(query(users, where('email', '==', email.trim())))
+        );
       }
       const userDocument = snapshot.docs[0];
       const data = userDocument?.data() as {
@@ -418,8 +430,8 @@ this.showQR = false;
     generation: number
   ): Promise<void> {
     try {
-      const agendaSnapshot = await getDocs(
-        collection(this.firestore, 'users', userId, 'agenda')
+      const agendaSnapshot = await this.firebaseContext.run(() =>
+        getDocs(collection(this.firestore, 'users', userId, 'agenda'))
       );
       const agendaDays = agendaSnapshot.docs
         .map((agendaDocument) => agendaDocument.data())
@@ -471,7 +483,7 @@ this.showQR = false;
         collection(this.firestore, 'users'),
         where('emailAddress', '==', email)
       );
-      const snapshot = await getDocs(usersQuery);
+      const snapshot = await this.firebaseContext.run(() => getDocs(usersQuery));
       const plantVisit = snapshot.docs[0]?.data()['plantVisit'] === true;
       if (this.isCurrentViewingUser(email, uid, generation)) {
         this.zone.run(() => {

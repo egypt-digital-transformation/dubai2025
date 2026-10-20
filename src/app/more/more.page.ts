@@ -22,6 +22,7 @@ import {
 } from 'ionicons/icons';
 import { Router } from '@angular/router';
 import { AdminService } from '../services/admin.service';
+import { FirebaseInjectionContext } from '../services/firebase-injection-context.service';
 
 interface MoreItem {
   title: string;
@@ -41,6 +42,7 @@ export class MorePage implements OnInit, OnDestroy {
   private readonly auth = inject(Auth);
   private readonly router = inject(Router);
   private readonly adminService = inject(AdminService);
+  private readonly firebaseContext = inject(FirebaseInjectionContext);
   private authUnsubscribe?: Unsubscribe;
 
   isAdmin = false;
@@ -76,20 +78,22 @@ export class MorePage implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.authUnsubscribe = onAuthStateChanged(this.auth, (user) => {
-      this.isAdmin = false;
-      if (!user?.email) {
-        return;
-      }
-
-      void this.adminService.isAdmin(user.email).then((isAdmin) => {
-        if (this.auth.currentUser?.uid === user.uid) {
-          this.isAdmin = isAdmin;
+    this.authUnsubscribe = this.firebaseContext.run(() =>
+      onAuthStateChanged(this.auth, (user) => {
+        this.isAdmin = false;
+        if (!user?.email) {
+          return;
         }
-      }).catch((error) => {
-        console.error('[MorePage] Failed to verify admin access:', error);
-      });
-    });
+
+        void this.adminService.isAdmin(user.email).then((isAdmin) => {
+          if (this.auth.currentUser?.uid === user.uid) {
+            this.isAdmin = isAdmin;
+          }
+        }).catch((error) => {
+          console.error('[MorePage] Failed to verify admin access:', error);
+        });
+      })
+    );
   }
 
   ngOnDestroy(): void {

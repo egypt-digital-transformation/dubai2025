@@ -9,7 +9,6 @@ describe('AgendaPage', () => {
   beforeEach(async () => {
     fixture = TestBed.createComponent(AgendaPage);
     component = fixture.componentInstance;
-    fixture.detectChanges();
   });
 
   it('should create', () => {

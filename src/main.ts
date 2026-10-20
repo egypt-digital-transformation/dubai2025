@@ -1,3 +1,6 @@
+import './polyfills';
+import './global.scss';
+import './theme/variables.scss';
 import { bootstrapApplication } from '@angular/platform-browser';
 import { RouteReuseStrategy } from '@angular/router';
 import { IonicRouteStrategy, provideIonicAngular } from '@ionic/angular/standalone';
@@ -8,13 +11,17 @@ import { provideStorage, getStorage } from '@angular/fire/storage'; // ✅ Add t
 import { AppComponent } from './app/app.component';
 import { routes } from './app/app.routes';
 import { environment } from './environments/environment';
-import { isDevMode, APP_INITIALIZER } from '@angular/core';
+import { enableProdMode, isDevMode, APP_INITIALIZER } from '@angular/core';
 import { provideServiceWorker } from '@angular/service-worker';
 import { defineCustomElements } from '@ionic/pwa-elements/loader';
 import { provideRouter } from '@angular/router';
 import { DataService } from './app/services/data.service';
 import { firstValueFrom } from 'rxjs';
 import { SplashScreen } from '@capacitor/splash-screen';
+
+if (environment.production) {
+  enableProdMode();
+}
 
 defineCustomElements(window);
 
