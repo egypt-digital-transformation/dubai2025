@@ -20,27 +20,35 @@ describe('AdminPage', () => {
         id: 'delegate-a',
         email: 'a@example.com',
         name: 'Delegate A',
+        firstName: 'Delegate',
+        nationality: 'Egyptian',
         day2Group: '1',
         day3Type: 'SV',
         day3GroupAM: '',
         day3GroupPM: '',
+        participantsGroup: 'Leadership',
         hasPushToken: true,
         loggedIn: true,
         active: true,
         installed: true,
+        plantVisit: true,
       },
       {
         id: 'delegate-b',
         email: 'b@example.com',
         name: 'Delegate B',
+        firstName: 'Delegate',
+        nationality: 'Egyptian',
         day2Group: '2',
         day3Type: 'WS',
         day3GroupAM: '3',
         day3GroupPM: '',
+        participantsGroup: 'Operations',
         hasPushToken: true,
         loggedIn: false,
         active: false,
         installed: false,
+        plantVisit: false,
       },
     ],
     campaigns: [],
@@ -49,11 +57,18 @@ describe('AdminPage', () => {
   beforeEach(async () => {
     adminService = jasmine.createSpyObj<AdminService>('AdminService', [
       'loadDashboard',
+      'loadNotificationAudience',
       'sendNotification',
+      'scheduleNotification',
       'listAdminInteractiveActivities',
       'createInteractiveActivity',
+      'loadAdminRequests',
+      'updateAdminRequest',
     ]);
     adminService.loadDashboard.and.resolveTo(dashboard);
+    adminService.loadNotificationAudience.and.resolveTo(dashboard.attendees);
+    adminService.loadAdminRequests.and.resolveTo([]);
+    adminService.updateAdminRequest.and.resolveTo(undefined);
     adminService.listAdminInteractiveActivities.and.resolveTo({ activities: [] });
     adminService.createInteractiveActivity.and.resolveTo({ id: 'activity-1' });
     adminService.sendNotification.and.resolveTo({
@@ -63,6 +78,15 @@ describe('AdminPage', () => {
       acceptedCount: 1,
       failedCount: 0,
       status: 'complete',
+    });
+    adminService.scheduleNotification.and.resolveTo({
+      campaignId: 'campaign-scheduled',
+      targetCount: 2,
+      pushReadyCount: 2,
+      acceptedCount: 0,
+      failedCount: 0,
+      status: 'scheduled',
+      scheduledAt: '2026-12-01T10:30:00.000Z',
     });
 
     const alert = {
@@ -85,6 +109,7 @@ describe('AdminPage', () => {
     component = fixture.componentInstance;
     fixture.detectChanges();
     await component.loadDashboard();
+    await component.loadNotificationAudience();
   });
 
   afterEach(() => fixture.destroy());
@@ -97,6 +122,10 @@ describe('AdminPage', () => {
         label: 'Day 2 group: 1',
       })
     );
+    expect(component.notificationSegments.map((segment) => segment.label)).toEqual([
+      'Participants group: Leadership',
+      'Participants group: Operations',
+    ]);
     expect(component.segments).toContain(
       jasmine.objectContaining({
         field: 'day3.type',
@@ -104,11 +133,97 @@ describe('AdminPage', () => {
         label: 'Day 3 track/type: SV',
       })
     );
+    expect(component.segments).toContain(
+      jasmine.objectContaining({
+        field: 'participantsGroup',
+        value: 'Leadership',
+        label: 'Participants group: Leadership',
+      })
+    );
+    expect(component.segments).toContain(
+      jasmine.objectContaining({
+        field: 'plantVisit',
+        value: 'true',
+        label: 'Plant visitors',
+      })
+    );
   });
 
-  it('sends to the selected segment after confirmation', async () => {
-    component.audienceKind = 'segment';
-    component.selectedSegmentKey = 'day2.group:1';
+  it('loads the notification audience independently from Firestore', async () => {
+    await component.loadNotificationAudience();
+
+    expect(adminService.loadNotificationAudience).toHaveBeenCalled();
+    expect(component.attendees.map((attendee) => attendee.email)).toEqual([
+      'a@example.com',
+      'b@example.com',
+    ]);
+    expect(component.pushReadyRecipientCount).toBe(2);
+  });
+
+  it('sends to any number of individually selected users', async () => {
+    component.audienceKind = 'users';
+    component.selectedUserIds = ['delegate-a', 'delegate-b'];
+    component.notificationTitle = 'Important update';
+    component.notificationBody = 'Please read this update.';
+
+    await component.sendNotification();
+
+    expect(adminService.sendNotification).toHaveBeenCalledWith(
+      'Important update',
+      'Please read this update.',
+      { kind: 'users', userIds: ['delegate-a', 'delegate-b'] }
+    );
+  });
+
+  it('searches Firestore users and selects every visible result', () => {
+    component.notificationUserSearch = 'delegate';
+
+    expect(component.filteredNotificationUsers.length).toBe(2);
+    component.selectVisibleUsers('update');
+
+    expect(component.selectedUserIds).toEqual(['delegate-a', 'delegate-b']);
+    expect(component.selectedRecipientCount).toBe(2);
+    expect(component.pushReadyRecipientCount).toBe(2);
+  });
+
+  it('shows the same Firestore-backed audience choices for updates and activities', () => {
+    component.selectedSection = 'updates';
+    component.audienceKind = 'users';
+    fixture.detectChanges();
+    const updatesText = fixture.nativeElement.textContent as string;
+
+    expect(updatesText).toContain('Select users');
+    expect(updatesText).toContain('Participants group');
+    expect(updatesText).toContain('Plant visitors');
+    expect(updatesText).not.toContain('One attendee');
+    expect(updatesText).toContain('Choose attendees');
+    expect(updatesText).toContain('a@example.com');
+    expect(fixture.nativeElement.querySelectorAll('.audience-mode').length).toBe(1);
+
+    component.selectedSection = 'engagement';
+    component.activityAudienceKind = 'users';
+    fixture.detectChanges();
+    const activitiesText = fixture.nativeElement.textContent as string;
+
+    expect(activitiesText).toContain('Select users');
+    expect(activitiesText).toContain('Participants group');
+    expect(activitiesText).toContain('Plant visitors');
+    expect(activitiesText).not.toContain('One attendee');
+    expect(activitiesText).toContain('Choose attendees');
+    expect(activitiesText).toContain('b@example.com');
+    expect(fixture.nativeElement.querySelectorAll('.audience-mode').length).toBe(1);
+
+    component.activityAudienceKind = 'group';
+    fixture.detectChanges();
+    const groupText = fixture.nativeElement.textContent as string;
+    expect(groupText).toContain('Choose a participants group');
+    expect(groupText).toContain('Participants group: Leadership');
+    expect(groupText).toContain('Participants group: Operations');
+  });
+
+  it('sends to the selected Firestore participant group after confirmation', async () => {
+    component.audienceKind = 'group';
+    component.selectedSegmentKey = 'participantsGroup:Leadership';
     component.notificationTitle = 'Schedule update';
     component.notificationBody = 'The session location changed.';
 
@@ -117,8 +232,55 @@ describe('AdminPage', () => {
     expect(adminService.sendNotification).toHaveBeenCalledWith(
       'Schedule update',
       'The session location changed.',
-      { kind: 'segment', field: 'day2.group', value: '1' }
+      { kind: 'segment', field: 'participantsGroup', value: 'Leadership' }
     );
+  });
+
+  it('targets the exact participantsGroup value', async () => {
+    component.audienceKind = 'group';
+    component.selectedSegmentKey = 'participantsGroup:Leadership';
+    component.notificationTitle = 'Leadership briefing';
+    component.notificationBody = 'Please review the updated agenda.';
+
+    await component.sendNotification();
+
+    expect(adminService.sendNotification).toHaveBeenCalledWith(
+      'Leadership briefing',
+      'Please review the updated agenda.',
+      { kind: 'segment', field: 'participantsGroup', value: 'Leadership' }
+    );
+  });
+
+  it('targets only attendees marked as plant visitors', async () => {
+    component.audienceKind = 'plantVisitors';
+    component.notificationTitle = 'Plant visit update';
+    component.notificationBody = 'Please review the site visit details.';
+
+    await component.sendNotification();
+
+    expect(adminService.sendNotification).toHaveBeenCalledWith(
+      'Plant visit update',
+      'Please review the site visit details.',
+      { kind: 'segment', field: 'plantVisit', value: 'true' }
+    );
+  });
+
+  it('schedules an audience push using Egypt time', async () => {
+    component.updateMode = 'scheduled';
+    component.scheduledDateTime = '2026-12-01T12:30';
+    component.notificationTitle = 'Agenda change';
+    component.notificationBody = 'The session location changed.';
+
+    await component.sendNotification();
+
+    expect(adminService.scheduleNotification).toHaveBeenCalledWith(
+      'Agenda change',
+      'The session location changed.',
+      { kind: 'all' },
+      '2026-12-01T10:30:00.000Z'
+    );
+    expect(component.noticeMessage).toContain('scheduled');
+    expect(component.noticeMessage).toContain('Egypt time');
   });
 
   it('publishes a quiz to the selected audience segment', async () => {
@@ -126,8 +288,8 @@ describe('AdminPage', () => {
     component.activityQuestion = 'Which item protects your eyes?';
     component.activityOptions = ['Safety glasses', 'Open sandals'];
     component.correctOptionIndex = 0;
-    component.activityAudienceKind = 'segment';
-    component.activitySelectedSegmentKey = 'day2.group:1';
+    component.activityAudienceKind = 'group';
+    component.activitySelectedSegmentKey = 'participantsGroup:Leadership';
 
     await component.createInteractiveActivity();
 
@@ -136,9 +298,42 @@ describe('AdminPage', () => {
       question: 'Which item protects your eyes?',
       options: ['Safety glasses', 'Open sandals'],
       kind: 'quiz',
-      target: { kind: 'segment', field: 'day2.group', value: '1' },
+      target: { kind: 'segment', field: 'participantsGroup', value: 'Leadership' },
       correctOptionIndex: 0,
     });
+  });
+
+  it('uses the same multi-user audience for a poll', async () => {
+    component.activityKind = 'poll';
+    component.activityTitle = 'Quick check';
+    component.activityQuestion = 'Are you ready?';
+    component.activityOptions = ['Yes', 'No'];
+    component.activityAudienceKind = 'users';
+    component.activitySelectedUserIds = ['delegate-a', 'delegate-b'];
+
+    await component.createInteractiveActivity();
+
+    expect(adminService.createInteractiveActivity).toHaveBeenCalledWith(
+      jasmine.objectContaining({
+        kind: 'poll',
+        target: { kind: 'users', userIds: ['delegate-a', 'delegate-b'] },
+      })
+    );
+  });
+
+  it('uses the same plant visitor audience for a quiz', async () => {
+    component.activityTitle = 'Site visit check';
+    component.activityQuestion = 'Are you attending the plant visit?';
+    component.activityOptions = ['Yes', 'No'];
+    component.activityAudienceKind = 'plantVisitors';
+
+    await component.createInteractiveActivity();
+
+    expect(adminService.createInteractiveActivity).toHaveBeenCalledWith(
+      jasmine.objectContaining({
+        target: { kind: 'segment', field: 'plantVisit', value: 'true' },
+      })
+    );
   });
 
   it('keeps the update composer available and explains unavailable audience data', () => {
@@ -148,7 +343,7 @@ describe('AdminPage', () => {
 
     const pageText = fixture.nativeElement.textContent as string;
     expect(pageText).toContain('Publish an update');
-    expect(pageText).toContain('All attendees');
+    expect(pageText).toContain('All users');
     expect(pageText).toContain('Audience details are unavailable');
 
     component.selectSection('engagement');

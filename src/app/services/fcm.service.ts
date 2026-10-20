@@ -4,6 +4,7 @@ import { ToastController } from '@ionic/angular/standalone';
 import { AuthService } from './auth.service';
 import { AdminService } from './admin.service';
 import { environment } from '../../environments/environment';
+import { initializeApp } from 'firebase/app';
 import { BehaviorSubject, filter } from 'rxjs';
 import {
   isSupported,
@@ -24,6 +25,10 @@ export class FcmService {
   private adminService = inject(AdminService);
 
   private messagingInstance: Messaging | null = null;
+  private notificationApp = initializeApp(
+    environment.notificationFirebaseConfig,
+    'NotificationSender'
+  );
   private isInitialized = false;
 
   private fcmTokenSubject = new BehaviorSubject<string | null>(null);
@@ -44,31 +49,39 @@ export class FcmService {
       .pipe(filter((user) => !!user && !!user.email))
       .subscribe(async (user) => {
         console.log(`[FCM] Authenticated user active: ${user?.email}`);
-        await this.requestPermissionAndRegisterToken();
+        if (
+          typeof window !== 'undefined' &&
+          'Notification' in window &&
+          Notification.permission === 'granted'
+        ) {
+          await this.requestPermissionAndRegisterToken();
+        }
       });
+  }
+
+  async isPushSupported(): Promise<boolean> {
+    if (typeof window === 'undefined' || !('Notification' in window) || !('serviceWorker' in navigator)) {
+      return false;
+    }
+
+    try {
+      return await isSupported();
+    } catch (error) {
+      console.error('[FCM] Failed to check push notification support:', error);
+      return false;
+    }
   }
 
   /**
    * ✅ Request browser notification permission and get FCM token
    */
   async requestPermissionAndRegisterToken(): Promise<string | null> {
-    if (typeof window === 'undefined' || !('Notification' in window)) {
-      console.warn('[FCM] Notifications are not supported in this environment');
-      return null;
-    }
-
     try {
-      const supported = await isSupported().catch(() => false);
-      if (!supported) {
-        console.warn('[FCM] Firebase Messaging is not supported on this browser/platform');
+      if (typeof window === 'undefined' || !('Notification' in window)) {
+        console.warn('[FCM] Notifications are not supported in this environment');
         return null;
       }
 
-      if (!this.messagingInstance) {
-        this.messagingInstance = getMessaging();
-      }
-
-      // Check current permission or request it
       let permission = Notification.permission;
       if (permission === 'default') {
         console.log('[FCM] Requesting notification permission...');
@@ -78,6 +91,16 @@ export class FcmService {
       if (permission !== 'granted') {
         console.warn(`[FCM] Notification permission was ${permission}`);
         return null;
+      }
+
+      const supported = await this.isPushSupported();
+      if (!supported) {
+        console.warn('[FCM] Firebase Messaging is not supported on this browser/platform');
+        return null;
+      }
+
+      if (!this.messagingInstance) {
+        this.messagingInstance = getMessaging(this.notificationApp);
       }
 
       // Ensure service worker registration is ready
@@ -97,8 +120,8 @@ export class FcmService {
 
       // Get FCM token
       const tokenOptions: { vapidKey?: string; serviceWorkerRegistration?: ServiceWorkerRegistration } = {};
-      if (environment.vapidKey && environment.vapidKey.trim() !== '') {
-        tokenOptions.vapidKey = environment.vapidKey.trim();
+      if (environment.notificationVapidKey.trim()) {
+        tokenOptions.vapidKey = environment.notificationVapidKey.trim();
       }
       if (swRegistration) {
         tokenOptions.serviceWorkerRegistration = swRegistration;
@@ -108,7 +131,7 @@ export class FcmService {
       const currentToken = await getToken(this.messagingInstance, tokenOptions);
 
       if (currentToken) {
-        console.log('[FCM] ✅ FCM Token retrieved:', currentToken);
+        console.log('[FCM] ✅ FCM token retrieved');
         this.fcmTokenSubject.next(currentToken);
         await this.saveTokenToFirestore(currentToken);
         this.listenForForegroundMessages();
@@ -202,8 +225,9 @@ export class FcmService {
   async saveTokenToFirestore(token: string) {
     const currentUser = this.authService.currentUser;
     if (!currentUser?.email) {
-      console.warn('[FCM] No authenticated user email found, skipping push-token registration');
-      return;
+      const error = new Error('Cannot register a push token without an authenticated user.');
+      console.error('[FCM] Push-token registration requires an authenticated user:', error);
+      throw error;
     }
 
     try {
@@ -211,6 +235,7 @@ export class FcmService {
       console.log(`[FCM] Push token registered for ${currentUser.email}`);
     } catch (error) {
       console.error('[FCM] Failed to register push token:', error);
+      throw error;
     }
   }
 }

@@ -32,6 +32,7 @@ import {
   AdminResource,
   AdminService,
   DEFAULT_RESOURCE_TYPES,
+  NotificationSendResult,
   NotificationTarget,
   ResourceType,
   RequestStatus,
@@ -41,12 +42,17 @@ import type { ProjectInput } from '../services/admin.service';
 import { ALL_PROJECTS } from '../iconic-projects/data/projects.data';
 import countryData from '../../../node_modules/flag-icons/country.json';
 import { greetingForNationality, NationalityGreeting } from '../shared/nationality-greetings';
+import { egyptDateTimeToIso, formatEgyptDateTime } from './notification-schedule-time';
 
 type SegmentField =
   | 'day2.group'
   | 'day3.type'
   | 'day3.groupAM'
-  | 'day3.groupPM';
+  | 'day3.groupPM'
+  | 'participantsGroup'
+  | 'plantVisit';
+type AudienceKind = 'all' | 'users' | 'group' | 'plantVisitors';
+type AudienceContext = 'update' | 'activity';
 
 interface AudienceSegment {
   key: string;
@@ -76,23 +82,28 @@ export class AdminPage implements OnInit, OnDestroy {
   private readonly router = inject(Router);
 
   dashboard: AdminDashboard | null = null;
+  notificationAudience: AdminAttendee[] | null = null;
+  notificationAudienceError = '';
   isLoading = true;
   isSending = false;
   errorMessage = '';
   noticeMessage = '';
-  audienceKind: 'all' | 'user' | 'segment' = 'all';
-  selectedUserId = '';
+  audienceKind: AudienceKind = 'all';
+  selectedUserIds: string[] = [];
+  notificationUserSearch = '';
   selectedSegmentKey = '';
   notificationTitle = '';
   notificationBody = '';
+  scheduledDateTime = '';
   segments: AudienceSegment[] = [];
   activityKind: 'quiz' | 'poll' = 'quiz';
   activityTitle = '';
   activityQuestion = '';
   activityOptions = ['', ''];
   correctOptionIndex = 0;
-  activityAudienceKind: 'all' | 'user' | 'segment' = 'all';
-  activitySelectedUserId = '';
+  activityAudienceKind: AudienceKind = 'all';
+  activitySelectedUserIds: string[] = [];
+  activityUserSearch = '';
   activitySelectedSegmentKey = '';
   isCreatingActivity = false;
   activityNotice = '';
@@ -213,11 +224,13 @@ export class AdminPage implements OnInit, OnDestroy {
       this.formControlsError = 'Admin forms could not be loaded. Reload the page and try again.';
     });
     void this.loadDashboard();
+    void this.loadNotificationAudience();
     void this.loadAdminActivities();
     void this.loadRequests();
     this.refreshTimer = setInterval(() => {
       if (!this.isLoading && !this.isSending) {
         void this.loadDashboard(true);
+        void this.loadNotificationAudience();
         void this.loadRequests();
       }
     }, 30_000);
@@ -286,13 +299,6 @@ export class AdminPage implements OnInit, OnDestroy {
 
     try {
       this.dashboard = await this.adminService.loadDashboard();
-      this.segments = this.buildSegments(this.dashboard.attendees);
-      if (
-        this.selectedSegmentKey &&
-        !this.segments.some((segment) => segment.key === this.selectedSegmentKey)
-      ) {
-        this.selectedSegmentKey = '';
-      }
       this.errorMessage = '';
     } catch (error) {
       console.error('[AdminPage] Failed to load dashboard:', error);
@@ -300,6 +306,45 @@ export class AdminPage implements OnInit, OnDestroy {
         'Could not load the admin dashboard. Check your connection and admin access, then try again.';
     } finally {
       this.isLoading = false;
+    }
+  }
+
+  async loadNotificationAudience(): Promise<void> {
+    this.notificationAudienceError = '';
+    try {
+      this.notificationAudience = await this.adminService.loadNotificationAudience();
+      this.segments = this.buildSegments(this.notificationAudience);
+      if (
+        this.selectedSegmentKey &&
+        !this.segments.some((segment) => segment.key === this.selectedSegmentKey)
+      ) {
+        this.selectedSegmentKey = '';
+      }
+      if (
+        this.selectedUserIds.length &&
+        !this.selectedUserIds.every((userId) =>
+          this.notificationAudience?.some((attendee) => attendee.id === userId)
+        )
+      ) {
+        this.selectedUserIds = this.selectedUserIds.filter((userId) =>
+          this.notificationAudience?.some((attendee) => attendee.id === userId)
+        );
+      }
+      this.activitySelectedUserIds = this.activitySelectedUserIds.filter((userId) =>
+        this.notificationAudience?.some((attendee) => attendee.id === userId)
+      );
+      if (
+        this.activitySelectedSegmentKey &&
+        !this.notificationSegments.some(
+          (segment) => segment.key === this.activitySelectedSegmentKey
+        )
+      ) {
+        this.activitySelectedSegmentKey = '';
+      }
+    } catch (error) {
+      console.error('[AdminPage] Failed to load notification audience from Firestore:', error);
+      this.notificationAudienceError =
+        'Could not load users and groups from Firestore. Refresh and try again.';
     }
   }
 
@@ -703,24 +748,163 @@ export class AdminPage implements OnInit, OnDestroy {
   }
 
   get selectedRecipientCount(): number | null {
-    const attendees = this.dashboard?.attendees;
+    const attendees = this.notificationAudience;
     if (!attendees) {
       return null;
     }
     if (this.audienceKind === 'all') {
       return attendees.length;
     }
-    if (this.audienceKind === 'user') {
-      return attendees.filter((attendee) => attendee.id === this.selectedUserId).length;
+    if (this.audienceKind === 'users') {
+      return attendees.filter((attendee) => this.selectedUserIds.includes(attendee.id)).length;
     }
-    const segment = this.segments.find((item) => item.key === this.selectedSegmentKey);
+    if (this.audienceKind === 'plantVisitors') {
+      return attendees.filter((attendee) => attendee.plantVisit).length;
+    }
+    const segment = this.notificationSegments.find(
+      (item) => item.key === this.selectedSegmentKey
+    );
     return segment
       ? attendees.filter((attendee) => this.matchesSegment(attendee, segment)).length
       : null;
   }
 
   get attendees(): AdminAttendee[] {
-    return this.dashboard?.attendees ?? [];
+    return this.notificationAudience ?? [];
+  }
+
+  get notificationSegments(): AudienceSegment[] {
+    return this.segments.filter((segment) => segment.field === 'participantsGroup');
+  }
+
+  get filteredNotificationUsers(): AdminAttendee[] {
+    return this.filterAudienceUsers(this.notificationUserSearch);
+  }
+
+  get filteredActivityUsers(): AdminAttendee[] {
+    return this.filterAudienceUsers(this.activityUserSearch);
+  }
+
+  private filterAudienceUsers(search: string): AdminAttendee[] {
+    const query = search.trim().toLowerCase();
+    return this.attendees.filter((attendee) =>
+      !query ||
+      [attendee.name, attendee.email, attendee.id].some((value) =>
+        value.toLowerCase().includes(query)
+      )
+    );
+  }
+
+  isAudienceUserSelected(userId: string, context: AudienceContext): boolean {
+    return this.getAudienceSelectedUserIds(context).includes(userId);
+  }
+
+  toggleAudienceUser(userId: string, selected: boolean, context: AudienceContext): void {
+    const selectedUserIds = this.getAudienceSelectedUserIds(context);
+    this.setAudienceSelectedUserIds(
+      context,
+      selected
+        ? [...new Set([...selectedUserIds, userId])]
+        : selectedUserIds.filter((selectedUserId) => selectedUserId !== userId)
+    );
+  }
+
+  onAudienceUserChange(userId: string, event: Event, context: AudienceContext): void {
+    const checkbox = event.target;
+    if (checkbox instanceof HTMLInputElement) {
+      this.toggleAudienceUser(userId, checkbox.checked, context);
+    }
+  }
+
+  selectVisibleUsers(context: AudienceContext): void {
+    const selectedUserIds = this.getAudienceSelectedUserIds(context);
+    const visibleUsers = this.getVisibleAudienceUsers(context);
+    this.setAudienceSelectedUserIds(
+      context,
+      [...new Set([
+        ...selectedUserIds,
+        ...visibleUsers.map((attendee) => attendee.id),
+      ])]
+    );
+  }
+
+  selectAllPushReadyUsers(context: AudienceContext): void {
+    this.setAudienceSelectedUserIds(
+      context,
+      this.attendees
+        .filter((attendee) => attendee.hasPushToken)
+        .map((attendee) => attendee.id)
+    );
+  }
+
+  clearSelectedUsers(context: AudienceContext): void {
+    this.setAudienceSelectedUserIds(context, []);
+  }
+
+  private getAudienceSelectedUserIds(context: AudienceContext): string[] {
+    return context === 'activity' ? this.activitySelectedUserIds : this.selectedUserIds;
+  }
+
+  private setAudienceSelectedUserIds(context: AudienceContext, userIds: string[]): void {
+    if (context === 'activity') {
+      this.activitySelectedUserIds = userIds;
+    } else {
+      this.selectedUserIds = userIds;
+    }
+  }
+
+  private getVisibleAudienceUsers(context: AudienceContext): AdminAttendee[] {
+    return context === 'activity'
+      ? this.filteredActivityUsers
+      : this.filteredNotificationUsers;
+  }
+
+  get selectedActivityRecipientCount(): number | null {
+    return this.getAudienceRecipientCount(this.activityAudienceKind, 'activity');
+  }
+
+  get pushReadyActivityRecipientCount(): number | null {
+    return this.getAudienceRecipientCount(this.activityAudienceKind, 'activity', true);
+  }
+
+  private getAudienceRecipientCount(
+    audienceKind: AudienceKind,
+    context: AudienceContext,
+    pushReadyOnly = false
+  ): number | null {
+    if (!this.notificationAudience) {
+      return null;
+    }
+    let recipients = this.attendees;
+    if (audienceKind === 'users') {
+      const selected = this.getAudienceSelectedUserIds(context);
+      recipients = recipients.filter((attendee) => selected.includes(attendee.id));
+    } else if (audienceKind === 'group') {
+      const selectedKey =
+        context === 'activity'
+          ? this.activitySelectedSegmentKey
+          : this.selectedSegmentKey;
+      const group = this.notificationSegments.find((segment) => segment.key === selectedKey);
+      if (!group) {
+        return null;
+      }
+      recipients = recipients.filter((attendee) => this.matchesSegment(attendee, group));
+    } else if (audienceKind === 'plantVisitors') {
+      recipients = recipients.filter((attendee) => attendee.plantVisit);
+    }
+    return pushReadyOnly
+      ? recipients.filter((attendee) => attendee.hasPushToken).length
+      : recipients.length;
+  }
+
+  countUsersInGroup(group: AudienceSegment): number {
+    return this.attendees.filter((attendee) => this.matchesSegment(attendee, group)).length;
+  }
+
+  countPushReadyUsersInGroup(group: AudienceSegment): number {
+    return this.attendees.filter(
+      (attendee) => attendee.hasPushToken && this.matchesSegment(attendee, group)
+    ).length;
   }
 
   get nationalityGreetings(): NationalityGreeting[] {
@@ -788,19 +972,27 @@ export class AdminPage implements OnInit, OnDestroy {
   }
 
   get pushReadyRecipientCount(): number | null {
-    const attendees = this.dashboard?.attendees;
+    const attendees = this.notificationAudience;
     if (!attendees) {
       return null;
     }
     if (this.audienceKind === 'all') {
       return attendees.filter((attendee) => attendee.hasPushToken).length;
     }
-    if (this.audienceKind === 'user') {
+    if (this.audienceKind === 'users') {
       return attendees.filter(
-        (attendee) => attendee.id === this.selectedUserId && attendee.hasPushToken
+        (attendee) =>
+          this.selectedUserIds.includes(attendee.id) && attendee.hasPushToken
       ).length;
     }
-    const segment = this.segments.find((item) => item.key === this.selectedSegmentKey);
+    if (this.audienceKind === 'plantVisitors') {
+      return attendees.filter(
+        (attendee) => attendee.plantVisit && attendee.hasPushToken
+      ).length;
+    }
+    const segment = this.notificationSegments.find(
+      (item) => item.key === this.selectedSegmentKey
+    );
     return segment
       ? attendees.filter(
           (attendee) =>
@@ -809,12 +1001,11 @@ export class AdminPage implements OnInit, OnDestroy {
       : null;
   }
 
+  get minScheduledDateTime(): string {
+    return formatEgyptDateTime(new Date(Date.now() + 2 * 60 * 1000));
+  }
+
   async sendNotification(): Promise<void> {
-    if (this.updateMode !== 'now') {
-      this.errorMessage =
-        'Scheduling is not available. Choose “Publish now” when you are ready to send.';
-      return;
-    }
     const title = this.notificationTitle.trim();
     const body = this.notificationBody.trim();
     const target = this.getNotificationTarget();
@@ -827,12 +1018,36 @@ export class AdminPage implements OnInit, OnDestroy {
       return;
     }
 
+    let scheduledAt: string | null = null;
+    if (this.updateMode === 'scheduled') {
+      try {
+        scheduledAt = egyptDateTimeToIso(this.scheduledDateTime);
+      } catch (error) {
+        this.errorMessage =
+          error instanceof Error ? error.message : 'Enter a valid Egypt date and time.';
+        return;
+      }
+      if (Date.parse(scheduledAt) < Date.now() + 60_000) {
+        this.errorMessage = 'Choose a send time at least one minute in the future.';
+        return;
+      }
+    }
+
+    const scheduledDisplay = scheduledAt
+      ? new Intl.DateTimeFormat('en-GB', {
+          timeZone: 'Africa/Cairo',
+          dateStyle: 'medium',
+          timeStyle: 'short',
+        }).format(new Date(scheduledAt))
+      : '';
     const confirmation = await this.alertController.create({
-      header: 'Send push notification?',
-      message: `This will send the message to ${this.pushReadyRecipientCount} device(s).`,
+      header: scheduledAt ? 'Schedule push notification?' : 'Send push notification?',
+      message: scheduledAt
+        ? `This will send the message to ${this.pushReadyRecipientCount} device(s) at ${scheduledDisplay} Egypt time.`
+        : `This will send the message to ${this.pushReadyRecipientCount} device(s).`,
       buttons: [
         { text: 'Cancel', role: 'cancel' },
-        { text: 'Send now', role: 'confirm' },
+        { text: scheduledAt ? 'Schedule' : 'Send now', role: 'confirm' },
       ],
     });
     await confirmation.present();
@@ -845,13 +1060,13 @@ export class AdminPage implements OnInit, OnDestroy {
     this.errorMessage = '';
     this.noticeMessage = '';
     try {
-      const result = await this.adminService.sendNotification(title, body, target);
+      const result = scheduledAt
+        ? await this.adminService.scheduleNotification(title, body, target, scheduledAt)
+        : await this.adminService.sendNotification(title, body, target);
       this.notificationTitle = '';
       this.notificationBody = '';
-      this.noticeMessage =
-        `Notification ${result.status}: ${result.acceptedCount} accepted, ` +
-        `${result.failedCount} failed; audience ${result.targetCount}, ` +
-        `${result.pushReadyCount} push-enabled.`;
+      this.scheduledDateTime = '';
+      this.noticeMessage = this.notificationResultMessage(result, scheduledDisplay);
       await this.loadDashboard(true);
     } catch (error) {
       console.error('[AdminPage] Failed to send notification:', error);
@@ -860,6 +1075,20 @@ export class AdminPage implements OnInit, OnDestroy {
     } finally {
       this.isSending = false;
     }
+  }
+
+  private notificationResultMessage(
+    result: NotificationSendResult,
+    scheduledDisplay: string
+  ): string {
+    if (result.status === 'scheduled') {
+      return `Notification scheduled for ${scheduledDisplay} Egypt time; audience ${result.targetCount}, ${result.pushReadyCount} push-enabled.`;
+    }
+    return (
+      `Notification ${result.status}: ${result.acceptedCount} accepted, ` +
+      `${result.failedCount} failed; audience ${result.targetCount}, ` +
+      `${result.pushReadyCount} push-enabled.`
+    );
   }
 
   openRate(campaign: AdminCampaign): number {
@@ -887,7 +1116,13 @@ export class AdminPage implements OnInit, OnDestroy {
     const question = this.activityQuestion.trim();
     const options = this.activityOptions.map((option) => option.trim());
     const target = this.getActivityTarget();
-    if (!title || !question || options.some((option) => !option) || !target) {
+    if (
+      !title ||
+      !question ||
+      options.some((option) => !option) ||
+      !target ||
+      !this.notificationAudience
+    ) {
       this.activityError = 'Enter a title, question, at least two options, and a valid audience.';
       return;
     }
@@ -896,7 +1131,7 @@ export class AdminPage implements OnInit, OnDestroy {
     this.activityError = '';
     this.activityNotice = '';
     try {
-      await this.adminService.createInteractiveActivity({
+      const result = await this.adminService.createInteractiveActivity({
         title,
         question,
         options,
@@ -909,7 +1144,19 @@ export class AdminPage implements OnInit, OnDestroy {
       this.activityQuestion = '';
       this.activityOptions = ['', ''];
       this.correctOptionIndex = 0;
+      this.activitySelectedUserIds = [];
+      this.activityUserSearch = '';
+      this.activitySelectedSegmentKey = '';
       this.activityNotice = `${this.activityKind === 'quiz' ? 'Quiz' : 'Poll'} published for attendees.`;
+      if (result.notificationSummary?.deliveryError) {
+        this.activityNotice += ' Push notification delivery failed; attendees can still access it in the app.';
+      } else if (result.notificationSummary?.pushReadyCount === 0) {
+        this.activityNotice += ' No attendees in this audience have enabled push notifications.';
+      } else if (result.notificationSummary) {
+        this.activityNotice +=
+          ` Push notifications accepted: ${result.notificationSummary.acceptedCount}; ` +
+          `failed: ${result.notificationSummary.failedCount}.`;
+      }
       await this.loadAdminActivities();
     } catch (error) {
       console.error('[AdminPage] Failed to create quiz or poll:', error);
@@ -935,28 +1182,39 @@ export class AdminPage implements OnInit, OnDestroy {
   }
 
   private getNotificationTarget(): NotificationTarget | null {
-    if (this.audienceKind === 'all') {
-      return { kind: 'all' };
-    }
-    if (this.audienceKind === 'user' && this.selectedUserId) {
-      return { kind: 'user', userId: this.selectedUserId };
-    }
-    const segment = this.segments.find((item) => item.key === this.selectedSegmentKey);
-    return segment
-      ? { kind: 'segment', field: segment.field, value: segment.value }
-      : null;
+    return this.getAudienceTarget(
+      this.audienceKind,
+      'update',
+      this.selectedSegmentKey
+    );
   }
 
   private getActivityTarget(): NotificationTarget | null {
-    if (this.activityAudienceKind === 'all') return { kind: 'all' };
-    if (this.activityAudienceKind === 'user' && this.activitySelectedUserId) {
-      return { kind: 'user', userId: this.activitySelectedUserId };
-    }
-    const segment = this.segments.find(
-      (item) => item.key === this.activitySelectedSegmentKey
+    return this.getAudienceTarget(
+      this.activityAudienceKind,
+      'activity',
+      this.activitySelectedSegmentKey
     );
-    return segment
-      ? { kind: 'segment', field: segment.field, value: segment.value }
+  }
+
+  private getAudienceTarget(
+    audienceKind: AudienceKind,
+    context: AudienceContext,
+    segmentKey: string
+  ): NotificationTarget | null {
+    if (audienceKind === 'all') {
+      return { kind: 'all' };
+    }
+    if (audienceKind === 'users') {
+      const userIds = [...new Set(this.getAudienceSelectedUserIds(context))];
+      return userIds.length ? { kind: 'users', userIds } : null;
+    }
+    if (audienceKind === 'plantVisitors') {
+      return { kind: 'segment', field: 'plantVisit', value: 'true' };
+    }
+    const group = this.notificationSegments.find((segment) => segment.key === segmentKey);
+    return group
+      ? { kind: 'segment', field: group.field, value: group.value }
       : null;
   }
 
@@ -982,6 +1240,16 @@ export class AdminPage implements OnInit, OnDestroy {
         label: 'Day 3 afternoon group',
         value: (attendee) => attendee.day3GroupPM,
       },
+      {
+        field: 'participantsGroup',
+        label: 'Participants group',
+        value: (attendee) => attendee.participantsGroup,
+      },
+      {
+        field: 'plantVisit',
+        label: 'Plant visitors',
+        value: (attendee) => attendee.plantVisit ? 'true' : '',
+      },
     ];
     const segments: AudienceSegment[] = [];
     for (const item of fields) {
@@ -991,7 +1259,7 @@ export class AdminPage implements OnInit, OnDestroy {
           key: `${item.field}:${value}`,
           field: item.field,
           value,
-          label: `${item.label}: ${value}`,
+          label: item.field === 'plantVisit' ? item.label : `${item.label}: ${value}`,
         });
       }
     }
@@ -1007,6 +1275,8 @@ export class AdminPage implements OnInit, OnDestroy {
       'day3.type': attendee.day3Type,
       'day3.groupAM': attendee.day3GroupAM,
       'day3.groupPM': attendee.day3GroupPM,
+      participantsGroup: attendee.participantsGroup,
+      plantVisit: attendee.plantVisit ? 'true' : '',
     };
     return values[segment.field] === segment.value;
   }

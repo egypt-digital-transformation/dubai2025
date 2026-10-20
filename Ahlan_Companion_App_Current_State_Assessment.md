@@ -30,7 +30,7 @@
 | Iconic projects showcase | **Not found** | No interactive Egypt/AMEA landmark gallery, 3D project experience or project-level carbon/concrete data overlays were identified. |
 | Cultural excursion guide | **Not found** | No Egypt-specific GEM, Giza, VIP access/routing or extended-stay guide was identified. |
 | Emergency and concierge support | **Partial / prototype** | Existing tips content includes UAE-specific contact information. Egypt contacts and an in-app concierge/SOS escalation process were not found. |
-| Notifications | **Configured (FCM)** | Firebase Cloud Messaging (FCM) service worker, token sync to Firestore, foreground toast alerts, and Cloud Functions reminder delivery configured. |
+| Notifications | **In place (deployment unverified)** | Source now includes Firebase Cloud Messaging (FCM) token registration, agenda reminders, immediate and Egypt-time scheduled admin pushes, quiz/poll alerts, and attendee/admin request alerts. Scheduled delivery requires the Cloud Functions and Firestore index changes to be deployed; active admins and attendees also need registered push tokens. |
 | Admin operations and imports | **Partial / prototype** | A limited admin-only announcement function exists. No central operations dashboard, analytics, agenda editor, CSV upload or Google Sheets sync interface was found. |
 | Personalized post-event recap | **Not found** | No AI-generated attendance/takeaway recap, tagged-photo delivery or personalized carbon-offset certificate was identified. |
 | Onboarding video | **Not found** | No 60-second app onboarding video or embedded login-screen walkthrough was identified. |
@@ -44,7 +44,7 @@
 - Firebase Authentication, Firestore, Storage integration and Firebase Hosting/Cloud Functions configuration.
 - Agenda and announcement data views, with limited group-based schedule personalization.
 - PWA manifest, install prompts and Angular service-worker configuration.
-- Firebase Cloud Messaging (FCM) push subscription/reminder foundation and Cloud Functions notification delivery.
+- Firebase Cloud Messaging (FCM) push foundation for agenda reminders, admin campaigns, quiz/poll alerts, and request status updates; live delivery still depends on Firebase deployment, valid configuration, permissions and registered device tokens.
 - Basic networking feed with posts, comments and likes; selected UI components for resources, venue and HSE.
 
 ## 3. Readiness items to resolve before development or launch
@@ -52,6 +52,7 @@
 - **Firestore rules:** The rules in the repository contain an expiry date of **19 September 2026**. Confirm the currently deployed rules and replace/approve them before any live use; the source file alone cannot establish the live state.
 - **Prototype/sample content:** The reviewed content contains example.com resource links, static QR/profile details, a local HSE video and Egypt/UAE guidance. Replace and validate all event content for Egypt.
 - **Environment and ownership:** Confirm the corporate Firebase project, agency access model, environments, data ownership, backup/retention, security review and deployment responsibilities.
+- **Push deployment:** Deploy the updated Cloud Functions and Firestore index, verify the web-push VAPID key in the approved Firebase project, and confirm that attendee and active-admin devices have registered push tokens.
 - **Delegate data:** Define how delegate, flight, hotel, attendance and group data will be provided, validated, updated and removed (Sheets integration versus controlled CSV upload).
 - **Privacy and consent:** Agree privacy, consent, retention and access controls for attendee contact data, analytics, photos, facial recognition, AI-generated recaps and carbon-offset attribution.
 - **Approved content:** Confirm the source and owners of brand assets, maps, project facts, media, HSE portals, support contacts and content approvals.

@@ -2,6 +2,7 @@ import { HttpsError, onCall } from "firebase-functions/v2/https";
 import {
   APP_ANALYTICS_COLLECTION,
   db,
+  FCM_PROJECT_ID,
   FieldValue,
 } from "../shared/firebase.js";
 import { requireAuthenticatedUser } from "../shared/admin-auth.js";
@@ -124,25 +125,46 @@ export const registerPushToken = onCall(
     }
 
     const normalizedEmail = user.email.trim().toLowerCase();
+    const adminRef = db.collection("admins").doc(normalizedEmail);
+    const adminSnapshot = await adminRef.get();
+    const isActiveAdmin = adminSnapshot.data()?.active === true;
+    if (isActiveAdmin) {
+      await adminRef.set(
+        {
+          fcmToken: token,
+          fcmProjectId: FCM_PROJECT_ID,
+          fcmTokenUpdatedAt: FieldValue.serverTimestamp(),
+        },
+        { merge: true }
+      );
+    }
+
     const usersRef = db.collection("users");
     let userSnapshot = await usersRef.where("email", "==", normalizedEmail).get();
     if (userSnapshot.empty && user.email !== normalizedEmail) {
       userSnapshot = await usersRef.where("email", "==", user.email).get();
     }
-    if (userSnapshot.size !== 1) {
+    if (userSnapshot.size > 1) {
+      throw new HttpsError(
+        "failed-precondition",
+        "Your delegate profile matched more than one record."
+      );
+    }
+    if (userSnapshot.size === 1) {
+      await userSnapshot.docs[0].ref.set(
+        {
+          fcmToken: token,
+          fcmProjectId: FCM_PROJECT_ID,
+          fcmTokenUpdatedAt: FieldValue.serverTimestamp(),
+        },
+        { merge: true }
+      );
+    } else if (!isActiveAdmin) {
       throw new HttpsError(
         "failed-precondition",
         "Your delegate profile could not be uniquely matched."
       );
     }
-
-    await userSnapshot.docs[0].ref.set(
-      {
-        fcmToken: token,
-        fcmTokenUpdatedAt: FieldValue.serverTimestamp(),
-      },
-      { merge: true }
-    );
 
     return { registered: true };
   }

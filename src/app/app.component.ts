@@ -33,6 +33,10 @@ export class AppComponent implements OnInit {
 
   isIos = false;
   showInstallBanner = false;
+  showNotificationPrompt = false;
+  notificationPermissionDenied = false;
+  isEnablingNotifications = false;
+  notificationSetupMessage = '';
   deferredPrompt: any;
   private installedApp = false;
   private readonly openedCampaigns = new Set<string>();
@@ -50,6 +54,9 @@ export class AppComponent implements OnInit {
 
     // ✅ Initialize Firebase Cloud Messaging push notifications
     this.fcmService.initPushNotifications();
+    this.authService.user$.subscribe((user) => {
+      void this.updateNotificationPrompt(!!user?.email);
+    });
 
     // ✅ Watch for new deploys and update installed home-screen apps automatically
     this.watchForPwaUpdates();
@@ -61,6 +68,7 @@ export class AppComponent implements OnInit {
     window.addEventListener('appinstalled', () => {
       this.installedApp = true;
       this.recordAppActivity();
+      void this.updateNotificationPrompt(!!this.authService.currentUser?.email);
     });
 
     this.authService.user$
@@ -127,6 +135,51 @@ export class AppComponent implements OnInit {
       navigatorWithStandalone.standalone === true ||
       window.matchMedia('(display-mode: standalone)').matches
     );
+  }
+
+  private async updateNotificationPrompt(isAuthenticated: boolean): Promise<void> {
+    if (!isAuthenticated || !(this.installedApp || this.isInstalledExperience())) {
+      this.showNotificationPrompt = false;
+      return;
+    }
+
+    if (!(await this.fcmService.isPushSupported()) || !this.authService.currentUser?.email) {
+      this.showNotificationPrompt = false;
+      return;
+    }
+
+    this.notificationPermissionDenied = Notification.permission === 'denied';
+    this.showNotificationPrompt = Notification.permission !== 'granted';
+  }
+
+  async enableNotifications(): Promise<void> {
+    if (this.isEnablingNotifications) {
+      return;
+    }
+
+    this.isEnablingNotifications = true;
+    this.notificationSetupMessage = '';
+    try {
+      const token = await this.fcmService.requestPermissionAndRegisterToken();
+      if (token) {
+        this.showNotificationPrompt = false;
+        return;
+      }
+
+      this.notificationPermissionDenied = Notification.permission === 'denied';
+      this.notificationSetupMessage = this.notificationPermissionDenied
+        ? ''
+        : 'We could not finish notification setup. Please try again.';
+    } catch (error) {
+      console.error('[APP] Failed to enable push notifications:', error);
+      this.notificationSetupMessage = 'We could not finish notification setup. Please try again.';
+    } finally {
+      this.isEnablingNotifications = false;
+    }
+  }
+
+  continueWithoutNotifications(): void {
+    this.showNotificationPrompt = false;
   }
 
   private recordAppActivity(): void {

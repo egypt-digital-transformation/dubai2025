@@ -1,9 +1,61 @@
 import { getAuth } from "firebase-admin/auth";
 import { onRequest } from "firebase-functions/v2/https";
 import { onSchedule } from "firebase-functions/v2/scheduler";
-import { db, Timestamp } from "../shared/firebase.js";
+import { db, FieldValue, Timestamp } from "../shared/firebase.js";
 import { requireAdminIdentity } from "../shared/admin-auth.js";
 import { sendSessionReminderNotification } from "../shared/session-notification.js";
+
+async function claimReminder(sessionRef) {
+  return db.runTransaction(async (transaction) => {
+    const sessionSnapshot = await transaction.get(sessionRef);
+    const session = sessionSnapshot.data();
+    if (!sessionSnapshot.exists || session?.reminderSent === true) {
+      return false;
+    }
+    const claimedAt = session?.reminderClaimedAt;
+    if (
+      claimedAt?.toMillis &&
+      Timestamp.now().toMillis() - claimedAt.toMillis() < 10 * 60 * 1000
+    ) {
+      return false;
+    }
+    transaction.update(sessionRef, {
+      reminderClaimedAt: Timestamp.now(),
+    });
+    return true;
+  });
+}
+
+async function releaseReminderClaim(sessionRef) {
+  await sessionRef.update({ reminderClaimedAt: FieldValue.delete() });
+}
+
+async function sendReminderForAgendaItem(user, fcmToken, sessionDoc) {
+  const claimed = await claimReminder(sessionDoc.ref);
+  if (!claimed) {
+    return false;
+  }
+
+  try {
+    const session = sessionDoc.data();
+    const messageId = await sendSessionReminderNotification(
+      fcmToken,
+      session.title,
+      sessionDoc.id
+    );
+    await sessionDoc.ref.update({
+      reminderSent: true,
+      reminderSentAt: Timestamp.now(),
+      reminderClaimedAt: FieldValue.delete(),
+      fcmMessageId: messageId,
+    });
+    console.log(`✅ Sent FCM reminder for "${session.title}" to ${user.email}`);
+    return true;
+  } catch (error) {
+    await releaseReminderClaim(sessionDoc.ref);
+    throw error;
+  }
+}
 
 export const sendSessionReminders = onSchedule(
   {
@@ -13,10 +65,10 @@ export const sendSessionReminders = onSchedule(
   async () => {
     try {
       const now = Timestamp.now();
+      const fiveMinutesAgo = Timestamp.fromMillis(now.toMillis() - 5 * 60 * 1000);
       const fiveMinutesFromNow = Timestamp.fromMillis(now.toMillis() + 5 * 60 * 1000);
-      const sixMinutesFromNow = Timestamp.fromMillis(now.toMillis() + 6 * 60 * 1000);
 
-      console.log(`Checking agendas for sessions between ${fiveMinutesFromNow.toDate()} and ${sixMinutesFromNow.toDate()}`);
+      console.log(`Checking agendas for sessions between ${fiveMinutesAgo.toDate()} and ${fiveMinutesFromNow.toDate()}`);
 
       const usersSnapshot = await db.collection("users").get();
       if (usersSnapshot.empty) {
@@ -31,8 +83,8 @@ export const sendSessionReminders = onSchedule(
 
         const agendaRef = db.collection(`users/${userDoc.id}/agenda`);
         const agendaSnapshot = await agendaRef
-          .where("startTime", ">=", fiveMinutesFromNow)
-          .where("startTime", "<=", sixMinutesFromNow)
+          .where("startTime", ">=", fiveMinutesAgo)
+          .where("startTime", "<=", fiveMinutesFromNow)
           .where("reminderSent", "==", false)
           .get();
 
@@ -41,25 +93,10 @@ export const sendSessionReminders = onSchedule(
         console.log(`User ${user.email} has ${agendaSnapshot.size} sessions starting soon`);
 
         for (const sessionDoc of agendaSnapshot.docs) {
-          const session = sessionDoc.data();
-          const sessionId = sessionDoc.id;
-
           try {
-            const messageId = await sendSessionReminderNotification(
-              fcmToken,
-              session.title,
-              sessionId
-            );
-
-            await sessionDoc.ref.update({
-              reminderSent: true,
-              reminderSentAt: Timestamp.now(),
-              fcmMessageId: messageId,
-            });
-
-            console.log(`✅ Sent FCM reminder for "${session.title}" to ${user.email}`);
-          } catch (err) {
-            console.error(`❌ Failed to send FCM reminder for session ${sessionId} to ${user.email}:`, err);
+            await sendReminderForAgendaItem(user, fcmToken, sessionDoc);
+          } catch (error) {
+            console.error(`❌ Failed to send FCM reminder for session ${sessionDoc.id} to ${user.email}:`, error);
           }
         }
       }
@@ -99,10 +136,10 @@ export const sendSessionRemindersManual = onRequest(
       }
 
       const now = Timestamp.now();
+      const fiveMinutesAgo = Timestamp.fromMillis(now.toMillis() - 5 * 60 * 1000);
       const fiveMinutesFromNow = Timestamp.fromMillis(now.toMillis() + 5 * 60 * 1000);
-      const sixMinutesFromNow = Timestamp.fromMillis(now.toMillis() + 6 * 60 * 1000);
 
-      console.log(`[MANUAL] Checking agendas for sessions between ${fiveMinutesFromNow.toDate()} and ${sixMinutesFromNow.toDate()}`);
+      console.log(`[MANUAL] Checking agendas for sessions between ${fiveMinutesAgo.toDate()} and ${fiveMinutesFromNow.toDate()}`);
 
       const usersSnapshot = await db.collection("users").get();
       const results = [];
@@ -132,8 +169,8 @@ export const sendSessionRemindersManual = onRequest(
 
         const agendaRef = db.collection(`users/${userDoc.id}/agenda`);
         const agendaSnapshot = await agendaRef
-          .where("startTime", ">=", fiveMinutesFromNow)
-          .where("startTime", "<=", sixMinutesFromNow)
+          .where("startTime", ">=", fiveMinutesAgo)
+          .where("startTime", "<=", fiveMinutesFromNow)
           .where("reminderSent", "==", false)
           .get();
 
@@ -143,26 +180,13 @@ export const sendSessionRemindersManual = onRequest(
           console.log(`[MANUAL] User ${user.email} has ${agendaSnapshot.size} sessions starting soon`);
 
           for (const sessionDoc of agendaSnapshot.docs) {
-            const session = sessionDoc.data();
-            const sessionId = sessionDoc.id;
-
             try {
-              const messageId = await sendSessionReminderNotification(
-                fcmToken,
-                session.title,
-                sessionId
-              );
-
-              await sessionDoc.ref.update({
-                reminderSent: true,
-                reminderSentAt: Timestamp.now(),
-                fcmMessageId: messageId,
-              });
-
-              userResult.notificationsSent++;
-              console.log(`[MANUAL] ✅ Sent FCM reminder for "${session.title}" to ${user.email}`);
-            } catch (err) {
-              const errorMsg = `Failed to send FCM notification for session "${session.title}": ${err.message}`;
+              const sent = await sendReminderForAgendaItem(user, fcmToken, sessionDoc);
+              if (sent) {
+                userResult.notificationsSent++;
+              }
+            } catch (error) {
+              const errorMsg = `Failed to send FCM notification for session "${sessionDoc.data().title}": ${error.message}`;
               userResult.errors.push(errorMsg);
               console.error(`[MANUAL] ❌ ${errorMsg}`);
             }
@@ -181,8 +205,8 @@ export const sendSessionRemindersManual = onRequest(
         message: "Manual FCM reminder check complete",
         timestamp: new Date().toISOString(),
         checkWindow: {
-          start: fiveMinutesFromNow.toDate(),
-          end: sixMinutesFromNow.toDate(),
+          start: fiveMinutesAgo.toDate(),
+          end: fiveMinutesFromNow.toDate(),
         },
         summary: {
           totalUsers: results.length,

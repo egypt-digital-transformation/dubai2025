@@ -9,6 +9,16 @@ export const environment = {
     appId: "1:107201585408:web:45f4aaa5690d72e5a693e5",
     measurementId: "G-MNX0Y34XMN"
   },
+  notificationFirebaseConfig: {
+    apiKey: "AIzaSyDLFKthhuoBAreHk6QN2w6sRRZmDratMWk",
+    authDomain: "mea-egypt-tv-sso-prd.firebaseapp.com",
+    databaseURL: "https://mea-egypt-tv-sso-prd-default-rtdb.firebaseio.com",
+    projectId: "mea-egypt-tv-sso-prd",
+    storageBucket: "mea-egypt-tv-sso-prd.firebasestorage.app",
+    messagingSenderId: "54851020508",
+    appId: "1:54851020508:web:36878d3e8ac15d3630f619",
+    measurementId: "G-8H04P90GW8"
+  },
   hsefirebaseConfig: {
     apiKey: "AIzaSyAhq-FgcGDV9I6V29GouM0W23AOfNr41sw",
     authDomain: "mea-hseegyptonboarding-prod.firebaseapp.com",
@@ -19,6 +29,5 @@ export const environment = {
     appId: "1:332004340544:web:f30fec6f2934f6d81780a5",
     measurementId: "G-YW3LMNTMX8"
   },
-  // Optional: Add your Web Push Certificate (VAPID Key) from Firebase Console > Project Settings > Cloud Messaging
-  vapidKey: ""
+  notificationVapidKey: "BIhWWTprzJSgEioUpdnNL_3ZnC1ck2C7NRfZ_p1xLLJ0Ctywvr3BTYwbBvWnaExbck1fGnvADUOWkqpIav11l3o"
 };

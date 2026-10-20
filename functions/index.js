@@ -9,8 +9,14 @@ export {
 } from "./admin/dashboard.js";
 export {
   recordNotificationOpen,
+  scheduleTargetedNotification,
   sendTargetedNotification,
+  dispatchScheduledNotifications,
 } from "./notifications/targeted-notifications.js";
+export {
+  notifyAdminsOfNewRequest,
+  notifyUserOfRequestUpdate,
+} from "./requests/request-notifications.js";
 export {
   sendSessionReminders,
   sendSessionRemindersManual,

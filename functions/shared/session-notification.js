@@ -14,13 +14,13 @@ export async function sendSessionReminderNotification(token, title, sessionId) {
     token,
     notification: {
       title: "Session Starting Soon!",
-      body: `Your "${title}" starts in 5 minutes.`,
+      body: `Your "${title}" is starting soon.`,
     },
     data: stringData,
     webpush: {
       notification: {
         title: "Session Starting Soon!",
-        body: `Your "${title}" starts in 5 minutes.`,
+        body: `Your "${title}" is starting soon.`,
         icon: "/assets/icon/favicon.png",
         badge: "/assets/icon/favicon.png",
       },

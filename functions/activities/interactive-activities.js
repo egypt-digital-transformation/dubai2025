@@ -8,15 +8,24 @@ import {
   matchesNotificationTarget,
   SEGMENT_FIELDS,
 } from "../shared/notification-utils.js";
+import {
+  getTargetRecipients,
+  sendPushToRecipients,
+} from "../shared/push-delivery.js";
 
 const ACTIVITY_COLLECTION = "interactiveActivities";
 
 function validateTarget(target) {
   if (
     !target ||
-    !["all", "user", "segment"].includes(target.kind) ||
+    !["all", "user", "users", "segment"].includes(target.kind) ||
     (target.kind === "user" &&
       (typeof target.userId !== "string" || !target.userId.length)) ||
+    (target.kind === "users" &&
+      (!Array.isArray(target.userIds) ||
+        target.userIds.length < 1 ||
+        target.userIds.length > 5000 ||
+        target.userIds.some((userId) => typeof userId !== "string" || !userId.length))) ||
     (target.kind === "segment" &&
       (!SEGMENT_FIELDS.has(target.field) ||
         typeof target.value !== "string" ||
@@ -71,7 +80,43 @@ export const createInteractiveActivity = onCall(
       createdAt: FieldValue.serverTimestamp(),
     });
 
-    return { id: activityRef.id };
+    let notificationSummary = {
+      pushReadyCount: 0,
+      acceptedCount: 0,
+      failedCount: 0,
+      deliveryError: false,
+    };
+    try {
+      const { recipients } = await getTargetRecipients(target);
+      notificationSummary.pushReadyCount = recipients.length;
+      const results = await sendPushToRecipients(recipients, {
+        title: `${kind === "quiz" ? "New quiz" : "New poll"}: ${title.trim()}`,
+        body: "Open the app to participate.",
+        data: {
+          activityId: activityRef.id,
+          kind,
+          url: "/activities",
+        },
+        link: "/activities",
+      });
+      notificationSummary = {
+        acceptedCount: results.filter((result) => result.success).length,
+        failedCount: results.filter((result) => !result.success).length,
+        deliveryError: false,
+      };
+      await activityRef.set(
+        { notificationSummary, notificationSentAt: FieldValue.serverTimestamp() },
+        { merge: true }
+      );
+    } catch (error) {
+      console.error(
+        `[InteractiveActivities] Failed to notify attendees about ${kind} ${activityRef.id}:`,
+        error
+      );
+      notificationSummary.deliveryError = true;
+    }
+
+    return { id: activityRef.id, notificationSummary };
   }
 );
 

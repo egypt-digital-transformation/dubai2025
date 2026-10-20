@@ -90,6 +90,7 @@ export const getAdminDashboard = onCall(
         const day3Type = data.day3?.type;
         const day3GroupAM = data.day3?.groupAM;
         const day3GroupPM = data.day3?.groupPM;
+        const participantsGroup = data.participantsGroup;
 
         return {
           id: attendeeDocument.id,
@@ -99,6 +100,8 @@ export const getAdminDashboard = onCall(
           day3Type: day3Type == null ? "" : String(day3Type),
           day3GroupAM: day3GroupAM == null ? "" : String(day3GroupAM),
           day3GroupPM: day3GroupPM == null ? "" : String(day3GroupPM),
+          participantsGroup:
+            participantsGroup == null ? "" : String(participantsGroup),
           hasPushToken: typeof data.fcmToken === "string" && data.fcmToken.length > 0,
           ...(activityByEmail.get(email.toLowerCase()) ?? {
             loggedIn: false,
@@ -123,6 +126,7 @@ export const getAdminDashboard = onCall(
         failedCount: campaign.failedCount || 0,
         openedCount: campaign.openedCount || 0,
         status: campaign.status,
+        scheduledAt: timestampToIso(campaign.scheduledAt),
       };
     });
 

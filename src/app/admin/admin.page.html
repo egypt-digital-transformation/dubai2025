@@ -553,6 +553,28 @@
         </button>
       </div>
 
+      <ion-input
+        *ngIf="updateMode === 'scheduled'"
+        label="Send date and time (Egypt time)"
+        labelPlacement="stacked"
+        fill="outline"
+        type="datetime-local"
+        [(ngModel)]="scheduledDateTime"
+        name="scheduledDateTime"
+        [min]="minScheduledDateTime"
+        required
+      ></ion-input>
+      <ion-note *ngIf="updateMode === 'scheduled'" color="medium" class="campaign-note">
+        Scheduled times use the Africa/Cairo timezone. The delivery worker checks once per minute.
+      </ion-note>
+
+      <ion-note *ngIf="notificationAudienceError" color="danger" class="campaign-note">
+        {{ notificationAudienceError }}
+      </ion-note>
+      <ion-note *ngIf="!notificationAudience && !notificationAudienceError" color="medium" class="campaign-note">
+        Loading users and participant groups from Firestore…
+      </ion-note>
+
       <ion-note *ngIf="!dashboard" color="medium" class="campaign-note">
         Audience details are unavailable until the admin dashboard service responds.
       </ion-note>
@@ -576,45 +598,123 @@
           name="notificationBody"
           required
         ></ion-textarea>
-        <ion-select
-          label="Audience"
-          labelPlacement="stacked"
-          fill="outline"
-          [(ngModel)]="audienceKind"
-          name="audienceKind"
-          [disabled]="!dashboard"
-        >
-          <ion-select-option value="all">All attendees</ion-select-option>
-          <ion-select-option value="user">One attendee</ion-select-option>
-          <ion-select-option value="segment">A group or track</ion-select-option>
-        </ion-select>
+        <fieldset class="audience-mode">
+          <legend>Choose notification audience</legend>
+          <label class="audience-mode-option">
+            <input
+              type="radio"
+              name="updateAudience"
+              value="all"
+              [(ngModel)]="audienceKind"
+              [disabled]="!notificationAudience"
+            />
+            <span>All users</span>
+          </label>
+          <label class="audience-mode-option">
+            <input
+              type="radio"
+              name="updateAudience"
+              value="users"
+              [(ngModel)]="audienceKind"
+              [disabled]="!notificationAudience"
+            />
+            <span>Select users</span>
+          </label>
+          <label class="audience-mode-option">
+            <input
+              type="radio"
+              name="updateAudience"
+              value="group"
+              [(ngModel)]="audienceKind"
+              [disabled]="!notificationAudience"
+            />
+            <span>Participants group</span>
+          </label>
+          <label class="audience-mode-option">
+            <input
+              type="radio"
+              name="updateAudience"
+              value="plantVisitors"
+              [(ngModel)]="audienceKind"
+              [disabled]="!notificationAudience"
+            />
+            <span>Plant visitors</span>
+          </label>
+        </fieldset>
 
-        <ion-select
-          *ngIf="audienceKind === 'user'"
-          label="Attendee"
-          labelPlacement="stacked"
-          fill="outline"
-          [(ngModel)]="selectedUserId"
-          name="selectedUserId"
-          [disabled]="!dashboard"
-        >
-          <ion-select-option *ngFor="let attendee of attendees" [value]="attendee.id">
-            {{ attendee.name || attendee.email }}{{ attendee.hasPushToken ? '' : ' (no push token)' }}
-          </ion-select-option>
-        </ion-select>
-        <ion-select
-          *ngIf="audienceKind === 'segment'"
-          label="Group / track"
-          labelPlacement="stacked"
-          fill="outline"
-          [(ngModel)]="selectedSegmentKey"
-          name="selectedSegmentKey"
-          [disabled]="!dashboard"
-        >
-          <ion-select-option *ngFor="let segment of segments" [value]="segment.key">
-            {{ segment.label }}
-          </ion-select-option>
-        </ion-select>
+        <section *ngIf="audienceKind === 'users'" class="audience-picker">
+          <div class="audience-picker-heading">
+            <div>
+              <strong>Choose attendees</strong>
+              <span>Select as many people as you need.</span>
+            </div>
+            <span class="count-pill">{{ selectedUserIds.length }} selected</span>
+          </div>
+          <input
+            class="audience-search"
+            type="search"
+            placeholder="Search by name or email"
+            aria-label="Search attendees"
+            [(ngModel)]="notificationUserSearch"
+            name="notificationUserSearch"
+          />
+          <div class="audience-picker-actions">
+            <button type="button" (click)="selectVisibleUsers('update')">
+              Select visible ({{ filteredNotificationUsers.length }})
+            </button>
+            <button type="button" (click)="selectAllPushReadyUsers('update')">Select push-ready users</button>
+            <button type="button" (click)="clearSelectedUsers('update')" [disabled]="!selectedUserIds.length">
+              Clear selection
+            </button>
+          </div>
+          <div class="audience-options-list" role="group" aria-label="Attendees">
+            <label class="audience-option" *ngFor="let attendee of filteredNotificationUsers">
+              <input
+                type="checkbox"
+                [checked]="isAudienceUserSelected(attendee.id, 'update')"
+                (change)="onAudienceUserChange(attendee.id, $event, 'update')"
+              />
+              <span class="audience-option-copy">
+                <strong>{{ attendee.name || attendee.email }}</strong>
+                <span>{{ attendee.email }}</span>
+              </span>
+              <span class="audience-token-status" [class.ready]="attendee.hasPushToken">
+                {{ attendee.hasPushToken ? 'Push ready' : 'No push token' }}
+              </span>
+            </label>
+            <p *ngIf="!filteredNotificationUsers.length" class="audience-empty">
+              No users match this search.
+            </p>
+          </div>
+        </section>
+        <section *ngIf="audienceKind === 'group'" class="audience-picker">
+          <div class="audience-picker-heading">
+            <div>
+              <strong>Choose a participants group</strong>
+              <span>Groups are loaded from Firestore user profiles.</span>
+            </div>
+          </div>
+          <div class="audience-options-list group-options" role="radiogroup" aria-label="Participants groups">
+            <label class="audience-option" *ngFor="let segment of notificationSegments">
+              <input
+                type="radio"
+                name="participantsGroup"
+                [value]="segment.key"
+                [(ngModel)]="selectedSegmentKey"
+              />
+              <span class="audience-option-copy">
+                <strong>{{ segment.label }}</strong>
+                <span>{{ countUsersInGroup(segment) }} users · {{ countPushReadyUsersInGroup(segment) }} push ready</span>
+              </span>
+            </label>
+            <p *ngIf="!notificationSegments.length" class="audience-empty">
+              No participants groups were found in Firestore.
+            </p>
+          </div>
+        </section>
+        <ion-note *ngIf="audienceKind === 'plantVisitors'" color="medium" class="campaign-note">
+          Includes Firestore users with <code>plantVisit</code> set to <code>true</code>.
+        </ion-note>
 
         <div class="send-row">
           <p *ngIf="selectedRecipientCount !== null">
@@ -623,12 +723,12 @@
           </p>
           <ion-button
             type="submit"
-            [disabled]="updateMode !== 'now' || !dashboard || isSending || !notificationTitle.trim() || !notificationBody.trim()"
+            [disabled]="!notificationAudience || !!notificationAudienceError || isSending || !notificationTitle.trim() || !notificationBody.trim() || (updateMode === 'scheduled' && !scheduledDateTime)"
           >
             <ion-spinner *ngIf="isSending" name="crescent"></ion-spinner>
             <ng-container *ngIf="!isSending">
               <ion-icon slot="start" name="send-outline"></ion-icon>
-              Publish now
+              {{ updateMode === 'scheduled' ? 'Schedule push' : 'Publish now' }}
             </ng-container>
           </ion-button>
         </div>
@@ -649,6 +749,7 @@
                 <th scope="col">Sent</th>
                 <th scope="col">Title</th>
                 <th scope="col">Audience</th>
+                <th scope="col">Status</th>
                 <th scope="col">Accepted</th>
                 <th scope="col">Failed</th>
                 <th scope="col">Opened</th>
@@ -657,16 +758,17 @@
             </thead>
             <tbody>
               <tr *ngFor="let campaign of data.campaigns">
-                <td>{{ campaign.createdAt | date:'short' }}</td>
+                <td>{{ (campaign.scheduledAt || campaign.createdAt) | date:'short' }}</td>
                 <td>{{ campaign.title }}</td>
                 <td>{{ campaign.targetLabel }}</td>
+                <td>{{ campaign.status }}</td>
                 <td>{{ campaign.acceptedCount }}</td>
                 <td>{{ campaign.failedCount }}</td>
                 <td>{{ campaign.openedCount }}</td>
                 <td>{{ openRate(campaign) }}%</td>
               </tr>
               <tr *ngIf="!data.campaigns.length">
-                <td colspan="7" class="empty-state">No push campaigns have been sent.</td>
+                <td colspan="8" class="empty-state">No push campaigns have been sent or scheduled.</td>
               </tr>
             </tbody>
           </table>
@@ -907,51 +1009,148 @@
             Add option
           </ion-button>
         </div>
-        <ion-select
-          label="Audience"
-          labelPlacement="stacked"
-          fill="outline"
-          [(ngModel)]="activityAudienceKind"
-          name="activityAudienceKind"
-        >
-          <ion-select-option value="all">All attendees</ion-select-option>
-          <ion-select-option value="user">One attendee</ion-select-option>
-          <ion-select-option value="segment">A group or track</ion-select-option>
-        </ion-select>
-        <ion-select
-          *ngIf="activityAudienceKind === 'user'"
-          label="Attendee"
-          labelPlacement="stacked"
-          fill="outline"
-          [(ngModel)]="activitySelectedUserId"
-          name="activitySelectedUserId"
-          [disabled]="!dashboard"
-        >
-          <ion-select-option *ngFor="let attendee of attendees" [value]="attendee.id">
-            {{ attendee.name || attendee.email }}
-          </ion-select-option>
-        </ion-select>
-        <ion-select
-          *ngIf="activityAudienceKind === 'segment'"
-          label="Group / track"
-          labelPlacement="stacked"
-          fill="outline"
-          [(ngModel)]="activitySelectedSegmentKey"
-          name="activitySelectedSegmentKey"
-          [disabled]="!dashboard"
-        >
-          <ion-select-option *ngFor="let segment of segments" [value]="segment.key">
-            {{ segment.label }}
-          </ion-select-option>
-        </ion-select>
-        <ion-note *ngIf="activityAudienceKind !== 'all' && !dashboard" color="medium">
-          Load dashboard data before selecting an attendee or segment.
+        <fieldset class="audience-mode">
+          <legend>Choose quiz or poll audience</legend>
+          <label class="audience-mode-option">
+            <input
+              type="radio"
+              name="activityAudience"
+              value="all"
+              [(ngModel)]="activityAudienceKind"
+              [disabled]="!notificationAudience"
+            />
+            <span>All users</span>
+          </label>
+          <label class="audience-mode-option">
+            <input
+              type="radio"
+              name="activityAudience"
+              value="users"
+              [(ngModel)]="activityAudienceKind"
+              [disabled]="!notificationAudience"
+            />
+            <span>Select users</span>
+          </label>
+          <label class="audience-mode-option">
+            <input
+              type="radio"
+              name="activityAudience"
+              value="group"
+              [(ngModel)]="activityAudienceKind"
+              [disabled]="!notificationAudience"
+            />
+            <span>Participants group</span>
+          </label>
+          <label class="audience-mode-option">
+            <input
+              type="radio"
+              name="activityAudience"
+              value="plantVisitors"
+              [(ngModel)]="activityAudienceKind"
+              [disabled]="!notificationAudience"
+            />
+            <span>Plant visitors</span>
+          </label>
+        </fieldset>
+
+        <section *ngIf="activityAudienceKind === 'users'" class="audience-picker">
+          <div class="audience-picker-heading">
+            <div>
+              <strong>Choose attendees</strong>
+              <span>Select as many people as you need.</span>
+            </div>
+            <span class="count-pill">{{ activitySelectedUserIds.length }} selected</span>
+          </div>
+          <input
+            class="audience-search"
+            type="search"
+            placeholder="Search by name or email"
+            aria-label="Search attendees for quiz or poll"
+            [(ngModel)]="activityUserSearch"
+            name="activityUserSearch"
+          />
+          <div class="audience-picker-actions">
+            <button type="button" (click)="selectVisibleUsers('activity')">
+              Select visible ({{ filteredActivityUsers.length }})
+            </button>
+            <button type="button" (click)="selectAllPushReadyUsers('activity')">
+              Select push-ready users
+            </button>
+            <button
+              type="button"
+              (click)="clearSelectedUsers('activity')"
+              [disabled]="!activitySelectedUserIds.length"
+            >
+              Clear selection
+            </button>
+          </div>
+          <div class="audience-options-list" role="group" aria-label="Quiz and poll attendees">
+            <label class="audience-option" *ngFor="let attendee of filteredActivityUsers">
+              <input
+                type="checkbox"
+                [checked]="isAudienceUserSelected(attendee.id, 'activity')"
+                (change)="onAudienceUserChange(attendee.id, $event, 'activity')"
+              />
+              <span class="audience-option-copy">
+                <strong>{{ attendee.name || attendee.email }}</strong>
+                <span>{{ attendee.email }}</span>
+              </span>
+              <span class="audience-token-status" [class.ready]="attendee.hasPushToken">
+                {{ attendee.hasPushToken ? 'Push ready' : 'No push token' }}
+              </span>
+            </label>
+            <p *ngIf="!filteredActivityUsers.length" class="audience-empty">
+              No users match this search.
+            </p>
+          </div>
+        </section>
+
+        <section *ngIf="activityAudienceKind === 'group'" class="audience-picker">
+          <div class="audience-picker-heading">
+            <div>
+              <strong>Choose a participants group</strong>
+              <span>Groups are loaded from Firestore user profiles.</span>
+            </div>
+          </div>
+          <div class="audience-options-list group-options" role="radiogroup" aria-label="Quiz and poll participants groups">
+            <label class="audience-option" *ngFor="let segment of notificationSegments">
+              <input
+                type="radio"
+                name="activityParticipantsGroup"
+                [value]="segment.key"
+                [(ngModel)]="activitySelectedSegmentKey"
+              />
+              <span class="audience-option-copy">
+                <strong>{{ segment.label }}</strong>
+                <span>{{ countUsersInGroup(segment) }} users · {{ countPushReadyUsersInGroup(segment) }} push ready</span>
+              </span>
+            </label>
+            <p *ngIf="!notificationSegments.length" class="audience-empty">
+              No participants groups were found in Firestore.
+            </p>
+          </div>
+        </section>
+        <ion-note *ngIf="activityAudienceKind === 'plantVisitors'" color="medium" class="campaign-note">
+          Includes Firestore users with <code>plantVisit</code> set to <code>true</code>.
+        </ion-note>
+
+        <ion-note *ngIf="!notificationAudienceError && !notificationAudience" color="medium">
+          Loading audience from Firestore…
+        </ion-note>
+        <ion-note *ngIf="notificationAudienceError" color="danger">
+          {{ notificationAudienceError }}
         </ion-note>
         <div class="send-row">
-          <p>Attendees can submit one response. Results are shown in this admin panel.</p>
+          <div>
+            <p *ngIf="selectedActivityRecipientCount !== null">
+              {{ selectedActivityRecipientCount }} attendee(s) match ·
+              {{ pushReadyActivityRecipientCount }} push-enabled
+            </p>
+            <p>Attendees can submit one response. Results are shown in this admin panel.</p>
+          </div>
           <ion-button
             type="submit"
-            [disabled]="isCreatingActivity || !activityTitle.trim() || !activityQuestion.trim()"
+            [disabled]="!notificationAudience || !!notificationAudienceError || isCreatingActivity || !activityTitle.trim() || !activityQuestion.trim() || selectedActivityRecipientCount === 0 || (activityAudienceKind === 'users' && !activitySelectedUserIds.length) || (activityAudienceKind === 'group' && !activitySelectedSegmentKey)"
           >
             <ion-spinner *ngIf="isCreatingActivity" name="crescent"></ion-spinner>
             <ng-container *ngIf="!isCreatingActivity">

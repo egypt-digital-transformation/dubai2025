@@ -43,6 +43,7 @@ export interface AdminAttendee {
   day3Type: string;
   day3GroupAM: string;
   day3GroupPM: string;
+  participantsGroup: string;
   hasPushToken: boolean;
   loggedIn: boolean;
   active: boolean;
@@ -95,6 +96,17 @@ export interface AdminCampaign {
   failedCount: number;
   openedCount: number;
   status: string;
+  scheduledAt: string | null;
+}
+
+export interface NotificationSendResult {
+  campaignId: string;
+  targetCount: number;
+  pushReadyCount: number;
+  acceptedCount: number;
+  failedCount: number;
+  status: string;
+  scheduledAt?: string;
 }
 
 export interface AdminDashboard {
@@ -147,9 +159,10 @@ export interface AdminInteractiveActivity extends Omit<InteractiveActivity, 'sub
 export type NotificationTarget =
   | { kind: 'all' }
   | { kind: 'user'; userId: string }
+  | { kind: 'users'; userIds: string[] }
   | {
       kind: 'segment';
-      field: 'day2.group' | 'day3.type' | 'day3.groupAM' | 'day3.groupPM';
+      field: 'day2.group' | 'day3.type' | 'day3.groupAM' | 'day3.groupPM' | 'participantsGroup' | 'plantVisit';
       value: string;
     };
 
@@ -215,19 +228,59 @@ export class AdminService {
     };
   }
 
+  async loadNotificationAudience(): Promise<AdminAttendee[]> {
+    const snapshot = await getDocs(collection(this.firestore, 'users'));
+    return snapshot.docs
+      .map((userDocument) => {
+        const data = userDocument.data();
+        const asText = (value: unknown): string =>
+          value == null ? '' : String(value);
+        return {
+          id: userDocument.id,
+          email:
+            asText(data['emailAddress']).trim() ||
+            asText(data['email']).trim() ||
+            userDocument.id,
+          name: asText(data['displayName'] ?? data['name']),
+          firstName: asText(data['firstName']),
+          nationality: asText(data['nationality']),
+          day2Group: asText((data['day2'] as { group?: unknown } | undefined)?.group),
+          day3Type: asText((data['day3'] as { type?: unknown } | undefined)?.type),
+          day3GroupAM: asText((data['day3'] as { groupAM?: unknown } | undefined)?.groupAM),
+          day3GroupPM: asText((data['day3'] as { groupPM?: unknown } | undefined)?.groupPM),
+          participantsGroup: asText(data['participantsGroup']),
+          hasPushToken:
+            typeof data['fcmToken'] === 'string' && data['fcmToken'].length > 0,
+          plantVisit: data['plantVisit'] === true,
+          loggedIn: false,
+          active: false,
+          installed: false,
+        };
+      })
+      .filter((user) => user.email.trim().length > 0)
+      .sort((a, b) => a.email.localeCompare(b.email));
+  }
+
   async sendNotification(
     title: string,
     body: string,
     target: NotificationTarget
-  ): Promise<{
-    campaignId: string;
-    targetCount: number;
-    pushReadyCount: number;
-    acceptedCount: number;
-    failedCount: number;
-    status: string;
-  }> {
+  ): Promise<NotificationSendResult> {
     return this.call('sendTargetedNotification', { title, body, target });
+  }
+
+  async scheduleNotification(
+    title: string,
+    body: string,
+    target: NotificationTarget,
+    scheduledAt: string
+  ): Promise<NotificationSendResult> {
+    return this.call('scheduleTargetedNotification', {
+      title,
+      body,
+      target,
+      scheduledAt,
+    });
   }
 
   async createInteractiveActivity(activity: {
@@ -237,7 +290,15 @@ export class AdminService {
     kind: 'quiz' | 'poll';
     target: NotificationTarget;
     correctOptionIndex: number | null;
-  }): Promise<{ id: string }> {
+  }): Promise<{
+    id: string;
+    notificationSummary?: {
+      pushReadyCount: number;
+      acceptedCount: number;
+      failedCount: number;
+      deliveryError: boolean;
+    };
+  }> {
     return this.call('createInteractiveActivity', activity);
   }
 
@@ -648,6 +709,7 @@ export class AdminService {
             groupAM?: unknown;
             groupPM?: unknown;
           };
+          participantsGroup?: unknown;
         };
         const asText = (value: unknown): string =>
           value == null ? '' : String(value);
@@ -664,6 +726,7 @@ export class AdminService {
           day3Type: asText(data.day3?.type),
           day3GroupAM: asText(data.day3?.groupAM),
           day3GroupPM: asText(data.day3?.groupPM),
+          participantsGroup: asText(data.participantsGroup),
           hasPushToken:
             typeof (data as { fcmToken?: unknown }).fcmToken === 'string' &&
             (data as { fcmToken: string }).fcmToken.length > 0,

@@ -1,156 +1,278 @@
 import { HttpsError, onCall } from "firebase-functions/v2/https";
-import { FieldValue, getMessaging, db, CAMPAIGN_COLLECTION } from "../shared/firebase.js";
+import { onSchedule } from "firebase-functions/v2/scheduler";
+import {
+  FieldValue,
+  db,
+  CAMPAIGN_COLLECTION,
+  Timestamp,
+} from "../shared/firebase.js";
 import { requireAdminUser, requireAuthenticatedUser } from "../shared/admin-auth.js";
 import {
   emailDocumentId,
-  matchesNotificationTarget,
   SEGMENT_FIELDS,
 } from "../shared/notification-utils.js";
+import {
+  getTargetRecipients,
+  sendPushToRecipients,
+} from "../shared/push-delivery.js";
+
+function validateNotification(request) {
+  const rawTitle = request.data?.title;
+  const rawBody = request.data?.body;
+  const title = typeof rawTitle === "string" ? rawTitle.trim() : "";
+  const body = typeof rawBody === "string" ? rawBody.trim() : "";
+  const target = request.data?.target;
+  if (
+    title.length < 1 ||
+    title.length > 100 ||
+    body.length < 1 ||
+    body.length > 1000
+  ) {
+    throw new HttpsError(
+      "invalid-argument",
+      "Enter a notification title (up to 100 characters) and message (up to 1,000 characters)."
+    );
+  }
+  if (
+    !target ||
+    !["all", "user", "users", "segment"].includes(target.kind) ||
+    (target.kind === "user" &&
+      (typeof target.userId !== "string" || target.userId.length < 1)) ||
+    (target.kind === "users" &&
+      (!Array.isArray(target.userIds) ||
+        target.userIds.length < 1 ||
+        target.userIds.length > 5000 ||
+        target.userIds.some((userId) => typeof userId !== "string" || !userId.length))) ||
+    (target.kind === "segment" &&
+      (!SEGMENT_FIELDS.has(target.field) ||
+        typeof target.value !== "string" ||
+        target.value.length < 1 ||
+        target.value.length > 100))
+  ) {
+    throw new HttpsError("invalid-argument", "Choose a valid notification audience.");
+  }
+
+  return { title, body, target };
+}
+
+function getTargetLabel(target, recipients) {
+  if (target.kind === "all") {
+    return "All attendees";
+  }
+  if (target.kind === "user") {
+    return recipients.find((recipient) => recipient.id === target.userId)?.email ||
+      "One attendee";
+  }
+  if (target.kind === "users") {
+    return `${target.userIds.length} selected users`;
+  }
+  return `${target.field}: ${target.value}`;
+}
+
+async function createCampaign(title, body, target, scheduledAt = null) {
+  const { targetCount, recipients } = await getTargetRecipients(target);
+  if (!recipients.length) {
+    throw new HttpsError(
+      "failed-precondition",
+      "No attendees in this audience have registered for push notifications."
+    );
+  }
+
+  const campaignRef = db.collection(CAMPAIGN_COLLECTION).doc();
+  await campaignRef.set({
+    title,
+    body,
+    target,
+    targetLabel: getTargetLabel(target, recipients),
+    targetCount,
+    pushReadyCount: recipients.length,
+    acceptedCount: 0,
+    failedCount: 0,
+    openedCount: 0,
+    status: scheduledAt ? "scheduled" : "sending",
+    scheduledAt,
+    createdAt: FieldValue.serverTimestamp(),
+  });
+  return { campaignRef, targetCount, recipients };
+}
+
+async function deliverCampaign(campaignRef, campaign, recipients) {
+  let acceptedCount = 0;
+  let failedCount = 0;
+  try {
+    const results = await sendPushToRecipients(recipients, {
+      title: campaign.title,
+      body: campaign.body,
+      data: {
+        campaignId: campaignRef.id,
+        url: `/tabs/home?notificationCampaign=${campaignRef.id}`,
+      },
+      link: `/tabs/home?notificationCampaign=${campaignRef.id}`,
+    });
+    acceptedCount = results.filter((result) => result.success).length;
+    failedCount = results.length - acceptedCount;
+    await Promise.all(
+      results.map(({ recipient, success, errorCode }) =>
+        campaignRef
+          .collection("deliveries")
+          .doc(emailDocumentId(recipient.email))
+          .set({
+            emailHash: emailDocumentId(recipient.email),
+            status: success ? "accepted" : "failed",
+            errorCode,
+            openedAt: null,
+          })
+      )
+    );
+  } catch (error) {
+    await campaignRef.set(
+      {
+        acceptedCount,
+        failedCount: recipients.length - acceptedCount,
+        status: "failed",
+      },
+      { merge: true }
+    );
+    console.error("[AdminNotifications] Failed to send campaign:", error);
+    throw error;
+  }
+
+  const status =
+    failedCount === 0 ? "complete" : acceptedCount === 0 ? "failed" : "partial";
+  await campaignRef.set(
+    { acceptedCount, failedCount, status },
+    { merge: true }
+  );
+  return { acceptedCount, failedCount, status };
+}
 
 export const sendTargetedNotification = onCall(
   { region: "europe-west1" },
   async (request) => {
     await requireAdminUser(request);
+    const { title, body, target } = validateNotification(request);
+    const { campaignRef, targetCount, recipients } = await createCampaign(
+      title,
+      body,
+      target
+    );
 
-    const rawTitle = request.data?.title;
-    const rawBody = request.data?.body;
-    const title = typeof rawTitle === "string" ? rawTitle.trim() : "";
-    const body = typeof rawBody === "string" ? rawBody.trim() : "";
-    const target = request.data?.target;
-    if (
-      title.length < 1 ||
-      title.length > 100 ||
-      body.length < 1 ||
-      body.length > 1000
-    ) {
+    try {
+      const result = await deliverCampaign(
+        campaignRef,
+        { title, body },
+        recipients
+      );
+      return {
+        campaignId: campaignRef.id,
+        targetCount,
+        pushReadyCount: recipients.length,
+        ...result,
+      };
+    } catch {
+      throw new HttpsError("internal", "The push notification could not be sent.");
+    }
+  }
+);
+
+export const scheduleTargetedNotification = onCall(
+  { region: "europe-west1" },
+  async (request) => {
+    await requireAdminUser(request);
+    const { title, body, target } = validateNotification(request);
+    const scheduledAtValue = request.data?.scheduledAt;
+    const scheduledAtMs =
+      typeof scheduledAtValue === "string" ? Date.parse(scheduledAtValue) : NaN;
+    if (!Number.isFinite(scheduledAtMs) || scheduledAtMs <= Date.now()) {
       throw new HttpsError(
         "invalid-argument",
-        "Enter a notification title (up to 100 characters) and message (up to 1,000 characters)."
-      );
-    }
-    if (
-      !target ||
-      !["all", "user", "segment"].includes(target.kind) ||
-      (target.kind === "user" &&
-        (typeof target.userId !== "string" || target.userId.length < 1)) ||
-      (target.kind === "segment" &&
-        (!SEGMENT_FIELDS.has(target.field) ||
-          typeof target.value !== "string" ||
-          target.value.length < 1 ||
-          target.value.length > 100))
-    ) {
-      throw new HttpsError("invalid-argument", "Choose a valid notification audience.");
-    }
-
-    const attendeesSnapshot = await db.collection("users").get();
-    const targets = attendeesSnapshot.docs.filter((attendeeDocument) =>
-      matchesNotificationTarget(attendeeDocument, target)
-    );
-    const targetLabel =
-      target.kind === "all"
-        ? "All attendees"
-        : target.kind === "user"
-          ? targets.find((attendee) => attendee.id === target.userId)?.data()
-              .email || "One attendee"
-          : `${target.field}: ${target.value}`;
-    const recipients = targets
-      .map((attendeeDocument) => ({
-        email: attendeeDocument.data().email?.trim(),
-        token: attendeeDocument.data().fcmToken,
-      }))
-      .filter(
-        (recipient) =>
-          recipient.email &&
-          typeof recipient.token === "string" &&
-          recipient.token.length > 0
-      );
-
-    if (recipients.length === 0) {
-      throw new HttpsError(
-        "failed-precondition",
-        "No attendees in this audience have registered for push notifications."
+        "Choose a valid future send time."
       );
     }
 
-    const campaignRef = db.collection(CAMPAIGN_COLLECTION).doc();
-    await campaignRef.set({
+    const scheduledAt = Timestamp.fromMillis(scheduledAtMs);
+    const { campaignRef, targetCount, recipients } = await createCampaign(
       title,
       body,
       target,
-      targetLabel,
-      targetCount: targets.length,
-      pushReadyCount: recipients.length,
-      acceptedCount: 0,
-      failedCount: 0,
-      openedCount: 0,
-      status: "sending",
-      createdAt: FieldValue.serverTimestamp(),
-    });
-
-    let acceptedCount = 0;
-    let failedCount = 0;
-    try {
-      for (let index = 0; index < recipients.length; index += 500) {
-        const batch = recipients.slice(index, index + 500);
-        const response = await getMessaging().sendEachForMulticast({
-          tokens: batch.map((recipient) => recipient.token),
-          notification: { title, body },
-          data: {
-            campaignId: campaignRef.id,
-            url: `/tabs/home?notificationCampaign=${campaignRef.id}`,
-          },
-          webpush: {
-            fcmOptions: {
-              link: `/tabs/home?notificationCampaign=${campaignRef.id}`,
-            },
-          },
-        });
-
-        acceptedCount += response.successCount;
-        failedCount += response.failureCount;
-        await Promise.all(
-          response.responses.map((sendResult, recipientIndex) => {
-            const recipient = batch[recipientIndex];
-            return campaignRef
-              .collection("deliveries")
-              .doc(emailDocumentId(recipient.email))
-              .set({
-                emailHash: emailDocumentId(recipient.email),
-                status: sendResult.success ? "accepted" : "failed",
-                errorCode: sendResult.error?.code || null,
-                openedAt: null,
-              });
-          })
-        );
-      }
-    } catch (error) {
-      await campaignRef.set(
-        {
-          acceptedCount,
-          failedCount: recipients.length - acceptedCount,
-          status: "failed",
-        },
-        { merge: true }
-      );
-      console.error("[AdminNotifications] Failed to send campaign:", error);
-      throw new HttpsError("internal", "The push notification could not be sent.");
-    }
-
-    const status =
-      failedCount === 0 ? "complete" : acceptedCount === 0 ? "failed" : "partial";
-    await campaignRef.set(
-      { acceptedCount, failedCount, status },
-      { merge: true }
+      scheduledAt
     );
-
     return {
       campaignId: campaignRef.id,
-      targetCount: targets.length,
+      targetCount,
       pushReadyCount: recipients.length,
-      acceptedCount,
-      failedCount,
-      status,
+      status: "scheduled",
+      scheduledAt: scheduledAt.toDate().toISOString(),
     };
+  }
+);
+
+export const dispatchScheduledNotifications = onSchedule(
+  {
+    schedule: "every 1 minutes",
+    region: "europe-west1",
+  },
+  async () => {
+    const now = Timestamp.now();
+    const dueCampaigns = await db
+      .collection(CAMPAIGN_COLLECTION)
+      .where("status", "==", "scheduled")
+      .where("scheduledAt", "<=", now)
+      .limit(50)
+      .get();
+
+    for (const campaignDocument of dueCampaigns.docs) {
+      const campaignRef = campaignDocument.ref;
+      const claimed = await db.runTransaction(async (transaction) => {
+        const freshCampaign = await transaction.get(campaignRef);
+        if (freshCampaign.data()?.status !== "scheduled") {
+          return false;
+        }
+        transaction.update(campaignRef, {
+          status: "sending",
+          sendingAt: FieldValue.serverTimestamp(),
+        });
+        return true;
+      });
+      if (!claimed) {
+        continue;
+      }
+
+      const campaign = campaignDocument.data();
+      try {
+        const { targetCount, recipients } = await getTargetRecipients(
+          campaign.target
+        );
+        if (!recipients.length) {
+          await campaignRef.set(
+            {
+              targetCount,
+              pushReadyCount: 0,
+              acceptedCount: 0,
+              failedCount: 0,
+              status: "failed",
+              failureReason: "No audience members have push notifications enabled.",
+            },
+            { merge: true }
+          );
+          continue;
+        }
+        await campaignRef.set(
+          { targetCount, pushReadyCount: recipients.length },
+          { merge: true }
+        );
+        await deliverCampaign(campaignRef, campaign, recipients);
+      } catch (error) {
+        console.error(
+          `[AdminNotifications] Failed to deliver scheduled campaign ${campaignRef.id}:`,
+          error
+        );
+        await campaignRef.set(
+          { status: "failed", failureReason: "Push delivery failed." },
+          { merge: true }
+        );
+      }
+    }
   }
 );
 

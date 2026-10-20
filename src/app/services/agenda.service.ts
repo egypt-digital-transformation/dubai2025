@@ -5,6 +5,7 @@ import {
   doc,
   setDoc,
   getDocs,
+  getDoc,
   query,
   where,
   CollectionReference,
@@ -100,7 +101,15 @@ async generateUserAgenda(): Promise<void> {
   const userAgendaRef = collection(this.firestore, `users/${userDocSnap.id}/agenda`);
   for (const session of personalizedSessions) {
     const agendaDoc = doc(userAgendaRef, session.id);
-    await setDoc(agendaDoc, session, { merge: true });
+    const existingAgendaDoc = await getDoc(agendaDoc);
+    await setDoc(
+      agendaDoc,
+      {
+        ...session,
+        reminderSent: existingAgendaDoc.data()?.['reminderSent'] === true,
+      },
+      { merge: true }
+    );
   }
 
   console.log(`[AgendaService] ✅ Saved ${personalizedSessions.length} sessions to ${userEmail}'s agenda`);
