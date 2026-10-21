@@ -87,6 +87,14 @@ h1 {
   color: #a13c36;
 }
 
+.push-card .setup-success {
+  color: #267447;
+}
+
+.push-card .setup-error {
+  grid-column: 1 / -1;
+}
+
 .enable-push-button {
   --background: #0b2343;
   --border-radius: 0.65rem;

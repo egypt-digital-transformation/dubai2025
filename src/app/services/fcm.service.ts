@@ -1,4 +1,5 @@
 import { Injectable, inject } from '@angular/core';
+import { App as CapacitorApp } from '@capacitor/app';
 import { Router } from '@angular/router';
 import { ToastController } from '@ionic/angular/standalone';
 import { AuthService } from './auth.service';
@@ -121,6 +122,9 @@ export class FcmService {
   private messagingInstance: Messaging | null = null;
   private hasForegroundMessageListener = false;
   private isInitialized = false;
+  private isRefreshingTokenRegistration = false;
+  private lastTokenRegistrationAttempt = 0;
+  private readonly tokenRegistrationCooldownMs = 5 * 60 * 1000;
 
   private fcmTokenSubject = new BehaviorSubject<string | null>(null);
   readonly fcmToken$ = this.fcmTokenSubject.asObservable();
@@ -138,17 +142,69 @@ export class FcmService {
 
     this.authService.user$
       .pipe(filter((user) => !!user && !!user.email))
-      .subscribe(async (user) => {
+      .subscribe((user) => {
         console.log(`[FCM] Authenticated user active: ${user?.email}`);
-        if (
-          typeof window !== 'undefined' &&
-          'Notification' in window &&
-          Notification.permission === 'granted'
-        ) {
-          await this.requestPermissionAndRegisterToken();
-        }
+        void this.refreshTokenRegistration();
       });
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('focus', this.refreshTokenRegistration);
+      window.addEventListener('online', this.refreshTokenRegistration);
+      document.addEventListener('visibilitychange', this.onVisibilityChange);
+      void CapacitorApp.addListener('appStateChange', ({ isActive }) => {
+        if (isActive) {
+          void this.refreshTokenRegistration();
+        }
+      }).catch((error) => {
+        console.warn('[FCM] Could not attach the app foreground listener:', error);
+      });
+      window.setInterval(() => {
+        if (document.visibilityState === 'visible') {
+          void this.refreshTokenRegistration();
+        }
+      }, this.tokenRegistrationCooldownMs);
+    }
   }
+
+  private readonly refreshTokenRegistration = async (): Promise<void> => {
+    if (
+      this.isRefreshingTokenRegistration ||
+      !this.authService.currentUser?.email ||
+      typeof window === 'undefined' ||
+      !('Notification' in window) ||
+      Notification.permission !== 'granted' ||
+      Date.now() - this.lastTokenRegistrationAttempt < this.tokenRegistrationCooldownMs
+    ) {
+      return;
+    }
+
+    this.isRefreshingTokenRegistration = true;
+    this.lastTokenRegistrationAttempt = Date.now();
+    try {
+      await this.requestPermissionAndRegisterToken();
+    } finally {
+      this.isRefreshingTokenRegistration = false;
+    }
+  };
+
+  async ensurePushTokenRegistered(): Promise<void> {
+    if (this.isRefreshingTokenRegistration) {
+      return;
+    }
+
+    this.isRefreshingTokenRegistration = true;
+    try {
+      await this.requestPermissionAndRegisterToken();
+    } finally {
+      this.isRefreshingTokenRegistration = false;
+    }
+  }
+
+  private readonly onVisibilityChange = (): void => {
+    if (document.visibilityState === 'visible') {
+      void this.refreshTokenRegistration();
+    }
+  };
 
   async isPushSupported(): Promise<boolean> {
     if (typeof window === 'undefined' || !('Notification' in window) || !('serviceWorker' in navigator)) {

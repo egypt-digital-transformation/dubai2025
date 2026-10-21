@@ -12,8 +12,10 @@ import {
 import {
   DocumentData,
   QueryDocumentSnapshot,
+  QuerySnapshot,
   addDoc,
   collection,
+  collectionGroup,
   deleteDoc,
   doc as firestoreDoc,
   getDoc as firebaseGetDoc,
@@ -208,6 +210,29 @@ export class AdminService {
   private readonly firestore = inject(Firestore);
   private readonly firebaseContext = inject(FirebaseInjectionContext);
   private readonly functions = getFunctions(undefined, 'europe-west1');
+  private userSnapshotCache?: {
+    loadedAt: number;
+    promise: Promise<QuerySnapshot<DocumentData>>;
+  };
+  private projectsCache?: { loadedAt: number; projects: IconicProject[] };
+
+  private loadUsersSnapshot(): Promise<QuerySnapshot<DocumentData>> {
+    if (
+      this.userSnapshotCache &&
+      Date.now() - this.userSnapshotCache.loadedAt < 5000
+    ) {
+      return this.userSnapshotCache.promise;
+    }
+
+    const promise = getDocs(collection(this.firestore, 'users'));
+    this.userSnapshotCache = { loadedAt: Date.now(), promise };
+    void promise.catch(() => {
+      if (this.userSnapshotCache?.promise === promise) {
+        this.userSnapshotCache = undefined;
+      }
+    });
+    return promise;
+  }
 
   async isAdmin(email = this.auth.currentUser?.email): Promise<boolean> {
     const adminEmail = email?.trim().toLowerCase();
@@ -246,8 +271,8 @@ export class AdminService {
   }
 
   async loadDashboard(): Promise<AdminDashboard> {
-    const dashboard = await this.call<AdminDashboard>('getAdminDashboard', {});
-    const [profileAttendees, analytics] = await Promise.all([
+    const [dashboard, profileAttendees, analytics] = await Promise.all([
+      this.call<AdminDashboard>('getAdminDashboard', {}),
       this.loadMainProjectUsers(),
       this.loadAppAnalytics(),
     ]);
@@ -263,7 +288,7 @@ export class AdminService {
         authenticatedEmail: status?.email,
       };
     });
-    const attendees = await this.attachSafetyInductionStatus(attendeesWithStatus);
+    const attendees = attendeesWithStatus;
 
     return {
       ...dashboard,
@@ -277,7 +302,7 @@ export class AdminService {
   }
 
   async loadNotificationAudience(): Promise<AdminAttendee[]> {
-    const snapshot = await getDocs(collection(this.firestore, 'users'));
+    const snapshot = await this.loadUsersSnapshot();
     return snapshot.docs
       .map((userDocument) => {
         const data = userDocument.data();
@@ -362,10 +387,44 @@ export class AdminService {
   }
 
   async loadProjects(): Promise<IconicProject[]> {
+    if (this.projectsCache && Date.now() - this.projectsCache.loadedAt < 60_000) {
+      return this.projectsCache.projects;
+    }
     const snapshot = await getDocs(collection(this.firestore, 'projects'));
-    return snapshot.docs
+    const projects = snapshot.docs
       .map((projectDocument) => this.toProject(projectDocument.id, projectDocument.data()))
       .sort((a, b) => a.order - b.order || a.name.localeCompare(b.name));
+    this.projectsCache = { loadedAt: Date.now(), projects };
+    return projects;
+  }
+
+  async loadFlightDetailsForAttendees(
+    attendees: AdminAttendee[]
+  ): Promise<AdminAttendee[]> {
+    const snapshot = await getDocs(collectionGroup(this.firestore, 'flightDetails'));
+    const detailsByUserId = new Map<string, FlightDetails>();
+    for (const flightDocument of snapshot.docs) {
+      if (flightDocument.id !== 'flightInfo') {
+        continue;
+      }
+      const userId = flightDocument.ref.parent.parent?.id;
+      if (userId) {
+        detailsByUserId.set(
+          userId,
+          this.toFlightDetails(flightDocument.data() as Record<string, unknown>)
+        );
+      }
+    }
+    return attendees.map((attendee) => {
+      const flightDetails = detailsByUserId.get(attendee.id);
+      return flightDetails ? { ...attendee, flightDetails } : attendee;
+    });
+  }
+
+  async loadSafetyInductionStatus(
+    attendees: AdminAttendee[]
+  ): Promise<AdminAttendee[]> {
+    return this.attachSafetyInductionStatus(attendees);
   }
 
   async loadPreviewUsers(): Promise<PreviewUser[]> {
@@ -477,11 +536,13 @@ export class AdminService {
     const id = project.id?.trim() || this.createProjectId(project.name);
     const savedProject: IconicProject = { ...project, id };
     await setDoc(firestoreDoc(this.firestore, 'projects', id), savedProject);
+    this.projectsCache = undefined;
     return savedProject;
   }
 
   async deleteProject(projectId: string): Promise<void> {
     await deleteDoc(firestoreDoc(this.firestore, 'projects', projectId));
+    this.projectsCache = undefined;
   }
 
   async loadResources(): Promise<AdminResource[]> {
@@ -767,8 +828,8 @@ export class AdminService {
   }
 
   private async loadMainProjectUsers(): Promise<AdminAttendee[]> {
-    const snapshot = await getDocs(collection(this.firestore, 'users'));
-    const attendees = await Promise.all(snapshot.docs.map(async (userDocument) => {
+    const snapshot = await this.loadUsersSnapshot();
+    const attendees = snapshot.docs.map((userDocument) => {
       const data = userDocument.data();
       const asText = (value: unknown): string =>
         value == null ? '' : String(value);
@@ -796,9 +857,8 @@ export class AdminService {
         installed: false,
         plantVisit: data['plantVisit'] === true,
       };
-      const flightDetails = await this.loadFlightDetailsForUserId(userDocument.id);
-      return flightDetails ? { ...attendee, flightDetails } : attendee;
-    }));
+      return attendee;
+    });
     return attendees
       .filter((attendee) => attendee.email.trim().length > 0)
       .sort((a, b) => a.email.localeCompare(b.email));

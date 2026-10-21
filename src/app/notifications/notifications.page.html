@@ -13,7 +13,7 @@
           <div>
             <h2>{{ isPermissionGranted ? 'Notifications enabled' : 'Get event updates' }}</h2>
             <p *ngIf="isPermissionGranted">
-              You’ll receive important updates from your event team.
+              This device allows notifications. Push registration is maintained automatically.
             </p>
             <p *ngIf="!isPermissionGranted && !isPermissionDenied && isPushSupported">
               Turn on push notifications for reminders and announcements.
@@ -35,7 +35,12 @@
           <ion-icon slot="start" name="notifications-outline"></ion-icon>
           {{ isEnablingNotifications ? 'Setting up…' : isPermissionDenied ? 'Try again' : 'Enable notifications' }}
         </ion-button>
-        <p *ngIf="notificationSetupMessage" class="setup-error" role="alert">
+        <p
+          *ngIf="notificationSetupMessage"
+          class="setup-error"
+          [class.setup-success]="notificationSetupSucceeded"
+          [attr.role]="notificationSetupSucceeded ? 'status' : 'alert'"
+        >
           {{ notificationSetupMessage }}
         </p>
       </section>

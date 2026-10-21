@@ -31,6 +31,7 @@ export class NotificationsPage implements OnInit {
   isPermissionDenied = false;
   isEnablingNotifications = false;
   notificationSetupMessage = '';
+  notificationSetupSucceeded = false;
 
   constructor() {
     addIcons({ notificationsOutline, openOutline });
@@ -42,6 +43,9 @@ export class NotificationsPage implements OnInit {
 
   async ionViewWillEnter(): Promise<void> {
     await this.refreshPermissionState();
+    if (this.isPushSupported && this.isPermissionGranted) {
+      await this.fcmService.ensurePushTokenRegistered();
+    }
   }
 
   async loadNotifications(): Promise<void> {
@@ -64,10 +68,14 @@ export class NotificationsPage implements OnInit {
 
     this.isEnablingNotifications = true;
     this.notificationSetupMessage = '';
+    this.notificationSetupSucceeded = false;
     try {
       const token = await this.fcmService.requestPermissionAndRegisterToken();
       await this.refreshPermissionState();
-      if (!token && !this.isPermissionDenied) {
+      if (token) {
+        this.notificationSetupMessage = 'This device is registered for push notifications.';
+        this.notificationSetupSucceeded = true;
+      } else if (!this.isPermissionDenied) {
         this.notificationSetupMessage =
           'We could not finish notification setup. Please try again.';
       }

@@ -233,6 +233,13 @@ export const registerPushToken = onCall(
         const existingDevice = devices.find(
           (device) => device.deviceId === deviceId
         );
+        if (
+          existingDevice?.token === token &&
+          existingDevice.fcmProjectId === FCM_PROJECT_ID &&
+          !existingDevice.invalidatedTokenHash
+        ) {
+          return;
+        }
         const migratedLegacyDevice =
           typeof ownerData.fcmToken === "string" &&
           ownerData.fcmToken.length > 0 &&

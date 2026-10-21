@@ -12,6 +12,8 @@ describe('AdminPage', () => {
   const createAdminServiceMock = () => ({
     loadDashboard: vi.fn<AdminService['loadDashboard']>(),
     loadNotificationAudience: vi.fn<AdminService['loadNotificationAudience']>(),
+    loadFlightDetailsForAttendees: vi.fn<AdminService['loadFlightDetailsForAttendees']>(),
+    loadSafetyInductionStatus: vi.fn<AdminService['loadSafetyInductionStatus']>(),
     sendNotification: vi.fn<AdminService['sendNotification']>(),
     scheduleNotification: vi.fn<AdminService['scheduleNotification']>(),
     listAdminInteractiveActivities: vi.fn<AdminService['listAdminInteractiveActivities']>(),
@@ -70,6 +72,8 @@ describe('AdminPage', () => {
     adminService = createAdminServiceMock();
     adminService.loadDashboard.mockResolvedValue(dashboard);
     adminService.loadNotificationAudience.mockResolvedValue(dashboard.attendees);
+    adminService.loadFlightDetailsForAttendees.mockResolvedValue(dashboard.attendees);
+    adminService.loadSafetyInductionStatus.mockResolvedValue(dashboard.attendees);
     adminService.loadAdminRequests.mockResolvedValue([]);
     adminService.updateAdminRequest.mockResolvedValue(undefined);
     adminService.listAdminInteractiveActivities.mockResolvedValue({ activities: [] });

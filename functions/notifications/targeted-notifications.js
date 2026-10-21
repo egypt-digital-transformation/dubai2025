@@ -127,6 +127,9 @@ async function deliverCampaign(campaignRef, campaign, recipients) {
             status: success ? "accepted" : "failed",
             errorCode,
             openedAt: null,
+            title: campaign.title,
+            body: campaign.body,
+            receivedAt: FieldValue.serverTimestamp(),
           })
       )
     );
@@ -354,11 +357,27 @@ export const listUserNotifications = onCall(
       campaignsById.set(campaignRef.id, {
         ref: campaignRef,
         opened: Boolean(data.openedAt) || existing?.opened === true,
+        title: existing?.title || data.title || null,
+        body: existing?.body || data.body || null,
+        createdAt:
+          existing?.createdAt ||
+          data.receivedAt?.toDate?.().toISOString() ||
+          null,
       });
     }
 
     const notifications = await Promise.all(
       [...campaignsById.entries()].map(async ([id, delivery]) => {
+        if (delivery.title && delivery.body) {
+          return {
+            id,
+            title: delivery.title,
+            body: delivery.body,
+            createdAt: delivery.createdAt,
+            opened: delivery.opened,
+          };
+        }
+
         const campaignSnapshot = await delivery.ref.get();
         if (!campaignSnapshot.exists) {
           return null;

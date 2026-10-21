@@ -805,6 +805,13 @@
           </div>
           <span class="metric-caption">{{ attendeesWithFlights.length }} users</span>
         </div>
+        <ion-note *ngIf="isLoadingAttendeeDetails" color="medium" class="message">
+          Loading flight details…
+        </ion-note>
+        <ion-note *ngIf="attendeeDetailsError" color="danger" class="message error-message">
+          {{ attendeeDetailsError }}
+          <ion-button fill="clear" (click)="retryAttendeeDetails()">Try again</ion-button>
+        </ion-note>
         <div class="table-scroll">
           <table class="flight-details-table">
             <thead>
@@ -844,7 +851,7 @@
                 <td>{{ attendee.flightDetails?.outbound?.flightNo }}</td>
                 <td>{{ attendee.flightDetails?.updatedAt }}</td>
               </tr>
-              <tr *ngIf="!attendeesWithFlights.length">
+              <tr *ngIf="!isLoadingAttendeeDetails && !attendeeDetailsError && !attendeesWithFlights.length">
                 <td colspan="15" class="empty-state">No flight details have been submitted.</td>
               </tr>
             </tbody>
@@ -1235,6 +1242,13 @@
             Export CSV
           </ion-button>
         </div>
+        <ion-note *ngIf="isLoadingAttendeeDetails" color="medium" class="message">
+          Loading safety induction statuses…
+        </ion-note>
+        <ion-note *ngIf="attendeeDetailsError" color="danger" class="message error-message">
+          {{ attendeeDetailsError }}
+          <ion-button fill="clear" (click)="retryAttendeeDetails()">Try again</ion-button>
+        </ion-note>
         <div class="attendee-tools" aria-label="Filter attendees">
           <ion-searchbar
             [(ngModel)]="attendeeSearch"

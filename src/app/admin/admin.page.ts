@@ -125,6 +125,8 @@ export class AdminPage implements OnInit, OnDestroy {
   projectNotice = '';
   projectError = '';
   isLoadingProjects = false;
+  isLoadingAttendeeDetails = false;
+  attendeeDetailsError = '';
   isSavingProject = false;
   isDeletingProject = false;
   editingProjectId: string | null = null;
@@ -154,6 +156,10 @@ export class AdminPage implements OnInit, OnDestroy {
   isSavingResourceType = false;
 
   private refreshTimer?: ReturnType<typeof setInterval>;
+  private hasLoadedFlightDetails = false;
+  private hasLoadedSafetyInductionStatus = false;
+  private flightDetailsLoad?: Promise<void>;
+  private safetyInductionLoad?: Promise<void>;
 
   constructor() {
     addIcons({
@@ -182,6 +188,12 @@ export class AdminPage implements OnInit, OnDestroy {
 
   selectSection(section: AdminSection): void {
     this.selectedSection = section;
+    if (section === 'flights' && this.dashboard) {
+      void this.loadFlightDetails();
+    }
+    if (section === 'attendees' && this.dashboard) {
+      void this.loadSafetyInductionStatuses();
+    }
     if (section === 'projects' && !this.projects.length && !this.isLoadingProjects) {
       void this.loadProjects();
     }
@@ -298,14 +310,101 @@ export class AdminPage implements OnInit, OnDestroy {
     }
 
     try {
-      this.dashboard = await this.adminService.loadDashboard();
+      const loadedDashboard = await this.adminService.loadDashboard();
+      const previousAttendees = new Map(
+        (this.dashboard?.attendees ?? []).map((attendee) => [attendee.id, attendee])
+      );
+      this.dashboard = {
+        ...loadedDashboard,
+        attendees: loadedDashboard.attendees.map((attendee) => ({
+          ...previousAttendees.get(attendee.id),
+          ...attendee,
+        })),
+      };
       this.errorMessage = '';
+      if (this.selectedSection === 'flights') {
+        void this.loadFlightDetails();
+      }
+      if (this.selectedSection === 'attendees') {
+        void this.loadSafetyInductionStatuses();
+      }
     } catch (error) {
       console.error('[AdminPage] Failed to load dashboard:', error);
       this.errorMessage =
         'Could not load the admin dashboard. Check your connection and admin access, then try again.';
     } finally {
       this.isLoading = false;
+    }
+  }
+
+  private async loadFlightDetails(): Promise<void> {
+    if (
+      !this.dashboard ||
+      this.hasLoadedFlightDetails ||
+      this.flightDetailsLoad
+    ) {
+      return this.flightDetailsLoad;
+    }
+
+    this.isLoadingAttendeeDetails = true;
+    this.attendeeDetailsError = '';
+    this.flightDetailsLoad = this.adminService
+      .loadFlightDetailsForAttendees(this.dashboard.attendees)
+      .then((attendees) => {
+        if (this.dashboard) {
+          this.dashboard = { ...this.dashboard, attendees };
+        }
+        this.hasLoadedFlightDetails = true;
+      })
+      .catch((error: unknown) => {
+        console.error('[AdminPage] Failed to load flight details:', error);
+        this.attendeeDetailsError = 'Flight details could not be loaded. Please try again.';
+      })
+      .finally(() => {
+        this.isLoadingAttendeeDetails = false;
+        this.flightDetailsLoad = undefined;
+      });
+    return this.flightDetailsLoad;
+  }
+
+  private async loadSafetyInductionStatuses(): Promise<void> {
+    if (
+      !this.dashboard ||
+      this.hasLoadedSafetyInductionStatus ||
+      this.safetyInductionLoad
+    ) {
+      return this.safetyInductionLoad;
+    }
+
+    this.isLoadingAttendeeDetails = true;
+    this.attendeeDetailsError = '';
+    this.safetyInductionLoad = this.adminService
+      .loadSafetyInductionStatus(this.dashboard.attendees)
+      .then((attendees) => {
+        if (this.dashboard) {
+          this.dashboard = { ...this.dashboard, attendees };
+        }
+        this.hasLoadedSafetyInductionStatus = true;
+      })
+      .catch((error: unknown) => {
+        console.error('[AdminPage] Failed to load safety induction status:', error);
+        this.attendeeDetailsError =
+          'Safety induction statuses could not be loaded. Please try again.';
+      })
+      .finally(() => {
+        this.isLoadingAttendeeDetails = false;
+        this.safetyInductionLoad = undefined;
+      });
+    return this.safetyInductionLoad;
+  }
+
+  retryAttendeeDetails(): void {
+    if (this.selectedSection === 'flights') {
+      this.hasLoadedFlightDetails = false;
+      void this.loadFlightDetails();
+    } else if (this.selectedSection === 'attendees') {
+      this.hasLoadedSafetyInductionStatus = false;
+      void this.loadSafetyInductionStatuses();
     }
   }
 
