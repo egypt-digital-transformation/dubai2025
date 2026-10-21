@@ -3,6 +3,7 @@ import {
   APP_ANALYTICS_COLLECTION,
   CAMPAIGN_COLLECTION,
   db,
+  FCM_PROJECT_ID,
   FieldValue,
 } from "../shared/firebase.js";
 import { requireAdminUser } from "../shared/admin-auth.js";
@@ -102,7 +103,10 @@ export const getAdminDashboard = onCall(
           day3GroupPM: day3GroupPM == null ? "" : String(day3GroupPM),
           participantsGroup:
             participantsGroup == null ? "" : String(participantsGroup),
-          hasPushToken: typeof data.fcmToken === "string" && data.fcmToken.length > 0,
+          hasPushToken:
+            typeof data.fcmToken === "string" &&
+            data.fcmToken.length > 0 &&
+            data.fcmProjectId === FCM_PROJECT_ID,
           ...(activityByEmail.get(email.toLowerCase()) ?? {
             loggedIn: false,
             active: false,

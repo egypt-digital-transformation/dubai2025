@@ -4,7 +4,7 @@ import { getMessaging as getAdminMessaging } from "firebase-admin/messaging";
 
 initializeApp();
 
-export const FCM_PROJECT_ID = "mea-egypt-tv-sso-prd";
+export const FCM_PROJECT_ID = "mea-egypt-ahlanapp-prd";
 const notificationApp = initializeApp(
   {
     credential: applicationDefault(),

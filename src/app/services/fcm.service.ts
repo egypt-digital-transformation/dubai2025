@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { ToastController } from '@ionic/angular/standalone';
 import { AuthService } from './auth.service';
-import { AdminService } from './admin.service';
+import { AdminService, PushTokenRegistrationResult } from './admin.service';
 import { environment } from '../../environments/environment';
 import { initializeApp } from 'firebase/app';
 import { BehaviorSubject, filter } from 'rxjs';
@@ -10,6 +10,7 @@ import {
   isSupported,
   getMessaging,
   getToken,
+  deleteToken,
   onMessage,
   Messaging,
   MessagePayload,
@@ -25,8 +26,9 @@ export class FcmService {
   private adminService = inject(AdminService);
 
   private messagingInstance: Messaging | null = null;
+  private hasForegroundMessageListener = false;
   private notificationApp = initializeApp(
-    environment.notificationFirebaseConfig,
+    environment.firebaseConfig,
     'NotificationSender'
   );
   private isInitialized = false;
@@ -128,18 +130,30 @@ export class FcmService {
       }
 
       console.log('[FCM] Fetching FCM device token...');
-      const currentToken = await getToken(this.messagingInstance, tokenOptions);
-
-      if (currentToken) {
-        console.log('[FCM] ✅ FCM token retrieved');
-        this.fcmTokenSubject.next(currentToken);
-        await this.saveTokenToFirestore(currentToken);
-        this.listenForForegroundMessages();
-        return currentToken;
-      } else {
+      let currentToken = await getToken(this.messagingInstance, tokenOptions);
+      if (!currentToken) {
         console.warn('[FCM] ⚠️ No registration token available. Request permission to generate one.');
         return null;
       }
+
+      let registration = await this.saveTokenToFirestore(currentToken);
+      if (registration.refreshRequired) {
+        console.warn('[FCM] Firebase rejected the previously registered token; refreshing it.');
+        await deleteToken(this.messagingInstance);
+        currentToken = await getToken(this.messagingInstance, tokenOptions);
+        if (!currentToken) {
+          throw new Error('Firebase did not provide a replacement push token.');
+        }
+        registration = await this.saveTokenToFirestore(currentToken);
+      }
+      if (!registration.registered) {
+        throw new Error('The push token was not registered successfully.');
+      }
+
+      console.log('[FCM] ✅ FCM token retrieved and registered');
+      this.fcmTokenSubject.next(currentToken);
+      this.listenForForegroundMessages();
+      return currentToken;
     } catch (error: any) {
       console.error('[FCM] ❌ Error acquiring FCM token:', error);
       if (error?.code === 'messaging/vapid-key-required' || error?.message?.includes('vapidKey')) {
@@ -157,7 +171,7 @@ export class FcmService {
    * ✅ Listen for incoming notifications while the app is in foreground
    */
   private listenForForegroundMessages() {
-    if (!this.messagingInstance) {
+    if (!this.messagingInstance || this.hasForegroundMessageListener) {
       return;
     }
 
@@ -166,6 +180,7 @@ export class FcmService {
         console.log('[FCM] 📩 Foreground message received:', payload);
         await this.displayForegroundToast(payload);
       });
+      this.hasForegroundMessageListener = true;
     } catch (err) {
       console.warn('[FCM] Failed to attach foreground message listener:', err);
     }
@@ -222,7 +237,7 @@ export class FcmService {
   /**
    * ✅ Save FCM token to Firestore in the user document
    */
-  async saveTokenToFirestore(token: string) {
+  async saveTokenToFirestore(token: string): Promise<PushTokenRegistrationResult> {
     const currentUser = this.authService.currentUser;
     if (!currentUser?.email) {
       const error = new Error('Cannot register a push token without an authenticated user.');
@@ -231,8 +246,9 @@ export class FcmService {
     }
 
     try {
-      await this.adminService.registerPushToken(token);
+      const result = await this.adminService.registerPushToken(token);
       console.log(`[FCM] Push token registered for ${currentUser.email}`);
+      return result;
     } catch (error) {
       console.error('[FCM] Failed to register push token:', error);
       throw error;

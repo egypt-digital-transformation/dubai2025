@@ -3,14 +3,13 @@ importScripts('https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging-com
 
 // Initialize Firebase inside Service Worker
 firebase.initializeApp({
-  apiKey: "AIzaSyDLFKthhuoBAreHk6QN2w6sRRZmDratMWk",
-  authDomain: "mea-egypt-tv-sso-prd.firebaseapp.com",
-  databaseURL: "https://mea-egypt-tv-sso-prd-default-rtdb.firebaseio.com",
-  projectId: "mea-egypt-tv-sso-prd",
-  storageBucket: "mea-egypt-tv-sso-prd.firebasestorage.app",
-  messagingSenderId: "54851020508",
-  appId: "1:54851020508:web:36878d3e8ac15d3630f619",
-  measurementId: "G-8H04P90GW8"
+  apiKey: "AIzaSyBamzLLaALQlR0nkN5nlIttLt-XmdFF1J0",
+  authDomain: "mea-egypt-ahlanapp-prd.firebaseapp.com",
+  projectId: "mea-egypt-ahlanapp-prd",
+  storageBucket: "mea-egypt-ahlanapp-prd.firebasestorage.app",
+  messagingSenderId: "107201585408",
+  appId: "1:107201585408:web:45f4aaa5690d72e5a693e5",
+  measurementId: "G-MNX0Y34XMN"
 });
 
 const messaging = firebase.messaging();

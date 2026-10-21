@@ -168,6 +168,11 @@ export type NotificationTarget =
       value: string;
     };
 
+export interface PushTokenRegistrationResult {
+  registered: boolean;
+  refreshRequired?: boolean;
+}
+
 @Injectable({ providedIn: 'root' })
 export class AdminService {
   private readonly auth = inject(Auth);
@@ -190,8 +195,8 @@ export class AdminService {
     await this.call<void>('recordAppActivity', { installed });
   }
 
-  async registerPushToken(token: string): Promise<void> {
-    await this.call<void>('registerPushToken', { token });
+  async registerPushToken(token: string): Promise<PushTokenRegistrationResult> {
+    return this.call<PushTokenRegistrationResult>('registerPushToken', { token });
   }
 
   async listSharedContactCards(): Promise<{
@@ -258,7 +263,9 @@ export class AdminService {
           day3GroupPM: asText((data['day3'] as { groupPM?: unknown } | undefined)?.groupPM),
           participantsGroup: asText(data['participantsGroup']),
           hasPushToken:
-            typeof data['fcmToken'] === 'string' && data['fcmToken'].length > 0,
+            typeof data['fcmToken'] === 'string' &&
+            data['fcmToken'].length > 0 &&
+            data['fcmProjectId'] === environment.firebaseConfig.projectId,
           plantVisit: data['plantVisit'] === true,
           loggedIn: false,
           active: false,
@@ -747,7 +754,10 @@ export class AdminService {
         day3GroupAM: asText((data['day3'] as { groupAM?: unknown } | undefined)?.groupAM),
         day3GroupPM: asText((data['day3'] as { groupPM?: unknown } | undefined)?.groupPM),
         participantsGroup: asText(data['participantsGroup']),
-        hasPushToken: typeof data['fcmToken'] === 'string' && data['fcmToken'].length > 0,
+        hasPushToken:
+          typeof data['fcmToken'] === 'string' &&
+          data['fcmToken'].length > 0 &&
+          data['fcmProjectId'] === environment.firebaseConfig.projectId,
         loggedIn: false,
         active: false,
         installed: false,

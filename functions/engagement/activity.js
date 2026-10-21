@@ -6,6 +6,7 @@ import {
   FieldValue,
 } from "../shared/firebase.js";
 import { requireAuthenticatedUser } from "../shared/admin-auth.js";
+import { tokenFingerprint } from "../shared/notification-utils.js";
 
 async function findDelegateProfiles(email) {
   const users = db.collection("users");
@@ -171,17 +172,6 @@ export const registerPushToken = onCall(
     const adminRef = db.collection("admins").doc(normalizedEmail);
     const adminSnapshot = await adminRef.get();
     const isActiveAdmin = adminSnapshot.data()?.active === true;
-    if (isActiveAdmin) {
-      await adminRef.set(
-        {
-          fcmToken: token,
-          fcmProjectId: FCM_PROJECT_ID,
-          fcmTokenUpdatedAt: FieldValue.serverTimestamp(),
-        },
-        { merge: true }
-      );
-    }
-
     const profiles = await findDelegateProfiles(user.email);
     if (profiles.length > 1) {
       throw new HttpsError(
@@ -189,15 +179,32 @@ export const registerPushToken = onCall(
         "Your delegate profile matched more than one record."
       );
     }
+
+    const submittedTokenHash = tokenFingerprint(token);
+    if (
+      (isActiveAdmin &&
+        adminSnapshot.data()?.fcmTokenInvalidatedHash === submittedTokenHash) ||
+      profiles.some(
+        (profile) =>
+          profile.data()?.fcmTokenInvalidatedHash === submittedTokenHash
+      )
+    ) {
+      return { registered: false, refreshRequired: true };
+    }
+
+    const tokenRegistration = {
+      fcmToken: token,
+      fcmProjectId: FCM_PROJECT_ID,
+      fcmTokenUpdatedAt: FieldValue.serverTimestamp(),
+      fcmTokenInvalidatedHash: FieldValue.delete(),
+      fcmTokenInvalidatedAt: FieldValue.delete(),
+    };
+    if (isActiveAdmin) {
+      await adminRef.set(tokenRegistration, { merge: true });
+    }
+
     if (profiles.length === 1) {
-      await profiles[0].ref.set(
-        {
-          fcmToken: token,
-          fcmProjectId: FCM_PROJECT_ID,
-          fcmTokenUpdatedAt: FieldValue.serverTimestamp(),
-        },
-        { merge: true }
-      );
+      await profiles[0].ref.set(tokenRegistration, { merge: true });
     } else if (!isActiveAdmin) {
       throw new HttpsError(
         "failed-precondition",

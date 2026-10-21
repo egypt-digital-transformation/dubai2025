@@ -13,6 +13,10 @@ export function emailDocumentId(email) {
   return createHash("sha256").update(email.trim().toLowerCase()).digest("hex");
 }
 
+export function tokenFingerprint(token) {
+  return createHash("sha256").update(token).digest("hex");
+}
+
 export function matchesNotificationTarget(userDocument, target) {
   if (target.kind === "all") {
     return true;

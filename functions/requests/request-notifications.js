@@ -2,7 +2,7 @@ import {
   onDocumentCreated,
   onDocumentUpdated,
 } from "firebase-functions/v2/firestore";
-import { db } from "../shared/firebase.js";
+import { db, FCM_PROJECT_ID } from "../shared/firebase.js";
 import { getAdminRecipients, sendPushToRecipients } from "../shared/push-delivery.js";
 
 export const notifyAdminsOfNewRequest = onDocumentCreated(
@@ -90,15 +90,25 @@ export const notifyUserOfRequestUpdate = onDocumentUpdated(
     }
 
     const profile = userSnapshot.docs[0].data();
-    if (typeof profile.fcmToken !== "string" || !profile.fcmToken) {
+    if (
+      typeof profile.fcmToken !== "string" ||
+      !profile.fcmToken ||
+      profile.fcmProjectId !== FCM_PROJECT_ID
+    ) {
       console.warn(
-        `[RequestNotifications] Requester ${normalizedEmail} has no registered push token.`
+        `[RequestNotifications] Requester ${normalizedEmail} has no push token for project ${FCM_PROJECT_ID}.`
       );
       return;
     }
 
     const results = await sendPushToRecipients(
-      [{ email: normalizedEmail, token: profile.fcmToken }],
+      [{
+        id: userSnapshot.docs[0].id,
+        email: normalizedEmail,
+        token: profile.fcmToken,
+        fcmProjectId: profile.fcmProjectId,
+        tokenOwner: { collection: "users", id: userSnapshot.docs[0].id },
+      }],
       {
         title: "Your request was updated",
         body: `An administrator updated your ${after.type || "help"} request. Status: ${after.status || "updated"}.`,

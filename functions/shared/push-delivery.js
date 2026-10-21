@@ -1,5 +1,36 @@
-import { db, FCM_PROJECT_ID, getMessaging } from "./firebase.js";
-import { matchesNotificationTarget } from "./notification-utils.js";
+import { db, FCM_PROJECT_ID, FieldValue, getMessaging } from "./firebase.js";
+import {
+  matchesNotificationTarget,
+  tokenFingerprint,
+} from "./notification-utils.js";
+
+const INVALID_REGISTRATION_TOKEN_CODES = new Set([
+  "messaging/registration-token-not-registered",
+  "messaging/invalid-registration-token",
+]);
+
+async function removeInvalidToken(recipient) {
+  if (!recipient.tokenOwner || !recipient.token) {
+    return;
+  }
+
+  const ownerRef = db
+    .collection(recipient.tokenOwner.collection)
+    .doc(recipient.tokenOwner.id);
+  await db.runTransaction(async (transaction) => {
+    const ownerSnapshot = await transaction.get(ownerRef);
+    if (!ownerSnapshot.exists || ownerSnapshot.data()?.fcmToken !== recipient.token) {
+      return;
+    }
+
+    transaction.update(ownerRef, {
+      fcmToken: FieldValue.delete(),
+      fcmProjectId: FieldValue.delete(),
+      fcmTokenInvalidatedHash: tokenFingerprint(recipient.token),
+      fcmTokenInvalidatedAt: FieldValue.serverTimestamp(),
+    });
+  });
+}
 
 export async function getTargetRecipients(target) {
   const attendeesSnapshot = await db.collection("users").get();
@@ -16,6 +47,7 @@ export async function getTargetRecipients(target) {
       ).trim(),
       token: attendeeDocument.data().fcmToken,
       fcmProjectId: attendeeDocument.data().fcmProjectId,
+      tokenOwner: { collection: "users", id: attendeeDocument.id },
     }))
     .filter(
       (recipient) =>
@@ -47,12 +79,25 @@ export async function sendPushToRecipients(recipients, { title, body, data = {},
       message.webpush = { fcmOptions: { link } };
     }
     const response = await getMessaging().sendEachForMulticast(message);
-    results.push(
-      ...response.responses.map((result, recipientIndex) => ({
-        recipient: batch[recipientIndex],
-        success: result.success,
-        errorCode: result.error?.code || null,
-      }))
+    const batchResults = response.responses.map((result, recipientIndex) => ({
+      recipient: batch[recipientIndex],
+      success: result.success,
+      errorCode: result.error?.code || null,
+    }));
+    results.push(...batchResults);
+    await Promise.all(
+      batchResults
+        .filter((result) =>
+          INVALID_REGISTRATION_TOKEN_CODES.has(result.errorCode)
+        )
+        .map(({ recipient, errorCode }) =>
+          removeInvalidToken(recipient).catch((error) => {
+            console.error(
+              `[PushDelivery] Failed to remove an invalid token (${errorCode}):`,
+              error
+            );
+          })
+        )
     );
   }
 
@@ -68,6 +113,7 @@ export async function getAdminRecipients() {
       email: adminDocument.id,
       token: adminDocument.data().fcmToken,
       fcmProjectId: adminDocument.data().fcmProjectId,
+      tokenOwner: { collection: "admins", id: adminDocument.id },
     }))
     .filter(
       (recipient) =>
