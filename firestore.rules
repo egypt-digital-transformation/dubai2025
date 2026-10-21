@@ -62,6 +62,10 @@ service cloud.firestore {
       }
     }
 
+    match /{path=**}/flightDetails/{flightId} {
+      allow read: if isAdmin();
+    }
+
     match /sessions/{sessionId} {
       allow read: if signedIn();
       allow write: if isAdmin();
