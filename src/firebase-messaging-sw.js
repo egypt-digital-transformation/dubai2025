@@ -18,6 +18,11 @@ const messaging = firebase.messaging();
 messaging.onBackgroundMessage((payload) => {
   console.log('[firebase-messaging-sw.js] Received background message:', payload);
 
+  // Firebase displays notification payloads automatically in the background.
+  if (payload.notification) {
+    return;
+  }
+
   const title = payload.notification?.title || payload.data?.title || 'Ahlan Companion';
   const options = {
     body: payload.notification?.body || payload.data?.body || '',
