@@ -17,9 +17,16 @@ export const AuthGuard: CanActivateFn = async (): Promise<boolean | UrlTree> => 
   // ✅ Wait until Firebase finishes checking for existing session
   await authService.waitForAuthResolved();
 
-  // ✅ If authenticated, allow route activation
+  // ✅ If authenticated, ensure user is registered in users or admins
   if (authService.isAuthenticated()) {
-    return true;
+    const user = authService.currentUser;
+    const allowed = await authService.isUserAllowed(user?.email);
+    if (allowed) {
+      return true;
+    }
+    console.warn('[AuthGuard] Authenticated user is not registered in users collection. Logging out.');
+    await authService.logout();
+    return router.parseUrl('/login');
   }
 
   // 🚫 Otherwise, redirect to login

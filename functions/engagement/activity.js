@@ -215,3 +215,28 @@ export const registerPushToken = onCall(
     return { registered: true };
   }
 );
+
+export const verifyUserAccess = onCall(
+  { region: "europe-west1" },
+  async (request) => {
+    const user = requireAuthenticatedUser(request);
+    const email = (user.email || "").trim().toLowerCase();
+    if (!email) {
+      throw new HttpsError("unauthenticated", "A valid email is required.");
+    }
+
+    // 1. Check if user is an active administrator
+    const adminSnapshot = await db.collection("admins").doc(email).get();
+    if (adminSnapshot.exists && adminSnapshot.data()?.active === true) {
+      return { allowed: true, role: "admin" };
+    }
+
+    // 2. Check if user exists in the registered users (attendees) collection
+    const profiles = await findDelegateProfiles(email);
+    if (profiles.length > 0) {
+      return { allowed: true, role: "delegate" };
+    }
+
+    return { allowed: false, role: null };
+  }
+);

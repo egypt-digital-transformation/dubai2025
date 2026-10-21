@@ -2,6 +2,7 @@ export {
   listSharedContactCards,
   recordAppActivity,
   registerPushToken,
+  verifyUserAccess,
 } from "./engagement/activity.js";
 export {
   createAdminAnnouncement,

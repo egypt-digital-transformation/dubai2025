@@ -7,6 +7,16 @@ import {
   User,
   signOut,
 } from '@angular/fire/auth';
+import {
+  Firestore,
+  collection,
+  query,
+  where,
+  getDocs,
+  doc,
+  getDoc,
+} from '@angular/fire/firestore';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 import { BehaviorSubject } from 'rxjs';
 import { Preferences } from '@capacitor/preferences';
 import { FirebaseInjectionContext } from './firebase-injection-context.service';
@@ -15,6 +25,7 @@ import { FirebaseInjectionContext } from './firebase-injection-context.service';
   providedIn: 'root'
 })
 export class AuthService {
+  private readonly firestore = inject(Firestore);
   private readonly firebaseContext = inject(FirebaseInjectionContext);
   private _user = new BehaviorSubject<User | null>(null);
   public user$ = this._user.asObservable();
@@ -71,7 +82,83 @@ export class AuthService {
     return !!this._user.value;
   }
 
-  /** Google Sign-In */
+  /**
+   * Verify if the user's email exists in the registered 'users' collection
+   * or has active administrator privileges in 'admins'.
+   */
+  async isUserAllowed(email: string | null | undefined): Promise<boolean> {
+    if (!email) return false;
+    const normalizedEmail = email.trim().toLowerCase();
+
+    // 1. Try server-side Cloud Function verifyUserAccess first
+    try {
+      const functions = getFunctions(undefined, 'europe-west1');
+      const verifyFn = httpsCallable<object, { allowed: boolean; role: string | null }>(
+        functions,
+        'verifyUserAccess'
+      );
+      const res = await verifyFn({});
+      if (res?.data && typeof res.data.allowed === 'boolean') {
+        return res.data.allowed;
+      }
+    } catch (cfError) {
+      console.warn('[AuthService] verifyUserAccess function call failed, falling back to direct Firestore check:', cfError);
+    }
+
+    // 2. Direct Firestore fallback
+    try {
+      // Check admin status
+      const adminDoc = await this.firebaseContext.run(() =>
+        getDoc(doc(this.firestore, 'admins', normalizedEmail))
+      );
+      if (adminDoc.exists() && adminDoc.data()?.['active'] === true) {
+        return true;
+      }
+
+      // Check users collection by document ID
+      const userDocById = await this.firebaseContext.run(() =>
+        getDoc(doc(this.firestore, 'users', normalizedEmail))
+      );
+      if (userDocById.exists()) {
+        return true;
+      }
+
+      // Check users collection by email / emailAddress fields
+      const usersRef = collection(this.firestore, 'users');
+      const [emailQuery, emailAddressQuery] = await Promise.all([
+        this.firebaseContext.run(() =>
+          getDocs(query(usersRef, where('email', '==', normalizedEmail)))
+        ).catch(() => null),
+        this.firebaseContext.run(() =>
+          getDocs(query(usersRef, where('emailAddress', '==', normalizedEmail)))
+        ).catch(() => null),
+      ]);
+
+      if ((emailQuery && !emailQuery.empty) || (emailAddressQuery && !emailAddressQuery.empty)) {
+        return true;
+      }
+
+      if (email.trim() !== normalizedEmail) {
+        const [rawEmailQuery, rawEmailAddressQuery] = await Promise.all([
+          this.firebaseContext.run(() =>
+            getDocs(query(usersRef, where('email', '==', email.trim())))
+          ).catch(() => null),
+          this.firebaseContext.run(() =>
+            getDocs(query(usersRef, where('emailAddress', '==', email.trim())))
+          ).catch(() => null),
+        ]);
+        if ((rawEmailQuery && !rawEmailQuery.empty) || (rawEmailAddressQuery && !rawEmailAddressQuery.empty)) {
+          return true;
+        }
+      }
+    } catch (firestoreError) {
+      console.error('[AuthService] Firestore verification error:', firestoreError);
+    }
+
+    return false;
+  }
+
+  /** Google Sign-In with pre-registered users allowlist check */
   async signInWithGoogle(): Promise<User | null> {
     try {
       const provider = new GoogleAuthProvider();
@@ -79,6 +166,16 @@ export class AuthService {
       const result = await this.firebaseContext.run(() => signInWithPopup(this.auth, provider));
 
       if (!result?.user) throw new Error('No user returned from sign-in');
+
+      // Verify that user email is registered in users or admins collection
+      const allowed = await this.isUserAllowed(result.user.email);
+      if (!allowed) {
+        await this.logout();
+        const error: any = new Error('NOT_AUTHORIZED');
+        error.code = 'auth/user-not-registered';
+        throw error;
+      }
+
       return result.user;
     } catch (error: any) {
       console.error('[AuthService] Google Sign-In Error:', error);

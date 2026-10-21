@@ -26,7 +26,10 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-      allow get, list: if isAdmin()
+      allow get: if isAdmin()
+        || (signedIn() && userId.lower() == request.auth.token.email.lower())
+        || isOwnUser(resource.data);
+      allow list: if isAdmin()
         || isOwnUser(resource.data);
       allow create, delete: if isAdmin();
       allow update: if isAdmin()

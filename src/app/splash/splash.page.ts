@@ -19,9 +19,15 @@ export class SplashPage implements OnInit {
     await this.authService.waitForAuthResolved();
 
     // Add a short visual delay
-    setTimeout(() => {
+    setTimeout(async () => {
       if (this.authService.isAuthenticated()) {
-        this.router.navigateByUrl('/tabs', { replaceUrl: true });
+        const allowed = await this.authService.isUserAllowed(this.authService.currentUser?.email);
+        if (allowed) {
+          this.router.navigateByUrl('/tabs', { replaceUrl: true });
+        } else {
+          await this.authService.logout();
+          this.router.navigateByUrl('/login', { replaceUrl: true });
+        }
       } else {
         this.router.navigateByUrl('/login', { replaceUrl: true });
       }

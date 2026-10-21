@@ -26,10 +26,19 @@ export class SsoPage implements OnInit, OnDestroy {
     // Wait for Firebase auth to initialize
     await this.authService.waitForAuthResolved();
 
-    // If already logged in, skip SSO
+    // If already logged in, verify registered user status before skipping SSO
     const user = this.authService.currentUser;
     if (user) {
-      await this.router.navigateByUrl('/tabs/home', { replaceUrl: true });
+      const allowed = await this.authService.isUserAllowed(user.email);
+      if (allowed) {
+        await this.router.navigateByUrl('/tabs/home', { replaceUrl: true });
+      } else {
+        await this.authService.logout();
+        this.notify.showToast(
+          'Your email is not registered for this event. Please contact the organizers.',
+          'warning'
+        );
+      }
     }
   }
 
@@ -82,6 +91,9 @@ export class SsoPage implements OnInit, OnDestroy {
 
   private formatError(message: string): string {
     if (!message) return 'Unknown error occurred.';
+    if (message.includes('auth/user-not-registered') || message.includes('NOT_AUTHORIZED')) {
+      return 'Access Denied: Your email is not registered for this event. Please sign in with your registered corporate email or contact the event organizers.';
+    }
     if (message.includes('popup-closed-by-user')) return 'Sign-in cancelled. Please try again.';
     if (message.includes('auth/network-request-failed')) return 'Network error. Please check your connection.';
     if (message.includes('auth/unauthorized-domain')) return 'Unauthorized domain. Please contact support.';
