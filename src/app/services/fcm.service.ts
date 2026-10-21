@@ -79,8 +79,30 @@ async function clearStaleBrowserPushSubscriptions(
   }
   try {
     if (typeof window !== 'undefined' && window.indexedDB) {
-      window.indexedDB.deleteDatabase('firebase-messaging-database');
-      window.indexedDB.deleteDatabase('fcm_token_details_db');
+      await Promise.all(
+        ['firebase-messaging-database', 'fcm_token_details_db'].map(
+          (databaseName) =>
+            new Promise<void>((resolve) => {
+              const timeout = window.setTimeout(() => {
+                console.warn(`[FCM] Timed out clearing ${databaseName}`);
+                resolve();
+              }, 5000);
+              const finish = () => {
+                window.clearTimeout(timeout);
+                resolve();
+              };
+              const request = window.indexedDB.deleteDatabase(databaseName);
+              request.onsuccess = finish;
+              request.onerror = () => {
+                console.warn(`[FCM] Failed to clear ${databaseName}:`, request.error);
+                finish();
+              };
+              request.onblocked = () => {
+                console.warn(`[FCM] Clearing ${databaseName} is blocked by an open connection`);
+              };
+            }),
+        ),
+      );
     }
   } catch (err) {
     console.warn('[FCM] Failed to delete FCM IndexedDB databases:', err);
@@ -209,15 +231,24 @@ export class FcmService {
       let registration = await this.saveTokenToFirestore(currentToken);
       if (registration.refreshRequired) {
         console.warn('[FCM] Firebase rejected the previously registered token; refreshing it.');
+        const rejectedToken = currentToken;
         try {
           await deleteToken(this.messagingInstance);
         } catch (delErr) {
           console.warn('[FCM] deleteToken failed (cross-project 403); clearing push storage:', delErr);
-          await clearStaleBrowserPushSubscriptions(swRegistration);
         }
+        await clearStaleBrowserPushSubscriptions(swRegistration);
         currentToken = await getToken(this.messagingInstance, tokenOptions);
+        if (currentToken === rejectedToken) {
+          console.warn('[FCM] Firebase returned the rejected token after cleanup; retrying once.');
+          await clearStaleBrowserPushSubscriptions(swRegistration);
+          currentToken = await getToken(this.messagingInstance, tokenOptions);
+        }
         if (!currentToken) {
           throw new Error('Firebase did not provide a replacement push token.');
+        }
+        if (currentToken === rejectedToken) {
+          throw new Error('Firebase continued returning a token the server marked invalid.');
         }
         registration = await this.saveTokenToFirestore(currentToken);
       }

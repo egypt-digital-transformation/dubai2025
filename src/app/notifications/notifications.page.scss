@@ -1,0 +1,231 @@
+:host {
+  display: block;
+  height: 100%;
+  --notification-ink: #0b2343;
+  --notification-muted: #758ba0;
+  --notification-border: #dce5eb;
+  --notification-accent: #00a6c8;
+}
+
+ion-content {
+  --background: #f4f7f8;
+}
+
+.notifications-page {
+  color: var(--notification-ink);
+}
+
+.notifications-content {
+  width: min(100%, 680px);
+  margin: 0 auto;
+  padding: clamp(1.25rem, 5vw, 2rem) 1.15rem calc(2rem + env(safe-area-inset-bottom));
+}
+
+.notifications-eyebrow {
+  margin: 0 0 0.55rem;
+  color: var(--notification-accent);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+}
+
+h1 {
+  margin: 0;
+  font-size: clamp(1.8rem, 7vw, 2.45rem);
+  letter-spacing: -0.05em;
+}
+
+.notifications-intro {
+  margin: 0.5rem 0 1.25rem;
+  color: var(--notification-muted);
+  font-size: 0.9rem;
+}
+
+.push-card {
+  display: grid;
+  gap: 0.85rem;
+  margin-bottom: 1.4rem;
+  border: 1px solid var(--notification-border);
+  border-radius: 0.9rem;
+  padding: 1rem;
+  background: #fff;
+}
+
+.push-card-copy {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.push-card-icon {
+  display: grid;
+  flex: 0 0 2.5rem;
+  width: 2.5rem;
+  height: 2.5rem;
+  place-items: center;
+  border-radius: 0.7rem;
+  background: #e8f5f8;
+  color: var(--notification-accent);
+  font-size: 1.3rem;
+}
+
+.push-card h2 {
+  margin: 0.1rem 0 0.35rem;
+  font-size: 0.95rem;
+  letter-spacing: -0.015em;
+}
+
+.push-card p {
+  margin: 0;
+  color: var(--notification-muted);
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.push-card .setup-error,
+.list-error {
+  color: #a13c36;
+}
+
+.enable-push-button {
+  --background: #0b2343;
+  --border-radius: 0.65rem;
+  --box-shadow: none;
+  --color: #fff;
+  font-size: 0.82rem;
+  font-weight: 700;
+  min-height: 2.8rem;
+  margin: 0;
+}
+
+.notification-list {
+  display: grid;
+  gap: 0.8rem;
+  margin-top: 1rem;
+}
+
+.notification-card {
+  display: grid;
+  grid-template-columns: 2.5rem minmax(0, 1fr);
+  gap: 0.75rem;
+  border: 1px solid var(--notification-border);
+  border-radius: 0.9rem;
+  padding: 1rem;
+  background: #fff;
+}
+
+.notification-card.unread {
+  border-color: #c8e7ef;
+}
+
+.notification-icon {
+  display: grid;
+  width: 2.25rem;
+  height: 2.25rem;
+  place-items: center;
+  border-radius: 0.7rem;
+  background: #e8f5f8;
+  color: var(--notification-accent);
+  font-size: 1.25rem;
+}
+
+.notification-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0.1rem 0 0.55rem;
+  color: #91a5b5;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+.notification-meta time {
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.notification-meta .unread-label {
+  border-radius: 999px;
+  padding: 0.18rem 0.4rem;
+  background: #e8f5f8;
+  color: #007f9b;
+  font-size: 0.55rem;
+}
+
+.notification-copy h2 {
+  margin: 0;
+  font-size: 1.05rem;
+  letter-spacing: -0.025em;
+}
+
+.notification-copy p {
+  margin: 0.6rem 0 0;
+  color: var(--notification-muted);
+  font-size: 0.84rem;
+  line-height: 1.55;
+  white-space: pre-line;
+}
+
+.notification-open {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.8rem;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: #0b2343;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.list-message,
+.empty-state,
+.list-error {
+  margin: 1rem 0 0;
+  color: var(--notification-muted);
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.empty-state {
+  border: 1px dashed #cbd8e1;
+  border-radius: 0.9rem;
+  padding: 1.4rem 1rem;
+  background: rgb(255 255 255 / 65%);
+  text-align: center;
+}
+
+.list-error button {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: #0b2343;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.refresh-button {
+  display: block;
+  margin: 1rem auto 0;
+  border: 0;
+  padding: 0.5rem;
+  background: transparent;
+  color: #0b2343;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+@media (min-width: 600px) {
+  .push-card {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    padding: 1.1rem 1.2rem;
+  }
+}

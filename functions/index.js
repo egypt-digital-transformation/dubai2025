@@ -9,6 +9,7 @@ export {
   getAdminDashboard,
 } from "./admin/dashboard.js";
 export {
+  listUserNotifications,
   recordNotificationOpen,
   scheduleTargetedNotification,
   sendTargetedNotification,

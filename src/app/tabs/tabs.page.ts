@@ -153,7 +153,7 @@ export class TabsPage implements OnInit, OnDestroy {
   }
 
   openNotifications(): void {
-    void this.router.navigateByUrl('/tabs/home');
+    void this.router.navigateByUrl('/tabs/notifications');
   }
 
   async signOut(): Promise<void> {

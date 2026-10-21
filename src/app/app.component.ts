@@ -86,7 +86,10 @@ export class AppComponent implements OnInit {
 
     this.router.events
       .pipe(filter((event) => event instanceof NavigationEnd))
-      .subscribe(() => this.trackNotificationCampaignOpen());
+      .subscribe(() => {
+        this.trackNotificationCampaignOpen();
+        void this.updateNotificationPrompt(!!this.authService.currentUser?.email);
+      });
     this.trackNotificationCampaignOpen();
 
     // ✅ Generate the user's agenda once per login session
@@ -138,7 +141,11 @@ export class AppComponent implements OnInit {
   }
 
   private async updateNotificationPrompt(isAuthenticated: boolean): Promise<void> {
-    if (!isAuthenticated || !(this.installedApp || this.isInstalledExperience())) {
+    if (
+      !isAuthenticated ||
+      this.router.url.startsWith('/tabs/notifications') ||
+      !(this.installedApp || this.isInstalledExperience())
+    ) {
       this.showNotificationPrompt = false;
       return;
     }

@@ -1,0 +1,88 @@
+<ion-content [scrollY]="true">
+  <main class="notifications-page">
+    <section class="notifications-content" aria-labelledby="notifications-title">
+      <p class="notifications-eyebrow">STAY IN THE KNOW</p>
+      <h1 id="notifications-title">Event updates</h1>
+      <p class="notifications-intro">The latest from your event team.</p>
+
+      <section class="push-card" aria-label="Push notification settings">
+        <div class="push-card-copy">
+          <span class="push-card-icon">
+            <ion-icon name="notifications-outline" aria-hidden="true"></ion-icon>
+          </span>
+          <div>
+            <h2>{{ isPermissionGranted ? 'Notifications enabled' : 'Get event updates' }}</h2>
+            <p *ngIf="isPermissionGranted">
+              You’ll receive important updates from your event team.
+            </p>
+            <p *ngIf="!isPermissionGranted && !isPermissionDenied && isPushSupported">
+              Turn on push notifications for reminders and announcements.
+            </p>
+            <p *ngIf="isPermissionDenied">
+              Notifications are blocked. Allow them in your device or browser settings.
+            </p>
+            <p *ngIf="!isPushSupported">
+              Push notifications aren’t available in this browser or device.
+            </p>
+          </div>
+        </div>
+        <ion-button
+          *ngIf="isPushSupported && !isPermissionGranted"
+          class="enable-push-button"
+          (click)="enableNotifications()"
+          [disabled]="isEnablingNotifications"
+        >
+          <ion-icon slot="start" name="notifications-outline"></ion-icon>
+          {{ isEnablingNotifications ? 'Setting up…' : isPermissionDenied ? 'Try again' : 'Enable notifications' }}
+        </ion-button>
+        <p *ngIf="notificationSetupMessage" class="setup-error" role="alert">
+          {{ notificationSetupMessage }}
+        </p>
+      </section>
+
+      <p *ngIf="isLoading" class="list-message" role="status">Loading your notifications…</p>
+      <div *ngIf="loadError" class="list-error" role="alert">
+        <p>{{ loadError }}</p>
+        <button type="button" (click)="loadNotifications()">Try again</button>
+      </div>
+      <p *ngIf="!isLoading && !loadError && !notifications.length" class="empty-state">
+        You haven’t received any event updates yet.
+      </p>
+
+      <div class="notification-list" *ngIf="!isLoading && !loadError && notifications.length">
+        <article
+          class="notification-card"
+          *ngFor="let notification of notifications"
+          [class.unread]="!notification.opened"
+        >
+          <div class="notification-icon">
+            <ion-icon name="notifications-outline" aria-hidden="true"></ion-icon>
+          </div>
+          <div class="notification-copy">
+            <div class="notification-meta">
+              <span>EVENT UPDATE</span>
+              <span *ngIf="!notification.opened" class="unread-label">NEW</span>
+              <time *ngIf="notification.createdAt" [attr.datetime]="notification.createdAt">
+                {{ notification.createdAt | date: 'dd/MM/yyyy' }}
+              </time>
+            </div>
+            <h2>{{ notification.title }}</h2>
+            <p>{{ notification.body }}</p>
+            <button type="button" class="notification-open" (click)="openNotification(notification)">
+              View update
+              <ion-icon name="open-outline" aria-hidden="true"></ion-icon>
+            </button>
+          </div>
+        </article>
+      </div>
+      <button
+        *ngIf="!isLoading && !loadError && notifications.length"
+        type="button"
+        class="refresh-button"
+        (click)="loadNotifications()"
+      >
+        Refresh updates
+      </button>
+    </section>
+  </main>
+</ion-content>

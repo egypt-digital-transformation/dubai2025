@@ -111,6 +111,14 @@ export interface NotificationSendResult {
   scheduledAt?: string;
 }
 
+export interface ReceivedNotification {
+  id: string;
+  title: string;
+  body: string;
+  createdAt: string | null;
+  opened: boolean;
+}
+
 export interface AdminDashboard {
   refreshedAt: string;
   totalAttendees: number;
@@ -306,6 +314,10 @@ export class AdminService {
     target: NotificationTarget
   ): Promise<NotificationSendResult> {
     return this.call('sendTargetedNotification', { title, body, target });
+  }
+
+  async listReceivedNotifications(): Promise<ReceivedNotification[]> {
+    return this.call('listUserNotifications', {});
   }
 
   async scheduleNotification(

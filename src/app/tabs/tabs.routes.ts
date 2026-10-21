@@ -34,6 +34,11 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'notifications',
+        loadComponent: () =>
+          import('../notifications/notifications.page').then((m) => m.NotificationsPage),
+      },
+      {
         path: 'more',
         loadComponent: () =>
           import('../more/more.page').then((m) => m.MorePage),

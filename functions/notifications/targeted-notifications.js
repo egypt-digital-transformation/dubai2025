@@ -331,3 +331,52 @@ export const recordNotificationOpen = onCall(
     });
   }
 );
+
+export const listUserNotifications = onCall(
+  { region: "europe-west1" },
+  async (request) => {
+    const user = requireAuthenticatedUser(request);
+    const deliveriesSnapshot = await db
+      .collectionGroup("deliveries")
+      .where("emailHash", "==", emailDocumentId(user.email))
+      .where("status", "==", "accepted")
+      .get();
+    const campaignsById = new Map();
+
+    for (const delivery of deliveriesSnapshot.docs) {
+      const data = delivery.data();
+      const campaignRef = delivery.ref.parent.parent;
+      if (!campaignRef) {
+        continue;
+      }
+
+      const existing = campaignsById.get(campaignRef.id);
+      campaignsById.set(campaignRef.id, {
+        ref: campaignRef,
+        opened: Boolean(data.openedAt) || existing?.opened === true,
+      });
+    }
+
+    const notifications = await Promise.all(
+      [...campaignsById.entries()].map(async ([id, delivery]) => {
+        const campaignSnapshot = await delivery.ref.get();
+        if (!campaignSnapshot.exists) {
+          return null;
+        }
+
+        const campaign = campaignSnapshot.data();
+        return {
+          id,
+          title: campaign.title,
+          body: campaign.body,
+          createdAt: campaign.createdAt?.toDate?.().toISOString() ?? null,
+          opened: delivery.opened,
+        };
+      })
+    );
+
+    return notifications
+      .filter((notification) => notification !== null)
+      .sort((a, b) => (b.createdAt ?? "").localeCompare(a.createdAt ?? ""));
+  }
+);
