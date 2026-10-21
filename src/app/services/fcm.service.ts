@@ -4,7 +4,6 @@ import { ToastController } from '@ionic/angular/standalone';
 import { AuthService } from './auth.service';
 import { AdminService, PushTokenRegistrationResult } from './admin.service';
 import { environment } from '../../environments/environment';
-import { initializeApp } from 'firebase/app';
 import { BehaviorSubject, filter } from 'rxjs';
 import {
   isSupported,
@@ -15,6 +14,78 @@ import {
   Messaging,
   MessagePayload,
 } from 'firebase/messaging';
+
+function waitForActiveServiceWorker(
+  registration: ServiceWorkerRegistration,
+): Promise<ServiceWorkerRegistration> {
+  if (registration.active?.state === 'activated') {
+    return Promise.resolve(registration);
+  }
+
+  const worker = registration.installing ?? registration.waiting;
+  if (!worker) {
+    return Promise.reject(new Error('The Firebase service worker has no active worker.'));
+  }
+
+  return new Promise((resolve, reject) => {
+    const finish = (error?: Error) => {
+      window.clearTimeout(timeout);
+      worker.removeEventListener('statechange', onStateChange);
+      if (error) {
+        reject(error);
+      } else {
+        resolve(registration);
+      }
+    };
+    const onStateChange = () => {
+      if (registration.active?.state === 'activated') {
+        finish();
+      } else if (worker.state === 'redundant') {
+        finish(new Error('The Firebase service worker became redundant before activation.'));
+      }
+    };
+    const timeout = window.setTimeout(
+      () => finish(new Error('Timed out waiting for the Firebase service worker to activate.')),
+      15000,
+    );
+
+    worker.addEventListener('statechange', onStateChange);
+    onStateChange();
+  });
+}
+
+function getPushDeviceId(): string {
+  const storageKey = 'fcmPushDeviceId';
+  const existingId = window.localStorage.getItem(storageKey);
+  if (existingId && /^[A-Za-z0-9_-]{8,128}$/.test(existingId)) {
+    return existingId;
+  }
+
+  const deviceId = window.crypto.randomUUID();
+  window.localStorage.setItem(storageKey, deviceId);
+  return deviceId;
+}
+
+async function clearStaleBrowserPushSubscriptions(
+  swRegistration?: ServiceWorkerRegistration
+): Promise<void> {
+  try {
+    const sub = await swRegistration?.pushManager?.getSubscription();
+    if (sub) {
+      await sub.unsubscribe();
+    }
+  } catch (err) {
+    console.warn('[FCM] Failed to unsubscribe push subscription:', err);
+  }
+  try {
+    if (typeof window !== 'undefined' && window.indexedDB) {
+      window.indexedDB.deleteDatabase('firebase-messaging-database');
+      window.indexedDB.deleteDatabase('fcm_token_details_db');
+    }
+  } catch (err) {
+    console.warn('[FCM] Failed to delete FCM IndexedDB databases:', err);
+  }
+}
 
 @Injectable({
   providedIn: 'root',
@@ -27,10 +98,6 @@ export class FcmService {
 
   private messagingInstance: Messaging | null = null;
   private hasForegroundMessageListener = false;
-  private notificationApp = initializeApp(
-    environment.firebaseConfig,
-    'NotificationSender'
-  );
   private isInitialized = false;
 
   private fcmTokenSubject = new BehaviorSubject<string | null>(null);
@@ -102,23 +169,15 @@ export class FcmService {
       }
 
       if (!this.messagingInstance) {
-        this.messagingInstance = getMessaging(this.notificationApp);
+        this.messagingInstance = getMessaging();
       }
 
-      // Ensure service worker registration is ready
-      let swRegistration: ServiceWorkerRegistration | undefined;
-      if ('serviceWorker' in navigator) {
-        try {
-          swRegistration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
-            scope: '/firebase-cloud-messaging-push-scope',
-          });
-          console.log('[FCM] Service worker registered successfully:', swRegistration.scope);
-        } catch (swErr) {
-          console.warn('[FCM] Custom SW registration note:', swErr);
-          // Fall back to existing registration if any
-          swRegistration = await navigator.serviceWorker.getRegistration();
-        }
-      }
+      const swRegistration = await navigator.serviceWorker.register(
+        '/firebase-messaging-sw.js',
+        { scope: '/firebase-cloud-messaging-push-scope' },
+      );
+      await waitForActiveServiceWorker(swRegistration);
+      console.log('[FCM] Service worker is active:', swRegistration.scope);
 
       // Get FCM token
       const tokenOptions: { vapidKey?: string; serviceWorkerRegistration?: ServiceWorkerRegistration } = {};
@@ -130,7 +189,18 @@ export class FcmService {
       }
 
       console.log('[FCM] Fetching FCM device token...');
-      let currentToken = await getToken(this.messagingInstance, tokenOptions);
+      let currentToken: string | null = null;
+      try {
+        currentToken = await getToken(this.messagingInstance, tokenOptions);
+      } catch (tokenErr: any) {
+        console.warn(
+          '[FCM] Stale push subscription detected or token acquisition failed; resetting push storage:',
+          tokenErr
+        );
+        await clearStaleBrowserPushSubscriptions(swRegistration);
+        currentToken = await getToken(this.messagingInstance, tokenOptions);
+      }
+
       if (!currentToken) {
         console.warn('[FCM] ⚠️ No registration token available. Request permission to generate one.');
         return null;
@@ -139,7 +209,12 @@ export class FcmService {
       let registration = await this.saveTokenToFirestore(currentToken);
       if (registration.refreshRequired) {
         console.warn('[FCM] Firebase rejected the previously registered token; refreshing it.');
-        await deleteToken(this.messagingInstance);
+        try {
+          await deleteToken(this.messagingInstance);
+        } catch (delErr) {
+          console.warn('[FCM] deleteToken failed (cross-project 403); clearing push storage:', delErr);
+          await clearStaleBrowserPushSubscriptions(swRegistration);
+        }
         currentToken = await getToken(this.messagingInstance, tokenOptions);
         if (!currentToken) {
           throw new Error('Firebase did not provide a replacement push token.');
@@ -246,7 +321,10 @@ export class FcmService {
     }
 
     try {
-      const result = await this.adminService.registerPushToken(token);
+      const result = await this.adminService.registerPushToken(
+        token,
+        getPushDeviceId(),
+      );
       console.log(`[FCM] Push token registered for ${currentUser.email}`);
       return result;
     } catch (error) {

@@ -3,7 +3,10 @@ import { onRequest } from "firebase-functions/v2/https";
 import { onSchedule } from "firebase-functions/v2/scheduler";
 import { db, FieldValue, Timestamp } from "../shared/firebase.js";
 import { requireAdminIdentity } from "../shared/admin-auth.js";
-import { sendSessionReminderNotification } from "../shared/session-notification.js";
+import {
+  getPushRecipientsForUser,
+  sendPushToRecipients,
+} from "../shared/push-delivery.js";
 
 async function claimReminder(sessionRef) {
   return db.runTransaction(async (transaction) => {
@@ -30,7 +33,7 @@ async function releaseReminderClaim(sessionRef) {
   await sessionRef.update({ reminderClaimedAt: FieldValue.delete() });
 }
 
-async function sendReminderForAgendaItem(user, fcmToken, sessionDoc) {
+async function sendReminderForAgendaItem(user, recipients, sessionDoc) {
   const claimed = await claimReminder(sessionDoc.ref);
   if (!claimed) {
     return false;
@@ -38,16 +41,28 @@ async function sendReminderForAgendaItem(user, fcmToken, sessionDoc) {
 
   try {
     const session = sessionDoc.data();
-    const messageId = await sendSessionReminderNotification(
-      fcmToken,
-      session.title,
-      sessionDoc.id
-    );
+    const results = await sendPushToRecipients(recipients, {
+      title: "Session Starting Soon!",
+      body: `Your "${session.title}" is starting soon.`,
+      data: { sessionId: sessionDoc.id },
+      link: "/",
+    });
+    const successfulResults = results.filter((result) => result.success);
+    if (!successfulResults.length) {
+      throw new Error(
+        `No session reminder delivery succeeded: ${results
+          .map((result) => result.errorCode || "unknown")
+          .join(", ")}`
+      );
+    }
     await sessionDoc.ref.update({
       reminderSent: true,
       reminderSentAt: Timestamp.now(),
       reminderClaimedAt: FieldValue.delete(),
-      fcmMessageId: messageId,
+      fcmMessageId: successfulResults[0].messageId,
+      fcmMessageIds: successfulResults
+        .map((result) => result.messageId)
+        .filter(Boolean),
     });
     console.log(`✅ Sent FCM reminder for "${session.title}" to ${user.email}`);
     return true;
@@ -78,8 +93,8 @@ export const sendSessionReminders = onSchedule(
 
       for (const userDoc of usersSnapshot.docs) {
         const user = userDoc.data();
-        const fcmToken = user.fcmToken;
-        if (!fcmToken) continue;
+        const recipients = getPushRecipientsForUser(userDoc);
+        if (!recipients.length) continue;
 
         const agendaRef = db.collection(`users/${userDoc.id}/agenda`);
         const agendaSnapshot = await agendaRef
@@ -94,7 +109,7 @@ export const sendSessionReminders = onSchedule(
 
         for (const sessionDoc of agendaSnapshot.docs) {
           try {
-            await sendReminderForAgendaItem(user, fcmToken, sessionDoc);
+            await sendReminderForAgendaItem(user, recipients, sessionDoc);
           } catch (error) {
             console.error(`❌ Failed to send FCM reminder for session ${sessionDoc.id} to ${user.email}:`, error);
           }
@@ -153,15 +168,15 @@ export const sendSessionRemindersManual = onRequest(
 
       for (const userDoc of usersSnapshot.docs) {
         const user = userDoc.data();
-        const fcmToken = user.fcmToken;
+        const recipients = getPushRecipientsForUser(userDoc);
         const userResult = {
-          hasFcmToken: !!fcmToken,
+          hasFcmToken: recipients.length > 0,
           sessionsFound: 0,
           notificationsSent: 0,
           errors: [],
         };
 
-        if (!fcmToken) {
+        if (!recipients.length) {
           userResult.errors.push("No FCM device token found for this user");
           results.push(userResult);
           continue;
@@ -181,7 +196,7 @@ export const sendSessionRemindersManual = onRequest(
 
           for (const sessionDoc of agendaSnapshot.docs) {
             try {
-              const sent = await sendReminderForAgendaItem(user, fcmToken, sessionDoc);
+              const sent = await sendReminderForAgendaItem(user, recipients, sessionDoc);
               if (sent) {
                 userResult.notificationsSent++;
               }

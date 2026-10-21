@@ -8,7 +8,7 @@
     "start": "vite",
     "ionic:serve": "vite",
     "ionic:build": "npm run build",
-    "build": "vite build --mode production && ngsw-config www ngsw-config.json",
+    "build": "vite build --mode production && ngsw-config www ngsw-config.json && node -e \"require('node:fs').copyFileSync('node_modules/@angular/service-worker/ngsw-worker.js', 'www/ngsw-worker.js')\"",
     "watch": "vite build --watch --mode development",
     "test": "vitest run",
     "test:watch": "vitest",

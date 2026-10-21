@@ -88,7 +88,9 @@ export const createInteractiveActivity = onCall(
     };
     try {
       const { recipients } = await getTargetRecipients(target);
-      notificationSummary.pushReadyCount = recipients.length;
+      notificationSummary.pushReadyCount = new Set(
+        recipients.map((recipient) => recipient.id)
+      ).size;
       const results = await sendPushToRecipients(recipients, {
         title: `${kind === "quiz" ? "New quiz" : "New poll"}: ${title.trim()}`,
         body: "Open the app to participate.",
@@ -100,6 +102,9 @@ export const createInteractiveActivity = onCall(
         link: "/activities",
       });
       notificationSummary = {
+        pushReadyCount: new Set(
+          recipients.map((recipient) => recipient.id)
+        ).size,
         acceptedCount: results.filter((result) => result.success).length,
         failedCount: results.filter((result) => !result.success).length,
         deliveryError: false,

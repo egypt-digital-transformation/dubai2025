@@ -3,11 +3,11 @@ import {
   APP_ANALYTICS_COLLECTION,
   CAMPAIGN_COLLECTION,
   db,
-  FCM_PROJECT_ID,
   FieldValue,
 } from "../shared/firebase.js";
 import { requireAdminUser } from "../shared/admin-auth.js";
 import { timestampToIso } from "../shared/notification-utils.js";
+import { getRegisteredPushDevices } from "../shared/push-tokens.js";
 
 export const createAdminAnnouncement = onCall(
   { region: "europe-west1" },
@@ -103,10 +103,7 @@ export const getAdminDashboard = onCall(
           day3GroupPM: day3GroupPM == null ? "" : String(day3GroupPM),
           participantsGroup:
             participantsGroup == null ? "" : String(participantsGroup),
-          hasPushToken:
-            typeof data.fcmToken === "string" &&
-            data.fcmToken.length > 0 &&
-            data.fcmProjectId === FCM_PROJECT_ID,
+          hasPushToken: getRegisteredPushDevices(data).length > 0,
           ...(activityByEmail.get(email.toLowerCase()) ?? {
             loggedIn: false,
             active: false,

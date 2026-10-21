@@ -10,6 +10,7 @@ import { requireAdminUser, requireAuthenticatedUser } from "../shared/admin-auth
 import {
   emailDocumentId,
   SEGMENT_FIELDS,
+  tokenFingerprint,
 } from "../shared/notification-utils.js";
 import {
   getTargetRecipients,
@@ -85,7 +86,7 @@ async function createCampaign(title, body, target, scheduledAt = null) {
     target,
     targetLabel: getTargetLabel(target, recipients),
     targetCount,
-    pushReadyCount: recipients.length,
+    pushReadyCount: new Set(recipients.map((recipient) => recipient.id)).size,
     acceptedCount: 0,
     failedCount: 0,
     openedCount: 0,
@@ -115,9 +116,14 @@ async function deliverCampaign(campaignRef, campaign, recipients) {
       results.map(({ recipient, success, errorCode }) =>
         campaignRef
           .collection("deliveries")
-          .doc(emailDocumentId(recipient.email))
+          .doc(
+            emailDocumentId(
+              `${recipient.email}:${tokenFingerprint(recipient.token)}`
+            )
+          )
           .set({
             emailHash: emailDocumentId(recipient.email),
+            deviceHash: tokenFingerprint(recipient.token),
             status: success ? "accepted" : "failed",
             errorCode,
             openedAt: null,
@@ -166,11 +172,15 @@ export const sendTargetedNotification = onCall(
       return {
         campaignId: campaignRef.id,
         targetCount,
-        pushReadyCount: recipients.length,
+        pushReadyCount: new Set(recipients.map((recipient) => recipient.id)).size,
         ...result,
       };
-    } catch {
-      throw new HttpsError("internal", "The push notification could not be sent.");
+    } catch (error) {
+      console.error("[sendTargetedNotification] Delivery failed:", error);
+      throw new HttpsError(
+        "internal",
+        error?.message || "The push notification could not be sent."
+      );
     }
   }
 );
@@ -200,7 +210,7 @@ export const scheduleTargetedNotification = onCall(
     return {
       campaignId: campaignRef.id,
       targetCount,
-      pushReadyCount: recipients.length,
+      pushReadyCount: new Set(recipients.map((recipient) => recipient.id)).size,
       status: "scheduled",
       scheduledAt: scheduledAt.toDate().toISOString(),
     };
@@ -258,7 +268,12 @@ export const dispatchScheduledNotifications = onSchedule(
           continue;
         }
         await campaignRef.set(
-          { targetCount, pushReadyCount: recipients.length },
+          {
+            targetCount,
+            pushReadyCount: new Set(
+              recipients.map((recipient) => recipient.id)
+            ).size,
+          },
           { merge: true }
         );
         await deliverCampaign(campaignRef, campaign, recipients);
@@ -286,23 +301,31 @@ export const recordNotificationOpen = onCall(
     }
 
     const campaignRef = db.collection(CAMPAIGN_COLLECTION).doc(campaignId);
-    const deliveryRef = campaignRef
+    const deliveriesQuery = campaignRef
       .collection("deliveries")
-      .doc(emailDocumentId(user.email));
+      .where("emailHash", "==", emailDocumentId(user.email));
 
     return db.runTransaction(async (transaction) => {
-      const [campaignSnapshot, deliverySnapshot] = await Promise.all([
+      const [campaignSnapshot, deliveriesSnapshot] = await Promise.all([
         transaction.get(campaignRef),
-        transaction.get(deliveryRef),
+        transaction.get(deliveriesQuery),
       ]);
-      if (!campaignSnapshot.exists || deliverySnapshot.data()?.status !== "accepted") {
+      const deliveries = deliveriesSnapshot.docs.filter(
+        (delivery) => delivery.data().status === "accepted"
+      );
+      if (!campaignSnapshot.exists || !deliveries.length) {
         return { recorded: false };
       }
-      if (deliverySnapshot.data()?.openedAt) {
+      const unopenedDelivery = deliveries.find(
+        (delivery) => !delivery.data().openedAt
+      );
+      if (!unopenedDelivery) {
         return { recorded: true, alreadyRecorded: true };
       }
 
-      transaction.update(deliveryRef, { openedAt: FieldValue.serverTimestamp() });
+      transaction.update(unopenedDelivery.ref, {
+        openedAt: FieldValue.serverTimestamp(),
+      });
       transaction.update(campaignRef, { openedCount: FieldValue.increment(1) });
       return { recorded: true, alreadyRecorded: false };
     });

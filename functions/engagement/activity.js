@@ -4,6 +4,7 @@ import {
   db,
   FCM_PROJECT_ID,
   FieldValue,
+  Timestamp,
 } from "../shared/firebase.js";
 import { requireAuthenticatedUser } from "../shared/admin-auth.js";
 import { tokenFingerprint } from "../shared/notification-utils.js";
@@ -167,6 +168,13 @@ export const registerPushToken = onCall(
     if (typeof token !== "string" || token.length < 20 || token.length > 4096) {
       throw new HttpsError("invalid-argument", "A valid push token is required.");
     }
+    const deviceId = request.data?.deviceId;
+    if (
+      typeof deviceId !== "string" ||
+      !/^[A-Za-z0-9_-]{8,128}$/.test(deviceId)
+    ) {
+      throw new HttpsError("invalid-argument", "A valid device identifier is required.");
+    }
 
     const normalizedEmail = user.email.trim().toLowerCase();
     const adminRef = db.collection("admins").doc(normalizedEmail);
@@ -180,36 +188,106 @@ export const registerPushToken = onCall(
       );
     }
 
-    const submittedTokenHash = tokenFingerprint(token);
-    if (
-      (isActiveAdmin &&
-        adminSnapshot.data()?.fcmTokenInvalidatedHash === submittedTokenHash) ||
-      profiles.some(
-        (profile) =>
-          profile.data()?.fcmTokenInvalidatedHash === submittedTokenHash
-      )
-    ) {
-      return { registered: false, refreshRequired: true };
-    }
-
-    const tokenRegistration = {
-      fcmToken: token,
-      fcmProjectId: FCM_PROJECT_ID,
-      fcmTokenUpdatedAt: FieldValue.serverTimestamp(),
-      fcmTokenInvalidatedHash: FieldValue.delete(),
-      fcmTokenInvalidatedAt: FieldValue.delete(),
-    };
-    if (isActiveAdmin) {
-      await adminRef.set(tokenRegistration, { merge: true });
-    }
-
-    if (profiles.length === 1) {
-      await profiles[0].ref.set(tokenRegistration, { merge: true });
-    } else if (!isActiveAdmin) {
+    if (!profiles.length && !isActiveAdmin) {
       throw new HttpsError(
         "failed-precondition",
         "Your delegate profile could not be uniquely matched."
       );
+    }
+
+    const submittedTokenHash = tokenFingerprint(token);
+    const ownerRefs = [
+      ...(isActiveAdmin ? [adminRef] : []),
+      ...profiles.map((profile) => profile.ref),
+    ];
+    const refreshRequired = await db.runTransaction(async (transaction) => {
+      const snapshots = await Promise.all(
+        ownerRefs.map((ownerRef) => transaction.get(ownerRef))
+      );
+      const refreshRequired = snapshots.some((snapshot) => {
+        const ownerData = snapshot.data() || {};
+        const devices = Array.isArray(ownerData.devices)
+          ? ownerData.devices
+          : [];
+        const existingDevice = devices.find(
+          (device) => device.deviceId === deviceId
+        );
+        return (
+          devices.some(
+            (device) => device.invalidatedTokenHash === submittedTokenHash
+          ) ||
+          (!existingDevice &&
+            ownerData.fcmTokenInvalidatedHash === submittedTokenHash)
+        );
+      });
+      if (refreshRequired) {
+        return true;
+      }
+
+      snapshots.forEach((snapshot, index) => {
+        const ownerRef = ownerRefs[index];
+        const ownerData = snapshot.data() || {};
+        const devices = Array.isArray(ownerData.devices)
+          ? ownerData.devices
+          : [];
+        const existingDevice = devices.find(
+          (device) => device.deviceId === deviceId
+        );
+        const migratedLegacyDevice =
+          typeof ownerData.fcmToken === "string" &&
+          ownerData.fcmToken.length > 0 &&
+          ownerData.fcmToken !== token &&
+          ownerData.fcmProjectId === FCM_PROJECT_ID
+            ? {
+                deviceId: `legacy-${tokenFingerprint(ownerData.fcmToken).slice(0, 16)}`,
+                token: ownerData.fcmToken,
+                fcmProjectId: ownerData.fcmProjectId,
+                platform: "web",
+                updatedAt:
+                  ownerData.fcmTokenUpdatedAt?.toDate?.() || Timestamp.now(),
+              }
+            : null;
+        const retainedDevices = devices.filter(
+          (device) => device.deviceId !== deviceId && device.token !== token
+        );
+        if (
+          migratedLegacyDevice &&
+          !retainedDevices.some(
+            (device) => device.token === migratedLegacyDevice.token
+          )
+        ) {
+          retainedDevices.push(migratedLegacyDevice);
+        }
+        const registeredDevice = {
+          ...(existingDevice || {}),
+          deviceId,
+          token,
+          fcmProjectId: FCM_PROJECT_ID,
+          platform: "web",
+          updatedAt: Timestamp.now(),
+        };
+        delete registeredDevice.invalidatedTokenHash;
+        delete registeredDevice.invalidatedAt;
+        retainedDevices.push(registeredDevice);
+
+        transaction.set(
+          ownerRef,
+          {
+            devices: retainedDevices,
+            fcmToken: FieldValue.delete(),
+            fcmProjectId: FieldValue.delete(),
+            fcmTokenUpdatedAt: FieldValue.serverTimestamp(),
+            fcmTokenInvalidatedHash: FieldValue.delete(),
+            fcmTokenInvalidatedAt: FieldValue.delete(),
+          },
+          { merge: true }
+        );
+      });
+      return false;
+    });
+
+    if (refreshRequired) {
+      return { registered: false, refreshRequired: true };
     }
 
     return { registered: true };

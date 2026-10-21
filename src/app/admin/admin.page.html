@@ -578,6 +578,12 @@
       <ion-note *ngIf="!dashboard" color="medium" class="campaign-note">
         Audience details are unavailable until the admin dashboard service responds.
       </ion-note>
+      <ion-note *ngIf="errorMessage" color="danger" class="campaign-note error-banner">
+        {{ errorMessage }}
+      </ion-note>
+      <ion-note *ngIf="noticeMessage" color="success" class="campaign-note success-banner">
+        {{ noticeMessage }}
+      </ion-note>
       <form class="notification-form" (ngSubmit)="sendNotification()">
         <ion-input
           label="Notification title"

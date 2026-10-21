@@ -1066,11 +1066,16 @@ export class AdminPage implements OnInit, OnDestroy {
       this.notificationTitle = '';
       this.notificationBody = '';
       this.scheduledDateTime = '';
-      this.noticeMessage = this.notificationResultMessage(result, scheduledDisplay);
+      if (result.status === 'failed') {
+        this.errorMessage = this.notificationResultMessage(result, scheduledDisplay);
+      } else {
+        this.noticeMessage = this.notificationResultMessage(result, scheduledDisplay);
+      }
       await this.loadDashboard(true);
-    } catch (error) {
+    } catch (error: any) {
       console.error('[AdminPage] Failed to send notification:', error);
       this.errorMessage =
+        error?.message ||
         'The notification could not be sent. Review the selected audience and try again.';
     } finally {
       this.isSending = false;

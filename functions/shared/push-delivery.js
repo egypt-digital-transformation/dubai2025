@@ -1,12 +1,21 @@
-import { db, FCM_PROJECT_ID, FieldValue, getMessaging } from "./firebase.js";
+import {
+  db,
+  FCM_PROJECT_ID,
+  FieldValue,
+  getMessaging,
+  Timestamp,
+} from "./firebase.js";
 import {
   matchesNotificationTarget,
   tokenFingerprint,
 } from "./notification-utils.js";
+import { getRegisteredPushDevices } from "./push-tokens.js";
 
 const INVALID_REGISTRATION_TOKEN_CODES = new Set([
   "messaging/registration-token-not-registered",
   "messaging/invalid-registration-token",
+  "messaging/mismatched-credential",
+  "messaging/invalid-argument",
 ]);
 
 async function removeInvalidToken(recipient) {
@@ -19,17 +28,67 @@ async function removeInvalidToken(recipient) {
     .doc(recipient.tokenOwner.id);
   await db.runTransaction(async (transaction) => {
     const ownerSnapshot = await transaction.get(ownerRef);
-    if (!ownerSnapshot.exists || ownerSnapshot.data()?.fcmToken !== recipient.token) {
+    if (!ownerSnapshot.exists) {
       return;
     }
 
-    transaction.update(ownerRef, {
-      fcmToken: FieldValue.delete(),
-      fcmProjectId: FieldValue.delete(),
-      fcmTokenInvalidatedHash: tokenFingerprint(recipient.token),
-      fcmTokenInvalidatedAt: FieldValue.serverTimestamp(),
+    const ownerData = ownerSnapshot.data();
+    if (recipient.isLegacy) {
+      if (ownerData.fcmToken !== recipient.token) {
+        return;
+      }
+      transaction.update(ownerRef, {
+        fcmToken: FieldValue.delete(),
+        fcmProjectId: FieldValue.delete(),
+        fcmTokenInvalidatedHash: tokenFingerprint(recipient.token),
+        fcmTokenInvalidatedAt: FieldValue.serverTimestamp(),
+      });
+      return;
+    }
+
+    const devices = Array.isArray(ownerData.devices) ? ownerData.devices : [];
+    const deviceIndex = devices.findIndex((device) => {
+      const deviceId =
+        typeof device.deviceId === "string" && device.deviceId
+          ? device.deviceId
+          : `legacy-${tokenFingerprint(device.token || "").slice(0, 16)}`;
+      return deviceId === recipient.deviceId && device.token === recipient.token;
     });
+    if (deviceIndex < 0) {
+      return;
+    }
+
+    const invalidatedDevice = {
+      ...devices[deviceIndex],
+      invalidatedTokenHash: tokenFingerprint(recipient.token),
+      invalidatedAt: Timestamp.now(),
+    };
+    delete invalidatedDevice.token;
+    delete invalidatedDevice.fcmProjectId;
+    const updatedDevices = [...devices];
+    updatedDevices[deviceIndex] = invalidatedDevice;
+    transaction.update(ownerRef, { devices: updatedDevices });
   });
+}
+
+function recipientsFromDocument(document, collection) {
+  const data = document.data();
+  const email = String(
+    data.emailAddress || data.email || document.id
+  ).trim();
+  return getRegisteredPushDevices(data).map((device) => ({
+    id: document.id,
+    email,
+    ...device,
+    tokenOwner: {
+      collection,
+      id: document.id,
+    },
+  }));
+}
+
+export function getPushRecipientsForUser(userDocument) {
+  return recipientsFromDocument(userDocument, "users");
 }
 
 export async function getTargetRecipients(target) {
@@ -37,25 +96,9 @@ export async function getTargetRecipients(target) {
   const targets = attendeesSnapshot.docs.filter((attendeeDocument) =>
     matchesNotificationTarget(attendeeDocument, target)
   );
-  const recipients = targets
-    .map((attendeeDocument) => ({
-      id: attendeeDocument.id,
-      email: String(
-        attendeeDocument.data().emailAddress ||
-        attendeeDocument.data().email ||
-        attendeeDocument.id
-      ).trim(),
-      token: attendeeDocument.data().fcmToken,
-      fcmProjectId: attendeeDocument.data().fcmProjectId,
-      tokenOwner: { collection: "users", id: attendeeDocument.id },
-    }))
-    .filter(
-      (recipient) =>
-        recipient.email &&
-        typeof recipient.token === "string" &&
-        recipient.token.length > 0 &&
-        recipient.fcmProjectId === FCM_PROJECT_ID
-    );
+  const recipients = targets.flatMap((attendeeDocument) =>
+    recipientsFromDocument(attendeeDocument, "users")
+  );
 
   return { targetCount: targets.length, recipients };
 }
@@ -79,11 +122,21 @@ export async function sendPushToRecipients(recipients, { title, body, data = {},
       message.webpush = { fcmOptions: { link } };
     }
     const response = await getMessaging().sendEachForMulticast(message);
-    const batchResults = response.responses.map((result, recipientIndex) => ({
-      recipient: batch[recipientIndex],
-      success: result.success,
-      errorCode: result.error?.code || null,
-    }));
+    const batchResults = response.responses.map((result, recipientIndex) => {
+      if (!result.success) {
+        console.warn(
+          `[PushDelivery] Push failed for recipient ${batch[recipientIndex].email}:`,
+          result.error?.code,
+          result.error?.message
+        );
+      }
+      return {
+        recipient: batch[recipientIndex],
+        success: result.success,
+        errorCode: result.error?.code || null,
+        messageId: result.messageId || null,
+      };
+    });
     results.push(...batchResults);
     await Promise.all(
       batchResults
@@ -108,17 +161,7 @@ export async function getAdminRecipients() {
   const adminsSnapshot = await db.collection("admins")
     .where("active", "==", true)
     .get();
-  return adminsSnapshot.docs
-    .map((adminDocument) => ({
-      email: adminDocument.id,
-      token: adminDocument.data().fcmToken,
-      fcmProjectId: adminDocument.data().fcmProjectId,
-      tokenOwner: { collection: "admins", id: adminDocument.id },
-    }))
-    .filter(
-      (recipient) =>
-        typeof recipient.token === "string" &&
-        recipient.token.length > 0 &&
-        recipient.fcmProjectId === FCM_PROJECT_ID
-    );
+  return adminsSnapshot.docs.flatMap((adminDocument) =>
+    recipientsFromDocument(adminDocument, "admins")
+  );
 }
