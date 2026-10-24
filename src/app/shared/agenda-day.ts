@@ -23,9 +23,12 @@ export interface MappedAgendaSession {
 type RecordValue = Record<string, unknown>;
 
 const AGENDA_PALETTE: Record<string, string> = {
-  '#1d4370': 'var(--holcim-dark-blue)',
+  '#041739': 'var(--holcim-premium-blue)',
   '#94c12e': 'var(--holcim-bright-green)',
+  '#4bb05b': 'var(--holcim-medium-green)',
   '#04bbf1': 'var(--holcim-bright-blue)',
+  '#007fad': 'var(--holcim-medium-blue)',
+  '#1d4370': 'var(--holcim-dark-blue)',
   '#ffd100': 'var(--holcim-yellow)',
   '#e4002b': 'var(--holcim-bright-red)',
   '#e6007e': 'var(--holcim-fuchsia)',
@@ -33,13 +36,13 @@ const AGENDA_PALETTE: Record<string, string> = {
   '#9a0039': 'var(--holcim-dark-red)',
   '#662483': 'var(--holcim-violet)',
   '#009a44': 'var(--holcim-green)',
-  '#006d68': 'var(--holcim-dark-turquoise)',
-  '#00a499': 'var(--holcim-bright-turquoise)',
+  '#006d68': 'var(--holcim-medium-blue)',
+  '#00a499': 'var(--holcim-bright-blue)',
 };
 
 function getAgendaColor(value: unknown): string {
   const color = asText(value).toLowerCase();
-  return AGENDA_PALETTE[color] ?? 'var(--holcim-dark-turquoise)';
+  return AGENDA_PALETTE[color] ?? 'var(--holcim-premium-blue)';
 }
 
 function asRecord(value: unknown): RecordValue | null {

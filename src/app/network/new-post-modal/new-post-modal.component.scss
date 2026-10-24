@@ -78,14 +78,14 @@
 
 .post-btn {
   color: var(--white);
-  background: linear-gradient(135deg, var(--holcim-dark-blue) 0%, var(--holcim-dark-blue) 100%);
+  background: var(--holcim-premium-blue);
   padding: 0 20px;
   border: none;
-  box-shadow: 0 2px 8px rgba(var(--holcim-dark-blue-rgb), 0.2);
+  box-shadow: 0 2px 8px rgba(var(--holcim-premium-blue-rgb), 0.2);
 
   &:hover {
-    background: linear-gradient(135deg, var(--holcim-dark-blue) 0%, var(--holcim-dark-blue) 100%);
-    box-shadow: 0 4px 12px rgba(var(--holcim-dark-blue-rgb), 0.3);
+    background: #03122c;
+    box-shadow: 0 4px 12px rgba(var(--holcim-premium-blue-rgb), 0.3);
     transform: translateY(-1px);
   }
 
@@ -173,7 +173,7 @@
   outline: none;
   min-height: 180px;
   background: var(--white);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Holcim', sans-serif;
   padding: 20px;
   border-radius: 14px;
   box-shadow: 0 1px 3px rgba(var(--black-rgb), 0.06);

@@ -92,25 +92,14 @@
         <div class="session-card skeleton-loader">
           <div class="card-content">
             <div class="session-header">
-              <div class="skeleton skeleton-badge"></div>
-              <div class="skeleton skeleton-time"></div>
+              <div class="skeleton-pill skeleton-time"></div>
             </div>
-            <div class="skeleton skeleton-title"></div>
-            <div class="session-info">
-              <div class="info-item">
-                <div class="skeleton skeleton-icon"></div>
-                <div class="skeleton skeleton-info-text"></div>
-              </div>
-              <div class="info-item">
-                <div class="skeleton skeleton-icon"></div>
-                <div class="skeleton skeleton-info-text"></div>
-              </div>
-            </div>
+            <div class="skeleton-line skeleton-title"></div>
             <div class="speaker-info">
-              <div class="skeleton skeleton-avatar"></div>
+              <div class="skeleton-avatar"></div>
               <div class="speaker-details">
-                <div class="skeleton skeleton-speaker-name"></div>
-                <div class="skeleton skeleton-speaker-role"></div>
+                <div class="skeleton-line skeleton-speaker-name"></div>
+                <div class="skeleton-line skeleton-speaker-role"></div>
               </div>
             </div>
           </div>
@@ -124,33 +113,30 @@
         <ng-container *ngIf="primarySession; else noSession">
           <div
             class="session-card"
-            [ngClass]="isLive(primarySession) ? 'live' : 'next-session'"
+            [ngClass]="{
+              'live-card': isLive(primarySession),
+              'next-card': !isLive(primarySession)
+            }"
             (click)="goToAgendaSession(primarySession)"
+            role="button"
+            tabindex="0"
           >
             <div class="card-content">
               <div class="session-header">
-                <div
-                  class="status-badge"
-                  [ngClass]="isLive(primarySession) ? 'live' : 'next'"
-                >
-                  {{ isLive(primarySession) ? 'LIVE NOW' : 'UP NEXT' }}
+                <div class="time-countdown-pill" [class.live]="isLive(primarySession)">
+                  <ion-icon [name]="isLive(primarySession) ? 'radio-outline' : 'hourglass-outline'"></ion-icon>
+                  <span>{{ getTimeUntil(primarySession) }}</span>
                 </div>
-                <div class="time-remaining" *ngIf="!isLive(primarySession)">
-                  {{ getTimeUntil(primarySession) }}
-                </div>
+                <ion-icon name="chevron-forward" class="card-chevron" aria-hidden="true"></ion-icon>
               </div>
 
               <h3 class="session-title">{{ primarySession.title }}</h3>
 
-              <div class="session-info">
-                <div class="info-item">
-                  <ion-icon name="time-outline"></ion-icon>
-                  <span>
-                    {{ primarySession.startTime.toDate() | date:'shortTime' }} -
-                    {{ primarySession.endTime.toDate() | date:'shortTime' }}
-                  </span>
-                </div>
-                <div class="info-item">
+              <div
+                class="session-meta-row"
+                *ngIf="primarySession.location && primarySession.location.trim().length > 0"
+              >
+                <div class="meta-pill location-pill">
                   <ion-icon name="location-outline"></ion-icon>
                   <span>{{ primarySession.location }}</span>
                 </div>
@@ -165,9 +151,7 @@
                       primarySession.speaker.photoURL === 'null')
                   "
                 >
-                  {{
-                    primarySession.speaker.name[0]
-                  }}{{ primarySession.speaker.name.split(' ')[1]?.[0] || '' }}
+                  {{ primarySession.speaker.name[0] }}{{ primarySession.speaker.name.split(' ')[1]?.[0] || '' }}
                 </div>
 
                 <img
@@ -184,7 +168,7 @@
                   <div class="speaker-name">
                     {{ primarySession.speaker?.name }}
                   </div>
-                  <div class="speaker-role">
+                  <div class="speaker-role" *ngIf="primarySession.speaker?.title">
                     {{ primarySession.speaker?.title }}
                   </div>
                 </div>
@@ -194,29 +178,62 @@
 
           <!-- Secondary Upcoming Session -->
           <div
-            class="session-card next-session secondary"
+            class="session-card next-card secondary-card"
             *ngIf="isLive(primarySession) && secondarySession"
             (click)="goToAgendaSession(secondarySession)"
+            role="button"
+            tabindex="0"
           >
             <div class="card-content">
               <div class="session-header">
-                <div class="status-badge next">UP NEXT</div>
-                <div class="time-remaining">
-                  {{ getTimeUntil(secondarySession) }}
+                <div class="time-countdown-pill">
+                  <ion-icon name="hourglass-outline"></ion-icon>
+                  <span>{{ getTimeUntil(secondarySession) }}</span>
                 </div>
+                <ion-icon name="chevron-forward" class="card-chevron" aria-hidden="true"></ion-icon>
               </div>
+
               <h3 class="session-title">{{ secondarySession.title }}</h3>
-              <div class="session-info">
-                <div class="info-item">
-                  <ion-icon name="time-outline"></ion-icon>
-                  <span>
-                    {{ secondarySession.startTime.toDate() | date:'shortTime' }} -
-                    {{ secondarySession.endTime.toDate() | date:'shortTime' }}
-                  </span>
-                </div>
-                <div class="info-item">
+
+              <div
+                class="session-meta-row"
+                *ngIf="secondarySession.location && secondarySession.location.trim().length > 0"
+              >
+                <div class="meta-pill location-pill">
                   <ion-icon name="location-outline"></ion-icon>
                   <span>{{ secondarySession.location }}</span>
+                </div>
+              </div>
+
+              <div class="speaker-info" *ngIf="shouldDisplaySpeaker(secondarySession)">
+                <div
+                  class="avatar"
+                  *ngIf="
+                    secondarySession.speaker &&
+                    (!secondarySession.speaker.photoURL ||
+                      secondarySession.speaker.photoURL === 'null')
+                  "
+                >
+                  {{ secondarySession.speaker.name[0] }}{{ secondarySession.speaker.name.split(' ')[1]?.[0] || '' }}
+                </div>
+
+                <img
+                  *ngIf="
+                    secondarySession.speaker?.photoURL &&
+                    secondarySession.speaker?.photoURL !== 'null'
+                  "
+                  [src]="secondarySession.speaker?.photoURL"
+                  alt="{{ secondarySession.speaker?.name }}"
+                  class="avatar-img"
+                />
+
+                <div class="speaker-details">
+                  <div class="speaker-name">
+                    {{ secondarySession.speaker?.name }}
+                  </div>
+                  <div class="speaker-role" *ngIf="secondarySession.speaker?.title">
+                    {{ secondarySession.speaker?.title }}
+                  </div>
                 </div>
               </div>
             </div>

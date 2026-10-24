@@ -8,7 +8,7 @@
   justify-content: center;
   padding: 1rem;
   border-radius: 12px;
-  background: var(--holcim-dark-blue);
+  background: var(--holcim-premium-blue);
   color: var(--white);
   box-shadow: 0 -2px 10px rgba(var(--black-rgb), 0.3);
 
@@ -53,7 +53,7 @@
 
         &:first-child {
           background-color: var(--white);
-          color: var(--holcim-dark-blue);
+          color: var(--holcim-premium-blue);
         }
 
         &.close {
@@ -90,7 +90,7 @@
   border-radius: 24px;
   padding: 30px 26px 22px;
   background: var(--white);
-  color: var(--holcim-dark-blue);
+  color: var(--holcim-premium-blue);
   box-shadow: 0 24px 70px rgba(var(--black-rgb), 0.34);
   text-align: center;
   animation: notification-dialog-in 240ms cubic-bezier(0.2, 0.8, 0.2, 1);
@@ -107,7 +107,7 @@
       width: 42px;
       height: 42px;
       fill: none;
-      stroke: var(--holcim-dark-blue);
+      stroke: var(--holcim-premium-blue);
       stroke-linecap: round;
       stroke-linejoin: round;
       stroke-width: 2.6;
@@ -126,7 +126,7 @@
   .notification-permission-copy {
     h2 {
       margin: 0 0 8px;
-      color: var(--holcim-dark-blue);
+      color: var(--holcim-premium-blue);
       font-size: clamp(1.35rem, 5vw, 1.65rem);
       font-weight: 750;
       line-height: 1.2;
@@ -179,11 +179,11 @@
   }
 
   .notification-permission-enable {
-    background: linear-gradient(135deg, var(--holcim-dark-blue), var(--holcim-dark-turquoise));
+    background: var(--holcim-premium-blue);
     color: var(--white);
 
     &:hover:not(:disabled) {
-      background: linear-gradient(135deg, var(--holcim-dark-blue), var(--holcim-dark-blue));
+      background: #03122c;
     }
   }
 
@@ -194,7 +194,7 @@
 
     &:hover:not(:disabled) {
       background: var(--background-color);
-      color: var(--holcim-dark-blue);
+      color: var(--holcim-premium-blue);
     }
   }
 }

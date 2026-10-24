@@ -29,8 +29,13 @@
   <!-- SEO: Add meta description (currently missing) -->
   <meta name="description" content="AMEA 2026 Conference - Connect, network, and explore event schedules, venues, and sessions."/>
   
-  <!-- PWA Theme Color -->
-  <meta name="theme-color" content="#1d4370"/>
+  <!-- PWA Theme Color: Holcim Premium Blue (#041739) per 2025 Brand Guidelines -->
+  <meta name="theme-color" content="#041739"/>
+
+  <!-- Google Fonts: Official Fallbacks (Montserrat for headlines, Reddit Sans for copy) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,700;0,800;0,900;1,400;1,700&family=Reddit+Sans:ital,wght@0,400;0,600;0,700;0,800;1,400;1,600&display=swap" rel="stylesheet">
   
   <!-- iOS / Mobile PWA Meta Tags -->
   <meta name="mobile-web-app-capable" content="yes"/>
@@ -47,6 +52,11 @@
   <!-- Manifest -->
   <link rel="manifest" href="manifest.webmanifest">
   
+  <!-- PRELOAD: Holcim Brand Fonts -->
+  <link rel="preload" href="/assets/fonts/Holcim-Regular.ttf" as="font" type="font/ttf" crossorigin>
+  <link rel="preload" href="/assets/fonts/Holcim-Bold.ttf" as="font" type="font/ttf" crossorigin>
+  <link rel="preload" href="/assets/fonts/Holcim-HeadlineBlack.ttf" as="font" type="font/ttf" crossorigin>
+  
   <!-- PERFORMANCE: Inline critical CSS to prevent layout shift -->
   <style>
     /* Prevent layout shift during initial load */
@@ -60,8 +70,33 @@
       min-height: 200px;
     }
     
-    /* Optimize font loading */
+    /* Holcim Brand Fonts */
     @font-face {
+      font-family: 'Holcim';
+      src: local('Holcim Regular'), local('Holcim-Regular'), url('/assets/fonts/Holcim-Regular.ttf') format('truetype');
+      font-weight: 400;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'Holcim';
+      src: local('Holcim Bold'), local('Holcim-Bold'), url('/assets/fonts/Holcim-Bold.ttf') format('truetype');
+      font-weight: 700;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'Holcim';
+      src: local('Holcim Headline Black'), local('Holcim-HeadlineBlack'), url('/assets/fonts/Holcim-HeadlineBlack.ttf') format('truetype');
+      font-weight: 900;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'Holcim Headline';
+      src: local('Holcim Headline Black'), local('Holcim-HeadlineBlack'), url('/assets/fonts/Holcim-HeadlineBlack.ttf') format('truetype');
+      font-weight: normal;
+      font-style: normal;
       font-display: swap;
     }
     
@@ -69,7 +104,8 @@
     body {
       margin: 0;
       padding: 0;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      font-family: 'Holcim', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --ion-font-family: 'Holcim', sans-serif;
     }
   </style>
 </head>

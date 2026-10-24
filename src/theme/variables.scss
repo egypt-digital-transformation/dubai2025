@@ -1,31 +1,117 @@
 :root {
-  --holcim-dark-blue: #1d4370;
-  --holcim-bright-green: #94c12e;
-  --holcim-bright-blue: #04bbf1;
-  --holcim-yellow: #ffd100;
-  --holcim-bright-red: #e4002b;
-  --holcim-fuchsia: #e6007e;
-  --holcim-orange: #ff671f;
-  --holcim-dark-red: #9a0039;
-  --holcim-violet: #662483;
-  --holcim-green: #009a44;
-  --holcim-dark-turquoise: #006d68;
-  --holcim-bright-turquoise: #00a499;
+  /* =========================================
+     ✅ HOLCIM MASTERBRAND TYPOGRAPHY
+     ========================================= */
+  --ion-font-family: 'Holcim', 'Reddit Sans', 'Reddit', Arial, sans-serif;
+  --ion-default-font: 'Holcim', 'Reddit Sans', 'Reddit', Arial, sans-serif;
+  --app-font-family: 'Holcim', 'Reddit Sans', 'Reddit', Arial, sans-serif;
+  --app-font-headline: 'Holcim Headline', 'Montserrat', 'Holcim', sans-serif;
 
-  --black: #000000;
+  /* =========================================
+     ✅ HOLCIM PRIMARY COLORS (2025 Refresh)
+     ========================================= */
+  --holcim-premium-blue: #041739; /* PANTONE 282 C, C100 M80 Y20 K70, R4 G23 B57 */
+  --holcim-premium-blue-rgb: 4, 23, 57;
+  --holcim-white: #ffffff;
+  --holcim-white-rgb: 255, 255, 255;
   --white: #ffffff;
-  --dark-gray: #575757;
-  --bright-gray: #8c8c8c;
+  --white-rgb: 255, 255, 255;
 
-  --app-background: #f5f6fa;
+  /* =========================================
+     ✅ HOLCIM SUPPORTING COLORS (Highlights & Accents)
+     ========================================= */
+  --holcim-bright-green: #94c12e; /* PANTONE 368 C, C50 M0 Y95 K0, R148 G193 B46 */
+  --holcim-bright-green-rgb: 148, 193, 46;
+
+  --holcim-medium-green: #4bb05b; /* PANTONE 7738 C, C70 M0 Y80 K0, R75 G176 B91 */
+  --holcim-medium-green-rgb: 75, 176, 91;
+
+  --holcim-bright-blue: #04bbf1;  /* PANTONE 298 C, C70 M0 Y0 K0, R4 G187 B241 */
+  --holcim-bright-blue-rgb: 4, 187, 241;
+
+  --holcim-medium-blue: #007fad;  /* PANTONE 2390 C, C80 M30 Y10 K15, R0 G127 B173 */
+  --holcim-medium-blue-rgb: 0, 127, 173;
+
+  --holcim-dark-blue: #1d4370;    /* PANTONE 7694 C, C90 M62 Y15 K37, R29 G67 B112 */
+  --holcim-dark-blue-rgb: 29, 67, 112;
+
+  /* =========================================
+     ✅ HOLCIM OFFICIAL GRAYSCALE
+     ========================================= */
+  --holcim-gray-01: #f6f6f6; /* K 05, R 246 G 246 B 246 */
+  --holcim-gray-01-rgb: 246, 246, 246;
+  --holcim-gray-02: #ececec; /* K 10, R 236 G 236 B 236 */
+  --holcim-gray-02-rgb: 236, 236, 236;
+  --holcim-gray-03: #d0d0d0; /* K 25, R 208 G 208 B 208 */
+  --holcim-gray-03-rgb: 208, 208, 208;
+  --holcim-gray-04: #9d9d9d; /* K 50, R 157 G 157 B 157 */
+  --holcim-gray-04-rgb: 157, 157, 157;
+  --holcim-black: #000000;   /* K 100, R 0 G 0 B 0 */
+  --holcim-black-rgb: 0, 0, 0;
+  --black: #000000;
+  --black-rgb: 0, 0, 0;
+
+  /* Backwards compatibility aliases for grayscale */
+  --dark-gray: var(--holcim-gray-04);
+  --dark-gray-rgb: var(--holcim-gray-04-rgb);
+  --bright-gray: var(--holcim-gray-03);
+  --bright-gray-rgb: var(--holcim-gray-03-rgb);
+
+  /* Functional alert colors */
+  --holcim-green: #009a44;
+  --holcim-green-rgb: 0, 154, 68;
+  --holcim-yellow: #ffd100;
+  --holcim-yellow-rgb: 255, 209, 0;
+  --holcim-bright-red: #e4002b;
+  --holcim-bright-red-rgb: 228, 0, 43;
+  --holcim-dark-turquoise: #007fad;
+  --holcim-dark-turquoise-rgb: 0, 127, 173;
+  --holcim-bright-turquoise: #04bbf1;
+  --holcim-bright-turquoise-rgb: 4, 187, 241;
+  --holcim-fuchsia: #e6007e;
+  --holcim-fuchsia-rgb: 230, 0, 126;
+  --holcim-orange: #ff671f;
+  --holcim-orange-rgb: 255, 103, 31;
+  --holcim-dark-red: #9a0039;
+  --holcim-dark-red-rgb: 154, 0, 57;
+  --holcim-violet: #1d4370;
+  --holcim-violet-rgb: 29, 67, 112;
+
+  /* =========================================
+     ✅ OFFICIAL HOLCIM GRADIENT SPECIFICATION
+     0-15%: Holcim Bright Green (#94c12e)
+     15-50%: Transition to Holcim Bright Blue (#04bbf1)
+     50-100%: Transition to Holcim Dark Blue (#1d4370)
+     ========================================= */
+  --holcim-gradient: linear-gradient(90deg, #94c12e 0%, #94c12e 15%, #04bbf1 50%, #1d4370 100%);
+  --holcim-gradient-to-right: linear-gradient(to right, #94c12e 0%, #94c12e 15%, #04bbf1 50%, #1d4370 100%);
+  --holcim-gradient-to-top: linear-gradient(to top, #94c12e 0%, #94c12e 15%, #04bbf1 50%, #1d4370 100%);
+  --holcim-gradient-135: linear-gradient(135deg, #94c12e 0%, #94c12e 15%, #04bbf1 50%, #1d4370 100%);
+  --holcim-gradient-vertical: linear-gradient(180deg, #94c12e 0%, #94c12e 15%, #04bbf1 50%, #1d4370 100%);
+
+  /* =========================================
+     ✅ APPLICATION SEMANTIC SYSTEM
+     ========================================= */
+  --app-primary: var(--holcim-premium-blue); /* #041739 - EAA Compliant Primary */
+  --app-primary-rgb: var(--holcim-premium-blue-rgb);
+  --app-secondary: var(--holcim-bright-green);
+  --app-secondary-rgb: var(--holcim-bright-green-rgb);
+
+  --app-background: var(--holcim-gray-01); /* #f6f6f6 - Clean, uncluttered background */
+  --app-background-rgb: var(--holcim-gray-01-rgb);
   --app-surface: var(--white);
-  --app-text: var(--holcim-dark-blue);
-  --app-text-muted: var(--dark-gray);
-  --app-text-subtle: var(--bright-gray);
-  --app-border: #e1e8ed;
-  --app-primary: var(--holcim-dark-blue);
-  --app-action: var(--holcim-bright-blue);
-  --app-accent: var(--holcim-bright-green);
+  --app-border: var(--holcim-gray-02);     /* #ececec */
+  --app-border-rgb: var(--holcim-gray-02-rgb);
+
+  --app-text: var(--holcim-premium-blue);  /* #041739 - Primary text */
+  --app-text-muted: #4a5568;
+  --app-text-subtle: var(--holcim-gray-04);
+
+  --app-action: var(--holcim-bright-blue); /* #04bbf1 */
+  --app-action-rgb: var(--holcim-bright-blue-rgb);
+  --app-accent: var(--holcim-bright-green); /* #94c12e */
+  --app-accent-rgb: var(--holcim-bright-green-rgb);
+
   --app-success: var(--holcim-green);
   --app-warning: var(--holcim-yellow);
   --app-error: var(--holcim-bright-red);
@@ -33,58 +119,46 @@
   --background-color: var(--app-background);
   --text-color: var(--app-text);
   --border-color: var(--app-border);
-  --primary-color: var(--holcim-bright-blue);
-  --secondary-color: var(--holcim-bright-green);
-  --accent-color: var(--holcim-bright-turquoise);
-  --error-color: var(--holcim-bright-red);
-  --success-color: var(--holcim-green);
-  --warning-color: var(--holcim-yellow);
+  --primary-color: var(--app-primary);
+  --secondary-color: var(--app-secondary);
+  --accent-color: var(--holcim-bright-blue);
+  --error-color: var(--app-error);
+  --success-color: var(--app-success);
+  --warning-color: var(--app-warning);
 
-  --black-rgb: 0, 0, 0;
-  --white-rgb: 255, 255, 255;
-  --dark-gray-rgb: 87, 87, 87;
-  --bright-gray-rgb: 140, 140, 140;
-  --app-background-rgb: 245, 246, 250;
-  --app-border-rgb: 225, 232, 237;
-  --holcim-dark-blue-rgb: 29, 67, 112;
-  --holcim-bright-green-rgb: 148, 193, 46;
-  --holcim-bright-blue-rgb: 4, 187, 241;
-  --holcim-yellow-rgb: 255, 209, 0;
-  --holcim-bright-red-rgb: 228, 0, 43;
-  --holcim-fuchsia-rgb: 230, 0, 126;
-  --holcim-orange-rgb: 255, 103, 31;
-  --holcim-dark-red-rgb: 154, 0, 57;
-  --holcim-violet-rgb: 102, 36, 131;
-  --holcim-green-rgb: 0, 154, 68;
-  --holcim-dark-turquoise-rgb: 0, 109, 104;
-  --holcim-bright-turquoise-rgb: 0, 164, 153;
-
+  /* =========================================
+     ✅ IONIC THEME TOKENS
+     ========================================= */
   --ion-color-primary: var(--app-primary);
-  --ion-color-primary-rgb: 29, 67, 112;
+  --ion-color-primary-rgb: var(--app-primary-rgb);
   --ion-color-primary-contrast: var(--white);
   --ion-color-primary-contrast-rgb: 255, 255, 255;
-  --ion-color-primary-shade: var(--holcim-dark-blue);
-  --ion-color-primary-tint: var(--holcim-bright-blue);
+  --ion-color-primary-shade: #03122c;
+  --ion-color-primary-tint: #1d2e4d;
+
   --ion-color-secondary: var(--holcim-bright-green);
-  --ion-color-secondary-rgb: 148, 193, 46;
-  --ion-color-secondary-contrast: var(--holcim-dark-blue);
-  --ion-color-secondary-contrast-rgb: 29, 67, 112;
-  --ion-color-secondary-shade: var(--holcim-bright-green);
-  --ion-color-secondary-tint: var(--holcim-bright-green);
+  --ion-color-secondary-rgb: var(--holcim-bright-green-rgb);
+  --ion-color-secondary-contrast: var(--holcim-premium-blue);
+  --ion-color-secondary-contrast-rgb: var(--holcim-premium-blue-rgb);
+  --ion-color-secondary-shade: #83ab29;
+  --ion-color-secondary-tint: #9fc743;
+
   --ion-color-success: var(--app-success);
-  --ion-color-success-rgb: 0, 154, 68;
+  --ion-color-success-rgb: var(--holcim-green-rgb);
   --ion-color-success-contrast: var(--white);
   --ion-color-success-contrast-rgb: 255, 255, 255;
   --ion-color-success-shade: var(--holcim-green);
   --ion-color-success-tint: var(--holcim-green);
+
   --ion-color-warning: var(--app-warning);
-  --ion-color-warning-rgb: 255, 209, 0;
-  --ion-color-warning-contrast: var(--holcim-dark-blue);
-  --ion-color-warning-contrast-rgb: 29, 67, 112;
+  --ion-color-warning-rgb: var(--holcim-yellow-rgb);
+  --ion-color-warning-contrast: var(--holcim-premium-blue);
+  --ion-color-warning-contrast-rgb: var(--holcim-premium-blue-rgb);
   --ion-color-warning-shade: var(--holcim-yellow);
   --ion-color-warning-tint: var(--holcim-yellow);
+
   --ion-color-danger: var(--app-error);
-  --ion-color-danger-rgb: 228, 0, 43;
+  --ion-color-danger-rgb: var(--holcim-bright-red-rgb);
   --ion-color-danger-contrast: var(--white);
   --ion-color-danger-contrast-rgb: 255, 255, 255;
   --ion-color-danger-shade: var(--holcim-bright-red);

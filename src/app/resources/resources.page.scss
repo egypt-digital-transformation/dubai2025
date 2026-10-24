@@ -16,7 +16,7 @@ $holcim-light-green: var(--border-color); // Subtle background highlight
 }
 
 .resource-library-header {
-  background: linear-gradient(to bottom right, var(--black) 0%, var(--black) 40%, var(--holcim-dark-blue) 100%);
+  background: linear-gradient(135deg, var(--holcim-premium-blue) 0%, #031027 65%, var(--holcim-dark-blue) 100%);
   border-radius: 0 0 1.25rem 1.25rem;
   color: var(--white);
   overflow: hidden;
@@ -208,7 +208,7 @@ $holcim-light-green: var(--border-color); // Subtle background highlight
 // HEADER SECTION  (mobile-first)
 // ============================================
 .header-gradient {
-  background: linear-gradient(to bottom right, var(--black) 0%, var(--black) 40%, var(--holcim-dark-blue) 100%);
+  background: linear-gradient(135deg, var(--holcim-premium-blue) 0%, #031027 65%, var(--holcim-dark-blue) 100%);
   padding: 4.5rem 1.25rem 3rem;  // ⬆️ more vertical padding on mobile
   position: relative;
   overflow: hidden;
@@ -602,12 +602,10 @@ $holcim-light-green: var(--border-color); // Subtle background highlight
 
 .holcim-gradient-line {
   border: 0;
-  height: 4px; /* thickness of the line */
-  margin: 1rem 0; /* spacing above and below */
-
-  /* Holcim gradient colors example */
-  background: linear-gradient(to right, var(--holcim-bright-blue), var(--holcim-bright-green));
-  border-radius: 2px;
+  height: 3px; /* standard stroke thickness */
+  margin: 1rem 0;
+  background: var(--holcim-gradient);
+  border-radius: 0; /* Square edges per Holcim Brand Guidelines */
 }
 
 .doc-icon {

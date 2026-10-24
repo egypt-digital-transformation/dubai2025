@@ -1,9 +1,9 @@
-// Holcim Brand Colors
-$holcim-dark-blue: var(--black);
-$holcim-medium-blue: var(--holcim-dark-blue);
-$holcim-light-blue: var(--holcim-dark-blue);
-$holcim-accent-blue: var(--holcim-dark-blue);
-$holcim-green: var(--holcim-bright-green);
+
+$holcim-premium-blue: var(--holcim-premium-blue);
+$holcim-dark-blue: var(--holcim-dark-blue);
+$holcim-medium-blue: var(--holcim-medium-blue);
+$holcim-bright-blue: var(--holcim-bright-blue);
+$holcim-bright-green: var(--holcim-bright-green);
 
 // Mobile-first approach
 .sso-content {
@@ -24,7 +24,7 @@ $holcim-green: var(--holcim-bright-green);
   align-items: center;
   min-height: 100vh;
   position: relative;
-  background: linear-gradient(135deg, $holcim-dark-blue 0%, $holcim-medium-blue 50%, $holcim-light-blue 100%);
+  background: linear-gradient(135deg, var(--holcim-premium-blue) 0%, #031027 60%, var(--holcim-dark-blue) 100%);
   transition: opacity 0.3s ease, transform 0.3s ease;
 
   &.hidden {
@@ -101,7 +101,7 @@ $holcim-green: var(--holcim-bright-green);
 
     .app-logo {
       font-size: 3.5rem;
-      color: $holcim-dark-blue;
+      color: $holcim-premium-blue;
       animation: fadeInScale 0.8s ease-out;
       filter: drop-shadow(0 4px 12px rgba(var(--black-rgb), 0.15));
     }
@@ -110,14 +110,14 @@ $holcim-green: var(--holcim-bright-green);
   h1 {
     font-size: 1.625rem;
     font-weight: 700;
-    color: $holcim-dark-blue;
+    color: $holcim-premium-blue;
     margin-bottom: 0.75rem;
     line-height: 1.3;
     animation: fadeInText 0.8s ease-out 0.2s both;
   }
 
   .subtitle {
-    color: $holcim-light-blue;
+    color: var(--app-text-muted);
     margin-bottom: 2rem;
     font-size: 1rem;
     font-weight: 500;
@@ -202,7 +202,7 @@ img.google-lg {
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(135deg, $holcim-dark-blue 0%, $holcim-medium-blue 50%, $holcim-light-blue 100%);
+  background: linear-gradient(135deg, var(--holcim-premium-blue) 0%, #031027 60%, var(--holcim-dark-blue) 100%);
   z-index: 9999;
   display: flex;
   align-items: center;

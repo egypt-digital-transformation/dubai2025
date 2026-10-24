@@ -10,7 +10,7 @@
 // HEADER SECTION  (mobile-first)
 // ============================================
 .header-gradient {
-  background: linear-gradient(to bottom right, var(--black) 0%, var(--black) 40%, var(--app-primary) 100%);
+  background: linear-gradient(135deg, var(--holcim-premium-blue) 0%, #031027 65%, var(--holcim-dark-blue) 100%);
   padding: 4.5rem 1.25rem 3rem;  // ⬆️ more vertical padding on mobile
   position: relative;
   overflow: hidden;
@@ -172,14 +172,13 @@
 
 .tabs-wrapper {
   background: var(--white);
-  border-radius: 0.75rem;
-  padding: 0.35rem;
+  border-radius: 10px;
+  padding: 4px;
   display: flex;
-  box-shadow: 0 3px 6px rgba(var(--holcim-dark-blue-rgb), 0.15);
-  border: 1px solid var(--app-border);
+  box-shadow: 0 2px 8px rgba(var(--holcim-dark-blue-rgb), 0.08);
+  border: 1px solid rgba(var(--black-rgb), 0.08);
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
-  transition: box-shadow 0.3s ease;
 
   &::-webkit-scrollbar {
     display: none;
@@ -188,12 +187,7 @@
   @media (min-width: 768px) {
     justify-content: center;
   }
-
-  .tabs-container.is-sticky & {
-    box-shadow: 0 6px 12px rgba(var(--holcim-dark-blue-rgb), 0.25);
-  }
 }
-
 
 .tab-btn {
   flex: 1;
@@ -202,11 +196,12 @@
   align-items: center;
   justify-content: center;
   gap: 0.4rem;
-  padding: 0.7rem 0.5rem;  // ⬆️ more comfortable tap target
-  border-radius: 0.5rem;
-  font-weight: 600;
-  font-size: 0.8rem;
-  text-transform: capitalize;
+  padding: 0.7rem 0.9rem;
+  border-radius: 8px;
+  font-family: var(--app-font-headline) !important;
+  font-weight: 700;
+  font-size: 0.88rem;
+  letter-spacing: 0.01em;
   transition: all 0.2s ease;
   background: transparent;
   color: var(--bright-gray);
@@ -219,27 +214,23 @@
   }
 
   &:hover:not(.active) {
-    background: var(--app-background);
+    background: #f1f5f9;
+    color: var(--holcim-premium-blue);
   }
 
   &.active {
-    background: var(--app-primary);
+    background: var(--holcim-premium-blue);
     color: var(--white);
-    box-shadow: 0 2px 4px rgba(var(--holcim-bright-blue-rgb), 0.25);
+    box-shadow: 0 2px 6px rgba(4, 23, 57, 0.2);
   }
 
   @media (min-width: 480px) {
-    padding: 0.75rem 0.75rem;
+    padding: 0.75rem 1.25rem;
   }
 
   @media (min-width: 768px) {
     min-width: 120px;
-    padding: 0.75rem 1rem;
-    font-size: 0.875rem;
-
-    ion-icon {
-      font-size: 1.1rem;
-    }
+    font-size: 0.92rem;
   }
 }
 
@@ -254,9 +245,10 @@
   margin: 0;
   
   &:hover {
-    color: var(--holcim-violet);
+    color: var(--holcim-bright-blue);
   }
 }
+
 // Sessions Container
 .sessions-container {
   padding: 16px;
@@ -265,41 +257,101 @@
 }
 
 .agenda-session-group {
-  margin-bottom: 1.25rem;
+  margin-bottom: 1rem;
 }
 
+// Group Header Toggle - Clean & Executive
 .agenda-label-toggle {
   width: 100%;
-  min-height: 3.5rem;
-  padding: 0.9rem 1rem;
+  min-height: 3.25rem;
+  padding: 0.8rem 1rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
-  border: 1px solid rgba(var(--black-rgb), 0.1);
-  border-left: 4px solid var(--app-primary);
-  border-radius: 12px;
-  background: var(--app-surface);
-  color: var(--app-primary);
-  font: inherit;
-  font-weight: 700;
+  gap: 0.75rem;
+  border: 1px solid rgba(var(--black-rgb), 0.08);
+  border-left: 4px solid var(--holcim-premium-blue);
+  border-radius: 10px;
+  background: var(--white);
+  color: var(--app-text);
+  font-family: var(--app-font-headline) !important;
+  font-weight: 800;
   text-align: left;
   cursor: pointer;
-  box-shadow: 0 1px 3px rgba(var(--black-rgb), 0.06);
+  box-shadow: 0 1px 3px rgba(var(--black-rgb), 0.04);
+  transition: background 0.2s ease, border-color 0.2s ease;
+
+  &:hover {
+    background: #f8fafc;
+  }
+
+  &.completed-group {
+    border-left-color: #4bb05b;
+    background: #fafcfb;
+
+    .agenda-label-title {
+      color: #244369;
+    }
+
+    &:hover {
+      background: #f3f8f4;
+    }
+  }
 
   &:focus-visible {
-    outline: 2px solid var(--app-action);
+    outline: 2px solid var(--holcim-bright-blue);
     outline-offset: 2px;
   }
 }
 
 .agenda-label-title {
+  font-family: var(--app-font-headline) !important;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--holcim-premium-blue);
+  letter-spacing: -0.01em;
   line-height: 1.35;
+  margin: 0;
+  flex: 1;
+}
+
+.agenda-label-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.completed-group-pill {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #2e7d32;
+  background: rgba(75, 176, 91, 0.12);
+  border: 1px solid rgba(75, 176, 91, 0.25);
+  padding: 2px 7px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+
+  ion-icon {
+    font-size: 0.78rem;
+  }
+}
+
+.group-count-badge {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #64748b;
+  background: #f1f5f9;
+  padding: 2px 7px;
+  border-radius: 10px;
 }
 
 .agenda-label-chevron {
   flex: 0 0 auto;
-  font-size: 1.25rem;
+  font-size: 1.1rem;
+  color: #64748b;
   transition: transform 0.2s ease;
 
   &.collapsed {
@@ -317,66 +369,154 @@
   }
 
   .material-icon-wrapper {
-    background: color-mix(in srgb, var(--session-accent) 10%, var(--white));
+    background: #f1f5f9;
   }
 }
 
-// Session Card
+// ============================================
+// SESSION CARDS & REFINED STATUS
+// ============================================
 .session-card {
-  background: var(--app-surface);
-  border-radius: 16px;
-  margin-bottom: 20px;
-  box-shadow: 0 1px 3px rgba(var(--black-rgb), 0.08);
-  border-left: 5px solid var(--app-primary);
+  background: var(--white);
+  border-radius: 12px;
+  margin-bottom: 12px;
+  box-shadow: 0 1px 4px rgba(var(--black-rgb), 0.05);
+  border: 1px solid #e2e8f0;
+  border-left: 4px solid var(--holcim-medium-blue);
   overflow: hidden;
-  transition: all 0.3s ease;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
 
   &:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 6px 20px rgba(var(--black-rgb), 0.1);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(var(--black-rgb), 0.08);
   }
 }
 
-// Time Badge
-.time-badge {
-  background: var(--app-primary);
-  color: var(--white);
-  padding: 10px 18px;
-  font-size: 13px;
-  font-weight: 700;
+// 1. LIVE NOW (Running session in progress)
+.session-card.session-status-live {
+  border-left: 4px solid #16a34a; // Refined emerald green
+  border-color: #cbd5e1;
+  border-left-color: #16a34a;
+  background: var(--white);
+  box-shadow: 0 2px 8px rgba(22, 163, 74, 0.12), 0 1px 3px rgba(0, 0, 0, 0.04);
+
+  .session-title {
+    color: var(--holcim-premium-blue);
+  }
+}
+
+// 2. PAST SESSIONS (Completed)
+.session-card.session-status-past {
+  border-left: 4px solid #94a3b8; // Clean muted slate
+  background: #f8fafc;
+  opacity: 0.9;
+
+  &:hover {
+    opacity: 1;
+    background: var(--white);
+  }
+
+  .session-title {
+    color: #475569;
+  }
+}
+
+// 3. REMAINING SESSIONS (Upcoming)
+.session-card.session-status-upcoming {
+  border-left: 4px solid var(--holcim-bright-blue);
+  background: var(--white);
+
+  .session-title {
+    color: var(--holcim-premium-blue);
+  }
+}
+
+// Topline & Badges
+.session-card-topline {
   display: flex;
   align-items: center;
-  gap: 6px;
-  border-bottom: 1px solid rgba(var(--white-rgb), 0.15);
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
 
-  .time-icon {
-    font-size: 14px;
+.session-time {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #475569;
+  background: #f1f5f9;
+
+  ion-icon {
+    font-size: 0.85rem;
+    color: #64748b;
   }
+}
+
+// Refined, Minimal Status Badges
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  padding: 3px 8px;
+  border-radius: 6px;
+
+  &.live {
+    background: #ecfdf5;
+    color: #047857;
+    border: 1px solid #a7f3d0;
+    font-weight: 700;
+  }
+
+  &.past {
+    background: #f1f5f9;
+    color: #64748b;
+    border: 1px solid #e2e8f0;
+
+    ion-icon {
+      font-size: 0.82rem;
+      color: #64748b;
+    }
+  }
+
+  &.upcoming {
+    background: #f0f9ff;
+    color: #0284c7;
+    border: 1px solid #bae6fd;
+
+    ion-icon {
+      font-size: 0.82rem;
+      color: #0284c7;
+    }
+  }
+}
+
+.live-indicator {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #10b981;
 }
 
 // Session Content
 .session-content {
-  padding: 20px;
-}
-
-// Category Tag
-.session-tags {
-  margin-bottom: 14px;
-
-  .category-tag {
-    padding: 5px 12px;
-    border-radius: 18px;
-    font-size: 11px;
-    font-weight: 700;
-    text-transform: uppercase;
-  }
+  padding: 16px 18px;
 }
 
 // Title
 .session-title {
-  font-size: 20px;
+  font-family: var(--app-font-family) !important;
+  font-size: 1.15rem;
   font-weight: 700;
-  color: var(--black);
+  color: var(--app-text);
   margin: 0 0 14px;
   line-height: 1.4;
 }
@@ -655,32 +795,15 @@ $holcim-green: var(--app-accent);
     align-items: center;
     display: flex;
     gap: 0.65rem;
-    justify-content: space-between;
+    justify-content: flex-start;
     min-width: 0;
-  }
-
-  .session-card-topline .category-tag {
-    background: color-mix(in srgb, var(--holcim-bright-turquoise) 9%, var(--white));
-    border-radius: 999px;
-    color: var(--holcim-dark-turquoise);
-    display: block;
-    flex: 0 1 auto;
-    font-size: 0.61rem;
-    font-weight: 750;
-    letter-spacing: 0.055em;
-    max-width: 52%;
-    overflow: hidden;
-    padding: 0.35rem 0.6rem;
-    text-overflow: ellipsis;
-    text-transform: uppercase;
-    white-space: nowrap;
   }
 
   .session-time {
     align-items: center;
     background: var(--app-background);
     border-radius: 999px;
-    color: var(--holcim-dark-blue);
+    color: var(--holcim-premium-blue);
     display: inline-flex;
     flex: 0 0 auto;
     font-size: 0.72rem;
@@ -696,12 +819,13 @@ $holcim-green: var(--app-accent);
   }
 
   .session-title {
+    font-family: var(--app-font-family) !important;
     color: var(--app-text);
     font-size: 1.08rem;
-    font-weight: 720;
-    letter-spacing: -0.015em;
+    font-weight: 700;
+    letter-spacing: -0.01em;
     line-height: 1.35;
-    margin: 0.75rem 0 0;
+    margin: 0.65rem 0 0;
     overflow-wrap: anywhere;
   }
 
@@ -793,9 +917,7 @@ $holcim-green: var(--app-accent);
       padding: 0.9rem;
     }
 
-    .session-card-topline .category-tag {
-      max-width: 48%;
-    }
+
 
     .session-time {
       font-size: 0.68rem;
@@ -1632,9 +1754,144 @@ $holcim-green: var(--app-accent);
 
 .sessions-container {
   opacity: 1;
-  transition: opacity 0.15s ease-in-out;
-  
-  &.transitioning {
-    opacity: 0;
+}
+
+/* Schedule Loading Placeholder & Skeletons */
+.tabs-skeleton {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.tab-btn-skeleton {
+  width: 72px;
+  height: 38px;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+  background-size: 200% 100%;
+  animation: holcimShimmer 1.5s infinite;
+
+  &.active {
+    width: 80px;
+    background: linear-gradient(90deg, #cbd5e1 25%, #e2e8f0 50%, #cbd5e1 75%);
+  }
+}
+
+.schedule-loading-placeholder {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding: 0.5rem 0 2rem;
+}
+
+.schedule-loading-badge {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  gap: 0.625rem;
+  padding: 0.5rem 0.875rem;
+  background: rgba(4, 23, 57, 0.04);
+  border: 1px solid rgba(4, 23, 57, 0.08);
+  border-radius: 9999px;
+  color: var(--holcim-dark-blue, #041739);
+  font-size: 0.8125rem;
+  font-weight: 600;
+
+  ion-spinner {
+    width: 16px;
+    height: 16px;
+    --color: var(--holcim-bright-blue, #00A3E0);
+  }
+}
+
+.skeleton-group-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.skeleton-group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.25rem 0.5rem;
+
+  .skeleton-pill {
+    width: 140px;
+    height: 20px;
+    border-radius: 6px;
+  }
+
+  .skeleton-badge {
+    width: 24px;
+    height: 20px;
+    border-radius: 9999px;
+  }
+}
+
+.skeleton-session-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem 1.125rem;
+  background: #ffffff;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+
+  .skeleton-card-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .skeleton-time {
+    width: 110px;
+    height: 16px;
+    border-radius: 4px;
+  }
+
+  .skeleton-status {
+    width: 65px;
+    height: 18px;
+    border-radius: 9999px;
+  }
+
+  .skeleton-title {
+    width: 75%;
+    height: 18px;
+    border-radius: 4px;
+  }
+
+  .skeleton-subtitle {
+    width: 45%;
+    height: 14px;
+    border-radius: 4px;
+  }
+
+  .skeleton-card-footer {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.25rem;
+  }
+
+  .skeleton-chip {
+    width: 60px;
+    height: 22px;
+    border-radius: 6px;
+  }
+}
+
+.skeleton-line {
+  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+  background-size: 200% 100%;
+  animation: holcimShimmer 1.5s ease-in-out infinite;
+}
+
+@keyframes holcimShimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
   }
 }

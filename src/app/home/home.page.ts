@@ -25,6 +25,21 @@ import {
   SafetyInductionSite,
   SafetyInductions,
 } from '../hse-induction/safety-induction-modal.component';
+import { addIcons } from 'ionicons';
+import {
+  timeOutline,
+  locationOutline,
+  hourglassOutline,
+  radioOutline,
+  chevronForward,
+  qrCodeOutline,
+  mapOutline,
+  bulbOutline,
+  checkmarkCircle,
+  trophy,
+  calendarOutline,
+  keyOutline,
+} from 'ionicons/icons';
 
 import {
   Firestore,
@@ -147,6 +162,20 @@ export class HomePage implements OnInit, OnDestroy {
     private zone: NgZone,
     private readonly adminPreview: AdminPreviewService
   ) {
+    addIcons({
+      timeOutline,
+      locationOutline,
+      hourglassOutline,
+      radioOutline,
+      chevronForward,
+      qrCodeOutline,
+      mapOutline,
+      bulbOutline,
+      checkmarkCircle,
+      trophy,
+      calendarOutline,
+      keyOutline,
+    });
   }
 
   ngOnInit() {

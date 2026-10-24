@@ -1,114 +1,263 @@
-<!-- HTML -->
-<div class="tips-page-container">
-
-  <!-- HEADER with gradient and overlay -->
-<div class="header-gradient">
-  <div class="header-top">
-    <h2 class="header-title">TIPS</h2>
-    <ion-button class="close-btn" fill="clear" (click)="goHome()">
-      <ion-icon name="close-outline" slot="icon-only"></ion-icon>
-    </ion-button>
-  </div>
-  <img src="assets/skyline.webp" alt="" class="header-overlay" />
-</div>
-
-  <!-- SCROLLABLE CONTENT -->
-  <ion-content class="tips-content-wrapper">
-    <div class="tips-container">
-      <dl class="tips-list">
-
-        <!-- Essential Info Section -->
-        <div class="section-header">
-          <h2>Essential Information</h2>
-        </div>
-
-        <div class="tip-item">
-          <dt>
-            <span class="icon">👔</span>
-            Dress Code
-          </dt>
-          <dd>
-            <div class="info-row">
-              <span class="value">Smart Casual</span>
-            </div>
-            <div class="info-row highlight">
-              <span class="label">Gala Dinner:</span>
-              <span class="value">Formal</span>
-            </div>
-          </dd>
-        </div>
-
-        <div class="tip-item">
-          <dt>
-            <span class="icon">💰</span>
-            Currency & Cash
-          </dt>
-          <dd>
-            <div class="info-row">
-              <span class="value-large">EGP</span>
-              <span class="subtext">(Egyptian Pound)</span>
-            </div>
-            <p>Credit cards widely accepted. Exchange at airport, hotels, or malls—rates are similar everywhere.</p>
-          </dd>
-        </div>
-
-        <div class="tip-item">
-          <dt>
-            <span class="icon">🔌</span>
-            Power
-          </dt>
-          <dd>
-            <div class="info-row">
-              <span class="label">Voltage:</span>
-              <span class="value">220V</span>
-            </div>
-            <div class="info-row">
-              <span class="label">Plug Type:</span>
-              <span class="value">C and F (European-style, two round pins)</span>
-            </div>
-          </dd>
-        </div>
-
-        <div class="section-header">
-          <h2>Make the Most of Your Stay</h2>
-        </div>
-
-        <div class="tip-item extended-stay-card">
-          <dt>
-            <span class="icon">🏛️</span>
-            Keep the adventure going
-          </dt>
-          <dd>
-            <p class="recommendation-intro">
-              Staying a little longer? Turn your post-event days into an unforgettable Egyptian
-              escape, filled with history, culture, and exceptional experiences.
-            </p>
-            <div class="recommendation">
-              <strong>🏛️ Wander through Old Cairo &amp; Khan el-Khalili</strong>
-              <p>
-                Step into the story of Islamic Cairo with a fascinating architectural walk, then
-                browse the vibrant lanes of Khan el-Khalili for handcrafted treasures and local
-                atmosphere.
-              </p>
-            </div>
-            <div class="recommendation">
-              <strong>✨ Meet the Royal Mummies at NMEC</strong>
-              <p>
-                Discover Egypt’s extraordinary past at the National Museum of Egyptian Civilization
-                and experience the captivating Royal Mummies exhibition.
-              </p>
-            </div>
-            <div class="recommendation">
-              <strong>🍽️ Indulge in Executive Dining</strong>
-              <p>
-                End your Cairo adventure in style with top-tier dining, from elegant Nile-side
-                restaurants in Zamalek to standout culinary experiences across West Cairo.
-              </p>
-            </div>
-          </dd>
-        </div>
-
-      </dl>
+<ion-content [fullscreen]="true" class="tips-content">
+  <!-- Header with Holcim Navy gradient and Cairo skyline -->
+  <header class="header-gradient">
+    <div class="header-nav">
+      <button type="button" class="back-pill-btn" (click)="goHome()" aria-label="Back to home">
+        <ion-icon name="arrow-back-outline"></ion-icon>
+        <span>Back</span>
+      </button>
+      <span class="header-badge">AHLAN &bull; CAIRO 2026</span>
     </div>
-  </ion-content>
-</div>
+
+    <div class="header-text-block">
+      <h1 class="header-title">Travel &amp; Stay Tips</h1>
+      <p class="header-subtitle">Essential guidelines and curated local recommendations for an exceptional experience in
+        Egypt.</p>
+    </div>
+
+    <img src="assets/skyline.webp" alt="" class="header-overlay" />
+  </header>
+
+  <!-- Page Body -->
+  <main class="tips-body">
+    <!-- Category Tabs / Filter Pills -->
+    <div class="tips-filter-row" role="tablist">
+      <button type="button" role="tab" class="filter-tab-pill" [class.active]="activeTab === 'essential'"
+        (click)="setTab('essential')">
+        <ion-icon name="information-circle-outline"></ion-icon>
+        <span>Essential Info</span>
+      </button>
+      <button type="button" role="tab" class="filter-tab-pill" [class.active]="activeTab === 'explore'"
+        (click)="setTab('explore')">
+        <ion-icon name="compass-outline"></ion-icon>
+        <span>Explore Cairo</span>
+      </button>
+    </div>
+
+    <!-- TAB 1: ESSENTIAL INFO -->
+    <section *ngIf="activeTab === 'essential'" class="tips-section" id="essential-section"
+      aria-label="Essential Information">
+      <div class="section-title-bar">
+        <span class="section-eyebrow">PRACTICAL GUIDE</span>
+        <h2>Everything you need for the event</h2>
+      </div>
+
+      <div class="cards-grid">
+        <!-- Dress Code Card -->
+        <article class="tip-card featured-border-blue">
+          <div class="card-icon-header">
+            <div class="card-icon-avatar blue">
+              <ion-icon name="shirt-outline"></ion-icon>
+            </div>
+            <div class="card-header-titles">
+              <span class="card-category">ATTIRE &amp; PROTOCOL</span>
+              <h3>Dress Code</h3>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="detail-row">
+              <span class="detail-label">Daily Sessions</span>
+              <span class="detail-badge smart-casual">Smart Casual</span>
+            </div>
+            <p class="detail-desc">Comfortable, business-appropriate clothing for keynotes, workshops, and daytime
+              networking.</p>
+
+            <div class="detail-row highlight-row">
+              <span class="detail-label">Gala Dinner</span>
+              <span class="detail-badge gala-formal">Formal </span>
+            </div>
+            <p class="detail-desc">Suits or blazers for gentlemen; elegant evening or cocktail attire for ladies.</p>
+
+            <div class="tip-callout">
+              <ion-icon name="sparkles-outline"></ion-icon>
+              <span>Conference halls are well air-conditioned; we recommend carrying a light jacket or blazer.</span>
+            </div>
+          </div>
+        </article>
+
+        <!-- Currency & Payments Card -->
+        <article class="tip-card featured-border-green">
+          <div class="card-icon-header">
+            <div class="card-icon-avatar green">
+              <ion-icon name="cash-outline"></ion-icon>
+            </div>
+            <div class="card-header-titles">
+              <span class="card-category">FINANCIAL</span>
+              <h3>Currency &amp; Payments</h3>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="detail-row">
+              <span class="detail-label">Official Currency</span>
+              <span class="currency-highlight">EGP <small>(Egyptian Pound)</small></span>
+            </div>
+            <p class="detail-desc">Major credit and debit cards (Visa, Mastercard) are widely accepted across the venue,
+              hotels, and upscale restaurants.</p>
+
+            <div class="key-facts-list">
+              <div class="fact-item">
+                <ion-icon name="checkmark-circle-outline"></ion-icon>
+                <span><strong>ATMs &amp; Exchange:</strong> Accessible on-site at the hotel lobby and Cairo
+                  International Airport.</span>
+              </div>
+              <div class="fact-item">
+                <ion-icon name="checkmark-circle-outline"></ion-icon>
+                <span><strong>Cash on Hand:</strong> It is advisable to carry some cash in Egyptian pounds for added convenience when visiting Egypt’s historical landmarks, cultural attractions, and traditional destinations.</span>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <!-- Power & Connectivity Card -->
+        <article class="tip-card">
+          <div class="card-icon-header">
+            <div class="card-icon-avatar cyan">
+              <ion-icon name="flash-outline"></ion-icon>
+            </div>
+            <div class="card-header-titles">
+              <span class="card-category">TECHNICAL</span>
+              <h3>Power &amp; Plugs</h3>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="specs-grid">
+              <div class="spec-box">
+                <span class="spec-label">Voltage</span>
+                <strong class="spec-value">220V</strong>
+                <span class="spec-sub">50 Hz standard</span>
+              </div>
+              <div class="spec-box">
+                <span class="spec-label">Plug Types</span>
+                <strong class="spec-value">Type C &amp; F</strong>
+                <span class="spec-sub">European 2-pin</span>
+              </div>
+            </div>
+            <p class="detail-desc mt-2">European round-pin sockets are standard across Egypt. Universal charging
+              stations are available in the delegate networking lounge.</p>
+          </div>
+        </article>
+
+
+
+        <!-- Health & Safety Card -->
+        <article class="tip-card">
+          <div class="card-icon-header">
+            <div class="card-icon-avatar red">
+              <ion-icon name="medkit-outline"></ion-icon>
+            </div>
+            <div class="card-header-titles">
+              <span class="card-category">WELLBEING</span>
+              <h3>Health &amp; Assistance</h3>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="key-facts-list">
+              <div class="fact-item">
+                <ion-icon name="checkmark-circle-outline"></ion-icon>
+                <span><strong>Event Help Desk:</strong> A dedicated concierge is stationed near the main foyer
+                  throughout event hours.</span>
+              </div>
+              <div class="fact-item">
+                <ion-icon name="checkmark-circle-outline"></ion-icon>
+                <span><strong>Hydration:</strong> Complimentary mineral bottled water is provided in all conference
+                  halls and coaches.</span>
+              </div>
+              <div class="fact-item">
+                <ion-icon name="checkmark-circle-outline"></ion-icon>
+                <span><strong>Emergency Numbers:</strong> Police 122 &bull; Ambulance 123 &bull; Hotel Concierge Ext.
+                  0</span>
+              </div>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- TAB 2: EXPLORE CAIRO & EXTENDED STAY -->
+    <section *ngIf="activeTab === 'explore'" class="tips-section" id="explore-section"
+      aria-label="Explore Cairo">
+      <div class="section-title-bar">
+        <span class="section-eyebrow">LOCAL EXPERIENCES</span>
+        <h2>Make the Most of Your Stay in Egypt</h2>
+        <p class="section-desc">Extend your journey with handpicked cultural landmarks, culinary gems, and architectural
+          wonders.</p>
+      </div>
+
+      <div class="experiences-grid">
+        <!-- Experience 1: Old Cairo & Khan el-Khalili -->
+        <article class="experience-card">
+          <div class="exp-badge-top">
+            <span class="exp-category">HERITAGE &amp; SHOPPING</span>
+            <span class="exp-time"><ion-icon name="time-outline"></ion-icon> 2-3 Hours</span>
+          </div>
+          <h3 class="exp-title">Wander through Historic Cairo &amp; Khan el-Khalili</h3>
+          <p class="exp-desc">
+            Step into 1,000 years of living history. Walk along Al-Mu’izz Street—one of the world's richest
+            concentrations of medieval Islamic architecture—before exploring the historic lanes of Khan el-Khalili for
+            hand-crafted lanterns, aromatic spices, and traditional silversmiths.
+          </p>
+          <div class="exp-footer">
+            <span class="exp-tag">Must-Try</span>
+            <span class="exp-hint">Sip fresh mint tea at the historic El Fishawy Café (est. 1773).</span>
+          </div>
+        </article>
+
+        <!-- Experience 2: NMEC & Royal Mummies -->
+        <article class="experience-card highlight-exp">
+          <div class="exp-badge-top">
+            <span class="exp-category">WORLD-CLASS MUSEUM</span>
+            <span class="exp-time"><ion-icon name="time-outline"></ion-icon> 2 Hours</span>
+          </div>
+          <h3 class="exp-title">The Royal Mummies at NMEC</h3>
+          <p class="exp-desc">
+            The National Museum of Egyptian Civilization (NMEC) in Fustat offers a chronological journey through 5,000+
+            years of civilization. The centerpiece is the subterranean Royal Mummies Hall, featuring 22 ancient pharaohs
+            and queens displayed with state-of-the-art conservation technology.
+          </p>
+          <div class="exp-footer">
+            <span class="exp-tag">Highlight</span>
+            <span class="exp-hint">Overlooking Ain El Sira Lake with spectacular sunset views.</span>
+          </div>
+        </article>
+
+        <!-- Experience 3: Pyramids & Grand Egyptian Museum -->
+        <article class="experience-card">
+          <div class="exp-badge-top">
+            <span class="exp-category">ICONIC WONDER</span>
+            <span class="exp-time"><ion-icon name="time-outline"></ion-icon> Half Day</span>
+          </div>
+          <h3 class="exp-title">Giza Plateau &amp; The Grand Egyptian Museum (GEM)</h3>
+          <p class="exp-desc">
+            Stand in awe before the Great Pyramid of Khufu, the Sphinx, and the architectural triumph of the Grand
+            Egyptian Museum. Experience monumental statues, the grand staircase, and breathtaking panoramic views of the
+            pyramids.
+          </p>
+          <div class="exp-footer">
+            <span class="exp-tag">Architecture</span>
+            <span class="exp-hint">Book admission tickets online in advance for expedited entry.</span>
+          </div>
+        </article>
+
+        <!-- Experience 4: Nile-Side Fine Dining -->
+        <article class="experience-card">
+          <div class="exp-badge-top">
+            <span class="exp-category">CULINARY &amp; LIFESTYLE</span>
+            <span class="exp-time"><ion-icon name="time-outline"></ion-icon> Evening</span>
+          </div>
+          <h3 class="exp-title">Nile-Side Executive Dining &amp; Zamalek</h3>
+          <p class="exp-desc">
+            Celebrate the conclusion of the event at Cairo’s premier waterfront venues. Zamalek island hosts world-class
+            contemporary Mediterranean and authentic Middle Eastern dining on docked yachts and open-air riverside
+            terraces.
+          </p>
+          <div class="exp-footer">
+            <span class="exp-tag">Dining</span>
+            <span class="exp-hint">Reservations recommended for peak evening terrace tables.</span>
+          </div>
+        </article>
+      </div>
+    </section>
+
+
+  </main>
+</ion-content>

@@ -144,10 +144,6 @@
       {{ noticeMessage }}
     </ion-note>
 
-    <div *ngIf="isLoading && !dashboard" class="loading-state" role="status">
-      Loading admin data…
-    </div>
-
     <div
       id="admin-workspace"
       class="admin-workspace"
@@ -156,89 +152,116 @@
       [attr.aria-labelledby]="'admin-tab-' + selectedSection"
     >
     <ng-container *ngIf="selectedSection === 'overview'">
-      <ng-container *ngIf="dashboard as data; else overviewUnavailable">
-      <section id="overview" class="admin-overview" aria-labelledby="overview-heading">
-        <div class="overview-heading">
+      <!-- Overview Loading State -->
+      <section *ngIf="isLoading && !dashboard" class="panel-card admin-tab-loading" role="status" aria-live="polite">
+        <div class="admin-loading-badge">
+          <ion-spinner name="crescent" color="primary"></ion-spinner>
           <div>
-            <p class="eyebrow">AT A GLANCE</p>
-            <h2 id="overview-heading">Event adoption</h2>
+            <strong>Loading overview & metrics…</strong>
+            <span>Fetching delegate adoption and live statistics</span>
           </div>
-          <span class="count-pill">{{ data.totalAttendees }} delegate profiles</span>
         </div>
-        <div class="metric-grid" aria-label="App analytics">
-          <article class="metric-card">
-            <span class="metric-label">Active now</span>
-            <strong>{{ data.activeLoggedIn }}</strong>
-            <span class="metric-caption">Signed in and seen within 15 minutes</span>
-          </article>
-          <article class="metric-card">
-            <span class="metric-label">Signed in</span>
-            <strong>{{ data.totalLoggedIn }}</strong>
-            <span class="metric-caption">Unique attendee profiles observed signing in</span>
-          </article>
-          <article class="metric-card">
-            <span class="metric-label">Home-screen installs</span>
-            <strong>{{ data.installedUsers }}</strong>
-            <span class="metric-caption">Install detected for this attendee</span>
-          </article>
-          <article class="metric-card">
-            <span class="metric-label">Push-enabled</span>
-            <strong>{{ data.pushReadyUsers }}</strong>
-            <span class="metric-caption">Of {{ data.totalAttendees }} delegate profiles</span>
-          </article>
+        <div class="skeleton-metric-grid">
+          <div class="skeleton-metric-card" *ngFor="let m of [1, 2, 3, 4]">
+            <div class="skeleton-line skeleton-metric-label"></div>
+            <div class="skeleton-line skeleton-metric-val"></div>
+            <div class="skeleton-line skeleton-metric-sub"></div>
+          </div>
         </div>
-        <p class="refresh-caption">
-          Updated {{ data.refreshedAt | date:'mediumTime' }} · Refreshes every 30 seconds
-        </p>
-        <p class="metric-definition">
-          “Active now” means the signed-in app was visible recently; activity expires after
-          15 minutes without a heartbeat. Counts represent attendee profiles, not devices or tabs.
-          Home-screen installs are shown only when an install event or signed-in standalone launch
-          has been detected.
-        </p>
-        <section class="nationality-greetings panel-card" aria-labelledby="nationality-greetings-heading">
-          <div class="section-heading">
-            <div>
-              <p class="eyebrow">WELCOME IN EVERY LANGUAGE</p>
-              <h2 id="nationality-greetings-heading">Nationality greetings</h2>
-              <p class="subtitle">Greetings based on the nationalities in the attendee profiles.</p>
-            </div>
+        <div class="skeleton-panel-block">
+          <div class="skeleton-line skeleton-block-title"></div>
+          <div class="skeleton-table">
+            <div class="skeleton-table-header skeleton-line"></div>
+            <div class="skeleton-table-row skeleton-line" *ngFor="let r of [1, 2, 3]"></div>
           </div>
-          <div class="table-scroll" *ngIf="nationalityGreetings.length; else noNationalities">
-            <table class="nationality-table">
-              <thead>
-                <tr>
-                  <th scope="col">Nationality</th>
-                  <th scope="col">Greeting</th>
-                  <th scope="col">Attendees</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr *ngFor="let item of nationalityGreetings">
-                  <td>{{ item.nationality }}</td>
-                  <td class="greeting-cell" dir="auto">{{ item.greeting }}</td>
-                  <td>{{ item.attendeeCount }}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          <ng-template #noNationalities>
-            <p class="empty-state">No nationality information is available yet.</p>
-          </ng-template>
-        </section>
+        </div>
       </section>
-      </ng-container>
-      <ng-template #overviewUnavailable>
-        <section class="panel-card workspace-unavailable">
-          <p class="eyebrow">OVERVIEW</p>
-          <h2>Live metrics will appear here</h2>
-          <p>Connect to the admin service to see attendee adoption and activity.</p>
-          <ion-button fill="outline" (click)="loadDashboard()" [disabled]="isLoading">
-            <ion-icon slot="start" name="refresh-outline"></ion-icon>
-            Try again
-          </ion-button>
+
+      <ng-container *ngIf="!isLoading || dashboard">
+        <ng-container *ngIf="dashboard as data; else overviewUnavailable">
+        <section id="overview" class="admin-overview" aria-labelledby="overview-heading">
+          <div class="overview-heading">
+            <div>
+              <p class="eyebrow">AT A GLANCE</p>
+              <h2 id="overview-heading">Event adoption</h2>
+            </div>
+            <span class="count-pill">{{ data.totalAttendees }} delegate profiles</span>
+          </div>
+          <div class="metric-grid" aria-label="App analytics">
+            <article class="metric-card">
+              <span class="metric-label">Active now</span>
+              <strong>{{ data.activeLoggedIn }}</strong>
+              <span class="metric-caption">Signed in and seen within 15 minutes</span>
+            </article>
+            <article class="metric-card">
+              <span class="metric-label">Signed in</span>
+              <strong>{{ data.totalLoggedIn }}</strong>
+              <span class="metric-caption">Unique attendee profiles observed signing in</span>
+            </article>
+            <article class="metric-card">
+              <span class="metric-label">Home-screen installs</span>
+              <strong>{{ data.installedUsers }}</strong>
+              <span class="metric-caption">Install detected for this attendee</span>
+            </article>
+            <article class="metric-card">
+              <span class="metric-label">Push-enabled</span>
+              <strong>{{ data.pushReadyUsers }}</strong>
+              <span class="metric-caption">Of {{ data.totalAttendees }} delegate profiles</span>
+            </article>
+          </div>
+          <p class="refresh-caption">
+            Updated {{ data.refreshedAt | date:'mediumTime' }} · Refreshes every 30 seconds
+          </p>
+          <p class="metric-definition">
+            “Active now” means the signed-in app was visible recently; activity expires after
+            15 minutes without a heartbeat. Counts represent attendee profiles, not devices or tabs.
+            Home-screen installs are shown only when an install event or signed-in standalone launch
+            has been detected.
+          </p>
+          <section class="nationality-greetings panel-card" aria-labelledby="nationality-greetings-heading">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">WELCOME IN EVERY LANGUAGE</p>
+                <h2 id="nationality-greetings-heading">Nationality greetings</h2>
+                <p class="subtitle">Greetings based on the nationalities in the attendee profiles.</p>
+              </div>
+            </div>
+            <div class="table-scroll" *ngIf="nationalityGreetings.length; else noNationalities">
+              <table class="nationality-table">
+                <thead>
+                  <tr>
+                    <th scope="col">Nationality</th>
+                    <th scope="col">Greeting</th>
+                    <th scope="col">Attendees</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let item of nationalityGreetings">
+                    <td>{{ item.nationality }}</td>
+                    <td class="greeting-cell" dir="auto">{{ item.greeting }}</td>
+                    <td>{{ item.attendeeCount }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <ng-template #noNationalities>
+              <p class="empty-state">No nationality information is available yet.</p>
+            </ng-template>
+          </section>
         </section>
-      </ng-template>
+        </ng-container>
+        <ng-template #overviewUnavailable>
+          <section class="panel-card workspace-unavailable">
+            <p class="eyebrow">OVERVIEW</p>
+            <h2>Live metrics will appear here</h2>
+            <p>Connect to the admin service to see attendee adoption and activity.</p>
+            <ion-button fill="outline" (click)="loadDashboard()" [disabled]="isLoading">
+              <ion-icon slot="start" name="refresh-outline"></ion-icon>
+              Try again
+            </ion-button>
+          </section>
+        </ng-template>
+      </ng-container>
     </ng-container>
 
     <ng-container *ngIf="selectedSection === 'projects'">
@@ -256,7 +279,10 @@
       </div>
       <ion-note *ngIf="projectNotice" color="success" class="message success-message">{{ projectNotice }}</ion-note>
       <ion-note *ngIf="projectError && !isProjectFormOpen" color="danger" class="message error-message">{{ projectError }}</ion-note>
-      <div *ngIf="isLoadingProjects" class="loading-state">Loading projects…</div>
+      <div *ngIf="isLoadingProjects" class="admin-loading-badge inline-loader" role="status">
+        <ion-spinner name="crescent" color="primary"></ion-spinner>
+        <span>Loading project portfolio…</span>
+      </div>
       <div *ngIf="projectLoadError" class="message error-message">{{ projectLoadError }}</div>
 
       <form *ngIf="isProjectFormOpen" class="notification-form project-form" (ngSubmit)="saveProject()">
@@ -449,7 +475,10 @@
       </div>
       <ion-note *ngIf="resourceNotice" color="success" class="message success-message">{{ resourceNotice }}</ion-note>
       <ion-note *ngIf="resourceError && !isResourceFormOpen" color="danger" class="message error-message">{{ resourceError }}</ion-note>
-      <div *ngIf="isLoadingResources" class="loading-state">Loading resources?</div>
+      <div *ngIf="isLoadingResources" class="admin-loading-badge inline-loader" role="status">
+        <ion-spinner name="crescent" color="primary"></ion-spinner>
+        <span>Loading content library and resources…</span>
+      </div>
       <div *ngIf="resourceLoadError" class="message error-message">{{ resourceLoadError }}</div>
 
       <form *ngIf="isResourceFormOpen" class="notification-form project-form resource-form" (ngSubmit)="saveResource()">
@@ -796,7 +825,22 @@
     </ng-container>
 
     <ng-container *ngIf="selectedSection === 'flights'">
-      <section class="panel-card">
+      <!-- Flights Loading State -->
+      <section *ngIf="isLoading || (isLoadingAttendeeDetails && !attendeesWithFlights.length)" class="panel-card admin-tab-loading" role="status" aria-live="polite">
+        <div class="admin-loading-badge">
+          <ion-spinner name="crescent" color="primary"></ion-spinner>
+          <div>
+            <strong>Loading flight & travel details…</strong>
+            <span>Fetching attendee inbound and outbound flight information</span>
+          </div>
+        </div>
+        <div class="skeleton-table">
+          <div class="skeleton-table-header skeleton-line"></div>
+          <div class="skeleton-table-row skeleton-line" *ngFor="let r of [1, 2, 3, 4, 5]"></div>
+        </div>
+      </section>
+
+      <section class="panel-card" *ngIf="!isLoading && (!isLoadingAttendeeDetails || attendeesWithFlights.length)">
         <div class="section-heading">
           <div>
             <p class="eyebrow">TRAVEL DATA</p>
@@ -805,9 +849,10 @@
           </div>
           <span class="metric-caption">{{ attendeesWithFlights.length }} users</span>
         </div>
-        <ion-note *ngIf="isLoadingAttendeeDetails" color="medium" class="message">
-          Loading flight details…
-        </ion-note>
+        <div *ngIf="isLoadingAttendeeDetails" class="admin-loading-badge inline-loader" role="status">
+          <ion-spinner name="crescent" color="primary"></ion-spinner>
+          <span>Refreshing flight details…</span>
+        </div>
         <ion-note *ngIf="attendeeDetailsError" color="danger" class="message error-message">
           {{ attendeeDetailsError }}
           <ion-button fill="clear" (click)="retryAttendeeDetails()">Try again</ion-button>
@@ -861,14 +906,33 @@
     </ng-container>
 
     <ng-container *ngIf="selectedSection === 'requests'">
-      <section class="panel-card">
+      <!-- Requests Loading State -->
+      <section *ngIf="isLoadingRequests && !requests.length" class="panel-card admin-tab-loading" role="status" aria-live="polite">
+        <div class="admin-loading-badge">
+          <ion-spinner name="crescent" color="primary"></ion-spinner>
+          <div>
+            <strong>Loading help requests…</strong>
+            <span>Fetching concierge requests from delegates</span>
+          </div>
+        </div>
+        <div class="skeleton-table">
+          <div class="skeleton-table-header skeleton-line"></div>
+          <div class="skeleton-table-row skeleton-line" *ngFor="let r of [1, 2, 3, 4]"></div>
+        </div>
+      </section>
+
+      <section class="panel-card" *ngIf="!isLoadingRequests || requests.length">
         <div class="section-heading">
           <div>
             <p class="eyebrow">CONCIERGE</p>
             <h2>Help requests</h2>
             <p class="subtitle">Review attendee requests and send status updates or comments.</p>
           </div>
-          <ion-button fill="outline" (click)="loadRequests()">Refresh</ion-button>
+          <ion-button fill="outline" (click)="loadRequests()" [disabled]="isLoadingRequests">
+            <ion-spinner *ngIf="isLoadingRequests" name="crescent" slot="start"></ion-spinner>
+            <span *ngIf="!isLoadingRequests">Refresh</span>
+            <span *ngIf="isLoadingRequests">Loading…</span>
+          </ion-button>
         </div>
         <ion-note *ngIf="requestLoadError" color="danger" class="message error-message">
           {{ requestLoadError }}
@@ -1181,7 +1245,11 @@
           <p class="eyebrow">RESPONSES</p>
           <h2>Published quizzes and polls</h2>
         </div>
-        <ion-button fill="outline" (click)="loadAdminActivities()">Refresh results</ion-button>
+        <ion-button fill="outline" (click)="loadAdminActivities()" [disabled]="isLoadingActivities">
+          <ion-spinner *ngIf="isLoadingActivities" name="crescent" slot="start"></ion-spinner>
+          <span *ngIf="!isLoadingActivities">Refresh results</span>
+          <span *ngIf="isLoadingActivities">Loading…</span>
+        </ion-button>
       </div>
       <div class="unsupported-note" role="status">
         <strong>Activity lifecycle controls unavailable</strong>
@@ -1190,8 +1258,12 @@
           supported by the current admin service, so no close action is offered here.
         </span>
       </div>
+      <div *ngIf="isLoadingActivities && !adminActivities.length" class="admin-loading-badge inline-loader" role="status">
+        <ion-spinner name="crescent" color="primary"></ion-spinner>
+        <span>Loading quizzes and polls…</span>
+      </div>
       <p *ngIf="activityLoadError" class="metric-caption">{{ activityLoadError }}</p>
-      <div *ngIf="!activityLoadError && !adminActivities.length" class="empty-state">
+      <div *ngIf="!isLoadingActivities && !activityLoadError && !adminActivities.length" class="empty-state">
         <strong>No quizzes or polls yet</strong>
         <span>Published activities and their response counts will appear here.</span>
       </div>
@@ -1230,7 +1302,27 @@
     </ng-container>
 
     <ng-container *ngIf="selectedSection === 'attendees'">
-    <ng-container *ngIf="dashboard as data; else attendeesUnavailable">
+      <!-- Attendees Loading State -->
+      <section *ngIf="isLoading && !dashboard" class="panel-card admin-tab-loading" role="status" aria-live="polite">
+        <div class="admin-loading-badge">
+          <ion-spinner name="crescent" color="primary"></ion-spinner>
+          <div>
+            <strong>Loading attendee profiles…</strong>
+            <span>Retrieving user statuses, app adoption and safety inductions</span>
+          </div>
+        </div>
+        <div class="skeleton-toolbar">
+          <div class="skeleton-line skeleton-searchbar"></div>
+          <div class="skeleton-line skeleton-select"></div>
+        </div>
+        <div class="skeleton-table">
+          <div class="skeleton-table-header skeleton-line"></div>
+          <div class="skeleton-table-row skeleton-line" *ngFor="let r of [1, 2, 3, 4, 5, 6]"></div>
+        </div>
+      </section>
+
+      <ng-container *ngIf="!isLoading || dashboard">
+      <ng-container *ngIf="dashboard as data; else attendeesUnavailable">
       <section id="attendees" class="panel-card">
         <div class="section-heading">
           <div>
@@ -1242,9 +1334,10 @@
             Export CSV
           </ion-button>
         </div>
-        <ion-note *ngIf="isLoadingAttendeeDetails" color="medium" class="message">
-          Loading safety induction statuses…
-        </ion-note>
+        <div *ngIf="isLoadingAttendeeDetails" class="admin-loading-badge inline-loader" role="status">
+          <ion-spinner name="crescent" color="primary"></ion-spinner>
+          <span>Loading safety induction statuses…</span>
+        </div>
         <ion-note *ngIf="attendeeDetailsError" color="danger" class="message error-message">
           {{ attendeeDetailsError }}
           <ion-button fill="clear" (click)="retryAttendeeDetails()">Try again</ion-button>
@@ -1360,6 +1453,7 @@
         </ion-button>
       </section>
     </ng-template>
+    </ng-container>
     </ng-container>
     </div>
   </main>

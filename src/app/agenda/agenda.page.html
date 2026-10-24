@@ -27,7 +27,7 @@
 
     <!-- Day Selector -->
     <div class="tabs-container">
-      <div class="tabs-wrapper">
+      <div class="tabs-wrapper" *ngIf="availableDays.length > 0; else loadingDays">
         <button
           *ngFor="let day of availableDays"
           class="tab-btn"
@@ -37,51 +37,103 @@
           Day {{ day }}
         </button>
       </div>
+      <ng-template #loadingDays>
+        <div class="tabs-wrapper tabs-skeleton" *ngIf="isLoadingSchedule">
+          <div class="tab-btn-skeleton active"></div>
+          <div class="tab-btn-skeleton"></div>
+          <div class="tab-btn-skeleton"></div>
+        </div>
+      </ng-template>
     </div>
 
     <!-- Sessions List -->
-<div class="sessions-container" [class.transitioning]="isTransitioning">
-  <ng-container *ngIf="filteredSessionGroups.length > 0; else noSessions">
-    <section *ngFor="let group of filteredSessionGroups" class="agenda-session-group">
+    <div class="sessions-container">
+      <!-- Loading Placeholder -->
+      <div *ngIf="isLoadingSchedule" class="schedule-loading-placeholder" role="status" aria-live="polite">
+        <div class="schedule-loading-badge">
+          <ion-spinner name="crescent" color="primary"></ion-spinner>
+          <span>Loading schedule…</span>
+        </div>
+
+        <div class="skeleton-group-wrapper" *ngFor="let g of [1, 2]">
+          <div class="skeleton-group-header">
+            <div class="skeleton-line skeleton-pill"></div>
+            <div class="skeleton-line skeleton-badge"></div>
+          </div>
+          <div class="skeleton-session-card" *ngFor="let item of [1, 2]">
+            <div class="skeleton-card-top">
+              <div class="skeleton-line skeleton-time"></div>
+              <div class="skeleton-line skeleton-status"></div>
+            </div>
+            <div class="skeleton-line skeleton-title"></div>
+            <div class="skeleton-line skeleton-subtitle"></div>
+            <div class="skeleton-card-footer">
+              <div class="skeleton-line skeleton-chip"></div>
+              <div class="skeleton-line skeleton-chip"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <ng-container *ngIf="!isLoadingSchedule">
+        <ng-container *ngIf="filteredSessionGroups.length > 0; else noSessions">
+    <section *ngFor="let group of filteredSessionGroups; let gi = index" class="agenda-session-group">
       <button
         type="button"
         class="agenda-label-toggle"
-        [attr.aria-expanded]="!isGroupCollapsed(group.key)"
+        [class.completed-group]="isGroupCompleted(group)"
+        [style.--group-color]="getGroupColor(group, gi)"
+        [attr.aria-expanded]="!isGroupCollapsed(group)"
         [attr.aria-controls]="group.panelId"
-        (click)="toggleSessionGroup(group.key)"
+        (click)="toggleSessionGroup(group)"
       >
         <span class="agenda-label-title">{{ group.label }}</span>
-        <ion-icon
-          name="chevron-down-outline"
-          class="agenda-label-chevron"
-          [class.collapsed]="isGroupCollapsed(group.key)"
-          aria-hidden="true"
-        ></ion-icon>
+        <div class="agenda-label-right">
+          <span class="completed-group-pill" *ngIf="isGroupCompleted(group)">
+            <ion-icon name="checkmark-outline" aria-hidden="true"></ion-icon>
+            Completed
+          </span>
+          <span class="group-count-badge">{{ group.sessions.length }}</span>
+          <ion-icon
+            name="chevron-down-outline"
+            class="agenda-label-chevron"
+            [class.collapsed]="isGroupCollapsed(group)"
+            aria-hidden="true"
+          ></ion-icon>
+        </div>
       </button>
       <div
         [id]="group.panelId"
         class="agenda-label-sessions"
-        *ngIf="!isGroupCollapsed(group.key)"
+        *ngIf="!isGroupCollapsed(group)"
       >
       <article
         *ngFor="let session of group.sessions"
         #sessionCard
         class="session-card"
         [id]="session.id"
-        [style.--session-accent]="session.color || 'var(--holcim-dark-turquoise)'"
+        [ngClass]="'session-status-' + getSessionStatus(session)"
+        [style.--session-accent]="getSessionAccent(session, group, gi)"
       >
           <div class="session-content">
             <div class="session-card-topline">
-              <span
-                class="category-tag"
-                *ngIf="session.category && session.category !== 'general'"
-                [title]="formatCategory(session.category)"
-              >
-                {{ formatCategory(session.category) }}
-              </span>
               <span class="session-time" *ngIf="getSessionStartTime(session)">
                 <ion-icon name="time-outline" aria-hidden="true"></ion-icon>
                 {{ formatSessionTime(session) }}
+              </span>
+
+              <!-- Status Badges: Live, Past, Upcoming -->
+              <span class="status-badge live" *ngIf="getSessionStatus(session) === 'live'">
+                <span class="live-indicator"></span>
+                <span>Live Now</span>
+              </span>
+              <span class="status-badge past" *ngIf="getSessionStatus(session) === 'past'">
+                <ion-icon name="checkmark-outline" aria-hidden="true"></ion-icon>
+                <span>Completed</span>
+              </span>
+              <span class="status-badge upcoming" *ngIf="getSessionStatus(session) === 'upcoming'">
+                <ion-icon name="time-outline" aria-hidden="true"></ion-icon>
+                <span>Upcoming</span>
               </span>
             </div>
 
@@ -235,6 +287,7 @@
           </p>
         </div>
       </ng-template>
+      </ng-container>
     </div>
   </div>
 </ion-content>

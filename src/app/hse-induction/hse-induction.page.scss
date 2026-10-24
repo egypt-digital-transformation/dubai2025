@@ -1,13 +1,13 @@
-// Holcim Brand Colors
-$holcim-dark-blue: var(--black);
-$holcim-light-blue: var(--holcim-dark-blue);
+
+$holcim-premium-blue: var(--holcim-premium-blue);
+$holcim-dark-blue: var(--holcim-dark-blue);
 $holcim-green: var(--holcim-bright-green);
-$holcim-green-light: var(--holcim-bright-green);
+$holcim-green-light: var(--holcim-medium-green);
 
 .light-mode {
   color-scheme: light !important;
   --ion-background-color: var(--white) !important;
-  --ion-text-color: var(--black) !important;
+  --ion-text-color: var(--holcim-premium-blue) !important;
 }
 
 .hse-content {
@@ -19,7 +19,7 @@ $holcim-green-light: var(--holcim-bright-green);
 
 /* Gradient Header */
 .header-gradient {
-  background: linear-gradient(to bottom right, var(--black) 0%, var(--black) 40%, var(--holcim-dark-blue) 100%);
+  background: linear-gradient(135deg, var(--holcim-premium-blue) 0%, #031027 65%, var(--holcim-dark-blue) 100%);
   padding: 4.5rem 1.25rem 3rem;
   position: relative;
   overflow: hidden;
@@ -206,7 +206,7 @@ $holcim-green-light: var(--holcim-bright-green);
     margin-bottom: 0.75rem;
     font-size: 0.875rem;
     font-weight: 600;
-    color: $holcim-light-blue;
+    color: var(--holcim-bright-blue);
   }
 
   .progress-track {
@@ -217,7 +217,7 @@ $holcim-green-light: var(--holcim-bright-green);
 
     .progress-fill {
       height: 100%;
-      background: linear-gradient(90deg, $holcim-green 0%, $holcim-green-light 100%);
+      background: var(--holcim-gradient);
       transition: width 0.5s ease;
       border-radius: 1rem;
     }
@@ -250,7 +250,7 @@ $holcim-green-light: var(--holcim-bright-green);
   }
 
   .secondary-btn {
-    --color: #{$holcim-light-blue};
+    --color: var(--holcim-bright-blue);
     font-weight: 500;
     height: 3rem;
     font-size: 0.9375rem;

@@ -1,4 +1,120 @@
 /* =========================================
+   ✅ HOLCIM BRAND FONTS
+   ========================================= */
+@font-face {
+  font-family: 'Holcim';
+  src: local('Holcim Regular'), local('Holcim-Regular'),
+       url('/assets/fonts/Holcim-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Holcim';
+  src: local('Holcim Regular'), local('Holcim-Regular'),
+       url('/assets/fonts/Holcim-Regular.ttf') format('truetype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Holcim';
+  src: local('Holcim Bold'), local('Holcim-Bold'),
+       url('/assets/fonts/Holcim-Bold.ttf') format('truetype');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Holcim';
+  src: local('Holcim Bold'), local('Holcim-Bold'),
+       url('/assets/fonts/Holcim-Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Holcim';
+  src: local('Holcim Headline Black'), local('Holcim-HeadlineBlack'),
+       url('/assets/fonts/Holcim-HeadlineBlack.ttf') format('truetype');
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Holcim';
+  src: local('Holcim Headline Black'), local('Holcim-HeadlineBlack'),
+       url('/assets/fonts/Holcim-HeadlineBlack.ttf') format('truetype');
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Holcim Headline';
+  src: local('Holcim Headline Black'), local('Holcim-HeadlineBlack'),
+       url('/assets/fonts/Holcim-HeadlineBlack.ttf') format('truetype');
+  font-weight: 400 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --ion-font-family: 'Holcim', 'Reddit Sans', 'Reddit', Arial, sans-serif;
+  --ion-default-font: 'Holcim', 'Reddit Sans', 'Reddit', Arial, sans-serif;
+  --app-font-family: 'Holcim', 'Reddit Sans', 'Reddit', Arial, sans-serif;
+  --app-font-headline: 'Holcim Headline', 'Montserrat', 'Holcim', sans-serif;
+}
+
+html,
+body,
+ion-app,
+ion-content {
+  font-family: 'Holcim', 'Reddit Sans', 'Reddit', Arial, sans-serif;
+}
+
+h1,
+h2,
+h3,
+.holcim-headline {
+  font-family: 'Holcim Headline', 'Montserrat', 'Holcim', sans-serif;
+}
+
+/* Ensure form controls, buttons, and ionic elements use Holcim */
+button,
+input,
+optgroup,
+select,
+textarea,
+ion-toolbar,
+ion-title,
+ion-button,
+ion-item,
+ion-label,
+ion-input,
+ion-textarea,
+ion-select,
+ion-tab-bar,
+ion-tab-button,
+ion-card,
+ion-card-title,
+ion-card-subtitle,
+ion-card-content,
+ion-searchbar,
+ion-badge,
+ion-chip,
+ion-segment,
+ion-segment-button,
+ion-list-header {
+  font-family: 'Holcim', sans-serif;
+}
+
+/* =========================================
    ✅ CORE IONIC STYLES
    ========================================= */
 @import "@ionic/angular/css/core.css";
@@ -204,7 +320,7 @@ body {
   --ion-background-color-rgb: var(--white-rgb) !important;
   
   --ion-text-color: var(--app-text) !important;
-  --ion-text-color-rgb: var(--holcim-dark-blue-rgb) !important;
+  --ion-text-color-rgb: var(--holcim-premium-blue-rgb) !important;
   
   --ion-color-step-50: var(--background-color) !important;
   --ion-color-step-100: var(--border-color) !important;
@@ -254,7 +370,7 @@ ion-toast {
     --ion-background-color: var(--app-surface) !important;
     --ion-background-color-rgb: var(--white-rgb) !important;
     --ion-text-color: var(--app-text) !important;
-    --ion-text-color-rgb: var(--holcim-dark-blue-rgb) !important;
+    --ion-text-color-rgb: var(--holcim-premium-blue-rgb) !important;
   }
 
   ion-content {
@@ -371,4 +487,64 @@ ion-fab-button::part(native) {
   color: var(--white) !important;
   border-radius: 50% !important;
   box-shadow: 0 4px 12px rgba(var(--black-rgb), 0.3) !important;
+}
+
+/* =========================================
+   ✅ HOLCIM BRAND SIGNATURE UTILITIES (2025/2026 Refresh)
+   ========================================= */
+
+/* The Holcim Signature Stroke:
+   Used as dynamic underline (max 2 words) or accent line.
+   Strict square edges, gradient flowing Green -> Bright Blue -> Dark Blue */
+.holcim-signature-stroke {
+  position: relative;
+  display: inline-block;
+
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: -4px;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: var(--holcim-gradient);
+    border-radius: 0 !important; // Strict square edges per brand guidelines
+  }
+}
+
+/* Dedicated Holcim Accent Line */
+.holcim-gradient-line {
+  height: 3px;
+  width: 100%;
+  background: var(--holcim-gradient);
+  border-radius: 0 !important; // Straight edges per brand guidelines
+  margin: 0.5rem 0;
+}
+
+/* Holcim Gradient Headline Word Highlight (Page 23 - Non-standard use, sparingly) */
+.holcim-gradient-highlight {
+  background: var(--holcim-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  display: inline-block;
+}
+
+/* Holcim Master Brand Dark Header Surface (Page 13, 14 - Holcim Premium Blue) */
+.holcim-header-dark {
+  background: var(--holcim-premium-blue) !important;
+  color: var(--white) !important;
+
+  h1, h2, h3, .header-title {
+    color: var(--white) !important;
+  }
+}
+
+/* Holcim Master Brand Light Header Surface (Page 13, 14 - White with Premium Blue text) */
+.holcim-header-light {
+  background: var(--white) !important;
+  color: var(--holcim-premium-blue) !important;
+
+  h1, h2, h3, .header-title {
+    color: var(--holcim-premium-blue) !important;
+  }
 }

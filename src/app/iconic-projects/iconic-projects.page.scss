@@ -27,7 +27,7 @@
   overflow: hidden;
   background: var(--paper);
   color: var(--ink);
-  font-family: var(--ion-font-family, Arial, sans-serif);
+  font-family: var(--ion-font-family, 'Holcim', sans-serif);
 }
 
 .masthead {
@@ -111,7 +111,7 @@
 .opening-copy h1 {
   max-width: 720px;
   margin: 16px 0 13px;
-  font-family: Georgia, 'Times New Roman', serif;
+  font-family: 'Holcim Headline', 'Holcim', sans-serif;
   font-size: clamp(2.55rem, 8vw, 5rem);
   font-weight: 400;
   letter-spacing: -0.045em;
@@ -215,7 +215,7 @@
 
 .feature-caption h2 {
   margin: 10px 0 4px;
-  font-family: Georgia, 'Times New Roman', serif;
+  font-family: 'Holcim Headline', 'Holcim', sans-serif;
   font-size: clamp(2rem, 7vw, 4rem);
   font-weight: 400;
   letter-spacing: -0.035em;
@@ -260,7 +260,7 @@
 }
 
 .feature-metrics strong {
-  font-family: Georgia, 'Times New Roman', serif;
+  font-family: 'Holcim Headline', 'Holcim', sans-serif;
   font-size: 1.25rem;
   font-weight: 400;
 }
@@ -283,7 +283,7 @@
   top: 22px;
   right: 24px;
   color: rgba(var(--white-rgb), 0.86);
-  font-family: Georgia, 'Times New Roman', serif;
+  font-family: 'Holcim Headline', 'Holcim', sans-serif;
   font-size: 1rem;
   letter-spacing: 0.1em;
 }
@@ -297,7 +297,7 @@
   justify-content: center;
   gap: 8px;
   background:
-    linear-gradient(140deg, rgba(var(--holcim-dark-blue-rgb), 0.92), rgba(var(--holcim-dark-blue-rgb), 0.76)),
+    linear-gradient(140deg, rgba(var(--holcim-premium-blue-rgb), 0.94), rgba(var(--holcim-premium-blue-rgb), 0.82)),
     radial-gradient(ellipse at 68% 26%, rgba(var(--border-color-rgb), 0.36), transparent 38%);
   color: rgba(var(--white-rgb), 0.8);
   text-align: center;
@@ -312,7 +312,7 @@
 }
 
 .image-placeholder span {
-  font-family: Georgia, 'Times New Roman', serif;
+  font-family: 'Holcim Headline', 'Holcim', sans-serif;
   font-size: 1.55rem;
   letter-spacing: 0.04em;
 }
@@ -354,7 +354,7 @@
 
 .section-heading h2 {
   margin: 0;
-  font-family: Georgia, 'Times New Roman', serif;
+  font-family: 'Holcim Headline', 'Holcim', sans-serif;
   font-size: clamp(1.75rem, 5vw, 2.55rem);
   font-weight: 400;
   letter-spacing: -0.035em;
@@ -393,7 +393,7 @@
   top: 13px;
   left: 15px;
   color: var(--white);
-  font-family: Georgia, 'Times New Roman', serif;
+  font-family: 'Holcim Headline', 'Holcim', sans-serif;
   font-size: 0.9rem;
   text-shadow: 0 1px 5px rgba(var(--black-rgb), 0.45);
 }
@@ -420,7 +420,7 @@
 
 .card-title-row h3 {
   margin: 0;
-  font-family: Georgia, 'Times New Roman', serif;
+  font-family: 'Holcim Headline', 'Holcim', sans-serif;
   font-size: clamp(1.22rem, 3vw, 1.65rem);
   font-weight: 400;
   letter-spacing: -0.02em;
@@ -438,7 +438,7 @@
 
 .card-metric strong {
   color: var(--dark-gray);
-  font-family: Georgia, 'Times New Roman', serif;
+  font-family: 'Holcim Headline', 'Holcim', sans-serif;
   font-size: 1.15rem;
   font-weight: 400;
 }

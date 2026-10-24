@@ -7,9 +7,12 @@ import {
   ViewChildren,
   ViewChild,
   inject,
+  EnvironmentInjector,
+  runInInjectionContext,
+  ChangeDetectorRef,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { IonContent, IonIcon } from '@ionic/angular/standalone';
+import { IonContent, IonIcon, IonSpinner } from '@ionic/angular/standalone';
 import {
   Firestore,
   collection,
@@ -22,6 +25,18 @@ import { Auth } from '@angular/fire/auth';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { ActivatedRoute, Router, NavigationStart } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import { addIcons } from 'ionicons';
+import {
+  chevronDownOutline,
+  chevronForwardOutline,
+  timeOutline,
+  checkmarkOutline,
+  locationOutline,
+  businessOutline,
+  calendarOutline,
+  documentTextOutline,
+  closeOutline,
+} from 'ionicons/icons';
 import { interval, Subject, Subscription, takeUntil } from 'rxjs';
 import { filter } from 'rxjs/operators';
 import { AdminPreviewService } from '../services/admin-preview.service';
@@ -68,12 +83,19 @@ interface AgendaSessionGroup {
   standalone: true,
   templateUrl: './agenda.page.html',
   styleUrls: ['./agenda.page.scss'],
-  imports: [IonContent, IonIcon, CommonModule, FormsModule],
+  imports: [IonContent, IonIcon, IonSpinner, CommonModule, FormsModule],
 })
 export class AgendaPage implements OnInit, OnDestroy {
+  private readonly injector = inject(EnvironmentInjector);
   private readonly firebaseContext = inject(FirebaseInjectionContext);
+  private readonly cdr = inject(ChangeDetectorRef);
+
+  private runInContext<T>(operation: () => T): T {
+    return runInInjectionContext(this.injector, operation);
+  }
   selectedDay = '1';
   availableDays: string[] = [];
+  isLoadingSchedule = true;
   isTransitioning = false;
 
   @ViewChildren('sessionCard') sessionCards!: QueryList<ElementRef>;
@@ -100,7 +122,7 @@ export class AgendaPage implements OnInit, OnDestroy {
   private agendaDayDates: AgendaDayDate[] = [];
   private lastAutoSelectedDate = '';
   private hasAutoSelectedAgendaDay = false;
-  private readonly collapsedGroupKeys = new Set<string>();
+  private readonly userToggledGroupState = new Map<string, boolean>();
 
   constructor(
     private firestore: Firestore,
@@ -109,7 +131,19 @@ export class AgendaPage implements OnInit, OnDestroy {
     private route: ActivatedRoute,
     private router: Router,
     private readonly adminPreview: AdminPreviewService
-  ) {}
+  ) {
+    addIcons({
+      chevronDownOutline,
+      chevronForwardOutline,
+      timeOutline,
+      checkmarkOutline,
+      locationOutline,
+      businessOutline,
+      calendarOutline,
+      documentTextOutline,
+      closeOutline,
+    });
+  }
 
   ngOnInit() {
     console.log('[DEBUG] Initializing AgendaPage...');
@@ -138,6 +172,7 @@ export class AgendaPage implements OnInit, OnDestroy {
 
   ionViewWillEnter(): void {
     this.updateAgendaDayForCurrentDate();
+    this.cdr.detectChanges();
   }
 
   ngOnDestroy() {
@@ -165,6 +200,7 @@ export class AgendaPage implements OnInit, OnDestroy {
 
   async initializeAgenda(emailOverride?: string) {
     const loadId = ++this.agendaLoadId;
+    this.isLoadingSchedule = true;
     this.sessionsSubscription?.unsubscribe();
     this.userAgendaSubscription?.unsubscribe();
     this.sessionsSubscription = undefined;
@@ -180,11 +216,12 @@ export class AgendaPage implements OnInit, OnDestroy {
       this.sessions = [];
       this.filteredSessions = [];
       this.filteredSessionGroups = [];
-      this.collapsedGroupKeys.clear();
+      this.userToggledGroupState.clear();
       const user = this.auth.currentUser;
       const email = emailOverride ?? user?.email?.toLowerCase() ?? null;
       if (!email) {
         console.warn('[DEBUG] No authenticated user found.');
+        this.isLoadingSchedule = false;
         return;
       }
 
@@ -193,16 +230,17 @@ export class AgendaPage implements OnInit, OnDestroy {
 
       const usersRef = collection(this.firestore, 'users');
       const emailAddressQuery = query(usersRef, where('emailAddress', '==', this.userEmail));
-      let snapshot = await this.firebaseContext.run(() => getDocs(emailAddressQuery));
+      let snapshot = await this.runInContext(() => getDocs(emailAddressQuery));
       if (loadId !== this.agendaLoadId) return;
       if (snapshot.empty) {
         const emailQuery = query(usersRef, where('email', '==', this.userEmail));
-        snapshot = await this.firebaseContext.run(() => getDocs(emailQuery));
+        snapshot = await this.runInContext(() => getDocs(emailQuery));
         if (loadId !== this.agendaLoadId) return;
       }
 
       if (snapshot.empty) {
         console.warn(`[DEBUG] No user found with email ${this.userEmail}`);
+        this.isLoadingSchedule = false;
         return;
       }
 
@@ -211,7 +249,10 @@ export class AgendaPage implements OnInit, OnDestroy {
       console.log('[DEBUG] Loaded user:', this.currentUser);
 
       const userAgendaRef = collection(this.firestore, 'users', userDoc.id, 'agenda');
-      this.userAgendaSubscription = collectionData(userAgendaRef, { idField: 'id' }).subscribe({
+      const userAgenda$ = this.runInContext(() =>
+        collectionData(userAgendaRef, { idField: 'id' })
+      );
+      this.userAgendaSubscription = userAgenda$.subscribe({
         next: (documents: any[]) => {
           if (loadId !== this.agendaLoadId) return;
           const dayDocuments = documents.filter(
@@ -245,28 +286,39 @@ export class AgendaPage implements OnInit, OnDestroy {
               this.sessions.push(...this.mapUserAgendaSessions(dayDocument));
             });
             this.applyFilters();
+            this.isLoadingSchedule = false;
             return;
           }
 
           this.hasUserAgenda = false;
-          if (!this.sessionsSubscription) this.subscribeToSharedSessions();
+          if (!this.sessionsSubscription) {
+            this.subscribeToSharedSessions();
+          } else {
+            this.isLoadingSchedule = false;
+          }
         },
         error: (error) => {
           console.error('[AgendaPage] Failed to load the user agenda:', error);
           this.hasUserAgenda = false;
           if (loadId === this.agendaLoadId && !this.sessionsSubscription) {
             this.subscribeToSharedSessions();
+          } else {
+            this.isLoadingSchedule = false;
           }
         },
       });
     } catch (err) {
       console.error('[DEBUG] Error initializing agenda:', err);
+      this.isLoadingSchedule = false;
     }
   }
 
   private subscribeToSharedSessions() {
     const sessionsRef = collection(this.firestore, 'sessions');
-    this.sessionsSubscription = collectionData(sessionsRef, { idField: 'id' }).subscribe({
+    const sessions$ = this.runInContext(() =>
+      collectionData(sessionsRef, { idField: 'id' })
+    );
+    this.sessionsSubscription = sessions$.subscribe({
       next: (data: any[]) => {
         this.sessions = data || [];
         this.availableDays = [...new Set(
@@ -277,6 +329,7 @@ export class AgendaPage implements OnInit, OnDestroy {
         this.keepSelectedDayAvailable();
         console.log('[DEBUG] Total shared sessions loaded:', this.sessions.length);
         this.applyFilters();
+        this.isLoadingSchedule = false;
 
         this.route.queryParams.subscribe((params) => {
           const targetSessionId = params['sessionId'] || null;
@@ -287,6 +340,7 @@ export class AgendaPage implements OnInit, OnDestroy {
       },
       error: (error) => {
         console.error('[AgendaPage] Failed to load shared sessions:', error);
+        this.isLoadingSchedule = false;
       },
     });
   }
@@ -411,24 +465,64 @@ export class AgendaPage implements OnInit, OnDestroy {
       group.sessions.push(session);
     }
     this.filteredSessionGroups = [...groups.values()];
+    this.cdr.detectChanges();
 
     console.log('[DEBUG] Filtered sessions:', this.filteredSessions);
   }
 
-  isGroupCollapsed(groupKey: string): boolean {
-    return this.collapsedGroupKeys.has(groupKey);
+  isGroupCompleted(group: AgendaSessionGroup): boolean {
+    if (!group?.sessions || group.sessions.length === 0) return false;
+    return group.sessions.every((session) => this.getSessionStatus(session) === 'past');
   }
 
-  toggleSessionGroup(groupKey: string): void {
-    if (this.collapsedGroupKeys.has(groupKey)) {
-      this.collapsedGroupKeys.delete(groupKey);
-    } else {
-      this.collapsedGroupKeys.add(groupKey);
+  isGroupCollapsed(groupOrKey: AgendaSessionGroup | string): boolean {
+    const key = typeof groupOrKey === 'string' ? groupOrKey : groupOrKey.key;
+
+    // During search, expand all groups with matches so the user sees results
+    if (this.searchQuery && this.searchQuery.trim().length > 0) {
+      if (this.userToggledGroupState.has(key)) {
+        return this.userToggledGroupState.get(key)!;
+      }
+      return false;
     }
+
+    // If the user has explicitly clicked/toggled this group, respect their preference
+    if (this.userToggledGroupState.has(key)) {
+      return this.userToggledGroupState.get(key)!;
+    }
+
+    // Default: Completed groups (all sessions completed) are collapsed by default!
+    const group =
+      typeof groupOrKey === 'string'
+        ? this.filteredSessionGroups.find((g) => g.key === groupOrKey)
+        : groupOrKey;
+
+    if (group && this.isGroupCompleted(group)) {
+      return true;
+    }
+
+    return false;
+  }
+
+  toggleSessionGroup(groupOrKey: AgendaSessionGroup | string): void {
+    const key = typeof groupOrKey === 'string' ? groupOrKey : groupOrKey.key;
+    const currentlyCollapsed = this.isGroupCollapsed(groupOrKey);
+    this.userToggledGroupState.set(key, !currentlyCollapsed);
+    this.cdr.detectChanges();
   }
 
   private scrollToSession(sessionId: string | null, retries = 12) {
     if (!sessionId) return;
+
+    // If target session is inside a collapsed group, open it so the session can be seen
+    const parentGroup = this.filteredSessionGroups.find((g) =>
+      g.sessions.some((s) => s.id === sessionId)
+    );
+    if (parentGroup && this.isGroupCollapsed(parentGroup)) {
+      this.userToggledGroupState.set(parentGroup.key, false);
+      this.cdr.detectChanges();
+    }
+
     const target = this.sessionCards?.find(
       (card) => card.nativeElement.id === sessionId
     );
@@ -453,18 +547,14 @@ export class AgendaPage implements OnInit, OnDestroy {
   setSelectedDay(day: string) {
     if (!this.availableDays.includes(day)) return;
     if (this.selectedDay === day) return;
-    this.isTransitioning = true;
     this.selectedDay = day;
+    this.isTransitioning = false;
     this.applyFilters();
+    this.cdr.detectChanges();
 
-    requestAnimationFrame(() => {
-      requestAnimationFrame(async () => {
-        if (this.content) {
-          await this.content.scrollToPoint(0, 0, 0);
-          this.isTransitioning = false;
-        }
-      });
-    });
+    if (this.content) {
+      void this.content.scrollToPoint(0, 0, 0);
+    }
   }
 
   private keepSelectedDayAvailable() {
@@ -579,5 +669,49 @@ export class AgendaPage implements OnInit, OnDestroy {
     return !!session.material?.trim();
   }
 
+  getGroupColor(group: AgendaSessionGroup, index = 0): string {
+    const palette = [
+      '#04bbf1', // Holcim Bright Blue
+      '#94c12e', // Holcim Bright Green
+      '#007fad', // Holcim Medium Blue
+      '#4bb05b', // Holcim Medium Green
+      '#ffd100', // Holcim Warm Yellow
+      '#ff7a00', // Holcim Warm Orange
+      '#00a499', // Holcim Turquoise
+      '#1d4370', // Holcim Dark Blue
+    ];
+    const sessionWithColor = group.sessions.find(
+      (s) => s.color && s.color !== 'var(--holcim-dark-turquoise)'
+    );
+    if (sessionWithColor?.color) {
+      return sessionWithColor.color;
+    }
+    return palette[index % palette.length];
+  }
 
+  getSessionAccent(session: Session, group?: AgendaSessionGroup, groupIndex = 0): string {
+    if (session.color && session.color !== 'var(--holcim-dark-turquoise)') {
+      return session.color;
+    }
+    if (group) {
+      return this.getGroupColor(group, groupIndex);
+    }
+    return 'var(--holcim-bright-blue)';
+  }
+
+  getSessionStatus(session: Session): 'live' | 'past' | 'upcoming' {
+    const start = this.asDate(session.startTime);
+    const end = this.asDate(session.endTime);
+    if (!start || !end) return 'upcoming';
+
+    const now = new Date();
+
+    if (now >= end) {
+      return 'past';
+    }
+    if (now >= start && now < end) {
+      return 'live';
+    }
+    return 'upcoming';
+  }
 }

@@ -5,36 +5,7 @@
       <h1 id="notifications-title">Event updates</h1>
       <p class="notifications-intro">The latest from your event team.</p>
 
-      <section class="push-card" aria-label="Push notification settings">
-        <div class="push-card-copy">
-          <span class="push-card-icon">
-            <ion-icon name="notifications-outline" aria-hidden="true"></ion-icon>
-          </span>
-          <div>
-            <h2>
-              {{
-                isPermissionGranted
-                  ? 'Notifications enabled'
-                  : isPermissionDenied
-                    ? 'Notifications are turned off'
-                    : 'Enable event updates'
-              }}
-            </h2>
-            <p *ngIf="isPermissionGranted">
-              This device allows notifications. Push registration is maintained automatically.
-            </p>
-            <p *ngIf="!isPermissionGranted && !isPermissionDenied && isPushSupported">
-              Enable push notifications from the prompt to receive reminders and announcements.
-            </p>
-            <p *ngIf="isPermissionDenied">
-              Allow notifications in your device or browser settings, then reopen this tab.
-            </p>
-            <p *ngIf="!isPushSupported">
-              Push notifications aren’t available in this browser or device.
-            </p>
-          </div>
-        </div>
-      </section>
+    
 
       <p *ngIf="isLoading" class="list-message" role="status">Loading your notifications…</p>
       <div *ngIf="loadError" class="list-error" role="alert">

@@ -104,7 +104,9 @@ export class AdminPage implements OnInit, OnDestroy {
   activityError = '';
   showActivityResults: Record<string, boolean> = {};
   adminActivities: AdminInteractiveActivity[] = [];
+  isLoadingActivities = false;
   requests: AdminRequest[] = [];
+  isLoadingRequests = false;
   requestStatusOptions: RequestStatus[] = ['Open', 'In progress', 'Resolved'];
   savingRequestId: string | null = null;
   requestLoadError = '';
@@ -260,12 +262,15 @@ export class AdminPage implements OnInit, OnDestroy {
   }
 
   async loadRequests(): Promise<void> {
+    this.isLoadingRequests = true;
     try {
       this.requests = await this.adminService.loadAdminRequests();
       this.requestLoadError = '';
     } catch (error) {
       console.error('[AdminPage] Failed to load requests:', error);
       this.requestLoadError = 'Could not load help requests.';
+    } finally {
+      this.isLoadingRequests = false;
     }
   }
 
@@ -1266,6 +1271,7 @@ export class AdminPage implements OnInit, OnDestroy {
   }
 
   async loadAdminActivities(): Promise<void> {
+    this.isLoadingActivities = true;
     try {
       const result = await this.adminService.listAdminInteractiveActivities();
       this.adminActivities = result.activities;
@@ -1273,6 +1279,8 @@ export class AdminPage implements OnInit, OnDestroy {
     } catch (error) {
       console.error('[AdminPage] Failed to load quizzes and polls:', error);
       this.activityLoadError = 'Published quiz and poll results are unavailable.';
+    } finally {
+      this.isLoadingActivities = false;
     }
   }
 
