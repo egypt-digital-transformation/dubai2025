@@ -8,8 +8,8 @@ import { SwUpdate } from '@angular/service-worker';
 import { of } from 'rxjs';
 import { vi } from 'vitest';
 import { setupTestBed } from '@analogjs/vitest-angular/setup-testbed';
-import { AuthService } from './app/services/auth.service';
-import { AdminService } from './app/services/admin.service';
+import { AuthService } from '../../src/app/services/auth.service';
+import { AdminService } from '../../src/app/services/admin.service';
 
 if (typeof CSSStyleSheet !== 'undefined' && !('adoptedStyleSheets' in document)) {
   Object.defineProperty(document, 'adoptedStyleSheets', {

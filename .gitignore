@@ -73,3 +73,6 @@ Thumbs.db
 docs/admin-panel.md
 *.md
 docs/admin-panel.md
+!arch.md
+arch-diagram.svg
+arch.md

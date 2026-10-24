@@ -42,10 +42,6 @@ export interface AdminAttendee {
   name: string;
   firstName: string;
   nationality: string;
-  day2Group: string;
-  day3Type: string;
-  day3GroupAM: string;
-  day3GroupPM: string;
   participantsGroup: string;
   hasPushToken: boolean;
   loggedIn: boolean;
@@ -174,7 +170,7 @@ export type NotificationTarget =
   | { kind: 'users'; userIds: string[] }
   | {
       kind: 'segment';
-      field: 'day2.group' | 'day3.type' | 'day3.groupAM' | 'day3.groupPM' | 'participantsGroup' | 'plantVisit';
+      field: 'participantsGroup' | 'plantVisit';
       value: string;
     };
 
@@ -317,10 +313,6 @@ export class AdminService {
           name: asText(data['displayName'] ?? data['name']),
           firstName: asText(data['firstName']),
           nationality: asText(data['nationality']),
-          day2Group: asText((data['day2'] as { group?: unknown } | undefined)?.group),
-          day3Type: asText((data['day3'] as { type?: unknown } | undefined)?.type),
-          day3GroupAM: asText((data['day3'] as { groupAM?: unknown } | undefined)?.groupAM),
-          day3GroupPM: asText((data['day3'] as { groupPM?: unknown } | undefined)?.groupPM),
           participantsGroup: asText(data['participantsGroup']),
           hasPushToken: hasRegisteredPushToken(data),
           plantVisit: data['plantVisit'] === true,
@@ -846,10 +838,6 @@ export class AdminService {
         name,
         firstName: asText(data['firstName']),
         nationality: asText(data['nationality']),
-        day2Group: asText((data['day2'] as { group?: unknown } | undefined)?.group),
-        day3Type: asText((data['day3'] as { type?: unknown } | undefined)?.type),
-        day3GroupAM: asText((data['day3'] as { groupAM?: unknown } | undefined)?.groupAM),
-        day3GroupPM: asText((data['day3'] as { groupPM?: unknown } | undefined)?.groupPM),
         participantsGroup: asText(data['participantsGroup']),
         hasPushToken: hasRegisteredPushToken(data),
         loggedIn: false,

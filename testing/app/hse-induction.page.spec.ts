@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { HseInductionPage } from './hse-induction.page';
+import { HseInductionPage } from '../../src/app/hse-induction/hse-induction.page';
 
 describe('HseInductionPage', () => {
   let component: HseInductionPage;

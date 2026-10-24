@@ -128,9 +128,9 @@ export default defineConfig(({ mode }) => ({
   },
   test: {
     globals: true,
-    setupFiles: ['./test-setup.ts'],
+    setupFiles: ['../testing/app/test-setup.ts'],
     environment: 'jsdom',
-    include: ['**/*.spec.ts'],
+    include: ['../testing/app/**/*.spec.ts'],
     server: {
       deps: {
         inline: [/rxfire/, /@ionic/, /@angular\/fire/],

@@ -264,6 +264,59 @@
   margin: 0 auto;
 }
 
+.agenda-session-group {
+  margin-bottom: 1.25rem;
+}
+
+.agenda-label-toggle {
+  width: 100%;
+  min-height: 3.5rem;
+  padding: 0.9rem 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border: 1px solid rgba(4, 23, 57, 0.1);
+  border-left: 4px solid var(--app-primary);
+  border-radius: 12px;
+  background: var(--app-surface);
+  color: var(--app-primary);
+  font: inherit;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+
+  &:focus-visible {
+    outline: 2px solid var(--app-action);
+    outline-offset: 2px;
+  }
+}
+
+.agenda-label-title {
+  line-height: 1.35;
+}
+
+.agenda-label-chevron {
+  flex: 0 0 auto;
+  font-size: 1.25rem;
+  transition: transform 0.2s ease;
+
+  &.collapsed {
+    transform: rotate(-90deg);
+  }
+}
+
+.agenda-label-sessions {
+  display: grid;
+  gap: 0.75rem;
+  padding-top: 0.75rem;
+
+  .session-card {
+    margin-bottom: 0;
+  }
+}
+
 // Session Card
 .session-card {
   background: var(--app-surface);

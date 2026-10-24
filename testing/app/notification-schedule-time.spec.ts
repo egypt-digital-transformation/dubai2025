@@ -1,4 +1,4 @@
-import { egyptDateTimeToIso, formatEgyptDateTime } from './notification-schedule-time';
+import { egyptDateTimeToIso, formatEgyptDateTime } from '../../src/app/admin/notification-schedule-time';
 
 describe('Egypt notification schedule time', () => {
   it('converts Egypt wall time to the correct UTC instant', () => {

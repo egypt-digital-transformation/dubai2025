@@ -5,9 +5,8 @@ import {
   LoadingController,
   ModalController,
 } from '@ionic/angular';
-import { ImageUploadService } from '../../services/image-upload.service';
-
-import { NewPostModalComponent } from './new-post-modal.component';
+import { ImageUploadService } from '../../src/app/services/image-upload.service';
+import { NewPostModalComponent } from '../../src/app/network/new-post-modal/new-post-modal.component';
 
 describe('NewPostModalComponent', () => {
   let component: NewPostModalComponent;

@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 
-import { TabsPage } from './tabs.page';
+import { TabsPage } from '../../src/app/tabs/tabs.page';
 
 describe('TabsPage', () => {
   let component: TabsPage;

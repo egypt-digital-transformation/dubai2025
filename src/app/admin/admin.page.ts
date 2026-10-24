@@ -44,13 +44,7 @@ import countryData from '../../../node_modules/flag-icons/country.json';
 import { greetingForNationality, NationalityGreeting } from '../shared/nationality-greetings';
 import { egyptDateTimeToIso, formatEgyptDateTime } from './notification-schedule-time';
 
-type SegmentField =
-  | 'day2.group'
-  | 'day3.type'
-  | 'day3.groupAM'
-  | 'day3.groupPM'
-  | 'participantsGroup'
-  | 'plantVisit';
+type SegmentField = 'participantsGroup' | 'plantVisit';
 type AudienceKind = 'all' | 'users' | 'group' | 'plantVisitors';
 type AudienceContext = 'update' | 'activity';
 
@@ -1033,8 +1027,7 @@ export class AdminPage implements OnInit, OnDestroy {
     return (this.dashboard?.attendees ?? []).filter((attendee) => {
       const matchesQuery =
         !query ||
-        [attendee.name, attendee.email, attendee.id, attendee.day2Group, attendee.day3Type,
-          attendee.day3GroupAM, attendee.day3GroupPM]
+        [attendee.name, attendee.email, attendee.id]
           .some((value) => value.toLowerCase().includes(query));
       const matchesStatus =
         this.attendeeStatusFilter === 'all' ||
@@ -1051,12 +1044,10 @@ export class AdminPage implements OnInit, OnDestroy {
   }
 
   exportAttendees(): void {
-    const headers = ['Name', 'Email', 'ID', 'Logged in', 'Active', 'Installed', 'Push ready',
-      'Day 2 group', 'Day 3 type', 'Day 3 morning group', 'Day 3 afternoon group'];
+    const headers = ['Name', 'Email', 'ID', 'Logged in', 'Active', 'Installed', 'Push ready'];
     const rows = this.filteredAttendees.map((attendee) => [
       attendee.name, attendee.email, attendee.id, attendee.loggedIn, attendee.active,
-      attendee.installed, attendee.hasPushToken, attendee.day2Group, attendee.day3Type,
-      attendee.day3GroupAM, attendee.day3GroupPM,
+      attendee.installed, attendee.hasPushToken,
     ]);
     const csv = [headers, ...rows]
       .map((row) => row.map((value) => `"${String(value ?? '').replace(/"/g, '""')}"`).join(','))
@@ -1325,26 +1316,6 @@ export class AdminPage implements OnInit, OnDestroy {
   private buildSegments(attendees: AdminAttendee[]): AudienceSegment[] {
     const fields: { field: SegmentField; label: string; value: (attendee: AdminAttendee) => string }[] = [
       {
-        field: 'day2.group',
-        label: 'Day 2 group',
-        value: (attendee) => attendee.day2Group,
-      },
-      {
-        field: 'day3.type',
-        label: 'Day 3 track/type',
-        value: (attendee) => attendee.day3Type,
-      },
-      {
-        field: 'day3.groupAM',
-        label: 'Day 3 morning group',
-        value: (attendee) => attendee.day3GroupAM,
-      },
-      {
-        field: 'day3.groupPM',
-        label: 'Day 3 afternoon group',
-        value: (attendee) => attendee.day3GroupPM,
-      },
-      {
         field: 'participantsGroup',
         label: 'Participants group',
         value: (attendee) => attendee.participantsGroup,
@@ -1375,10 +1346,6 @@ export class AdminPage implements OnInit, OnDestroy {
     segment: AudienceSegment
   ): boolean {
     const values: Record<SegmentField, string> = {
-      'day2.group': attendee.day2Group,
-      'day3.type': attendee.day3Type,
-      'day3.groupAM': attendee.day3GroupAM,
-      'day3.groupPM': attendee.day3GroupPM,
       participantsGroup: attendee.participantsGroup,
       plantVisit: attendee.plantVisit ? 'true' : '',
     };

@@ -1,50 +1,115 @@
+import { randomUUID } from "node:crypto";
 import { getAuth } from "firebase-admin/auth";
 import { onRequest } from "firebase-functions/v2/https";
 import { onSchedule } from "firebase-functions/v2/scheduler";
-import { db, FieldValue, Timestamp } from "../shared/firebase.js";
+import { db, Timestamp } from "../shared/firebase.js";
 import { requireAdminIdentity } from "../shared/admin-auth.js";
 import {
   getPushRecipientsForUser,
   sendPushToRecipients,
 } from "../shared/push-delivery.js";
+import { getDueAgendaLabels } from "./session-reminder-utils.js";
 
-async function claimReminder(sessionRef) {
+const REMINDER_WINDOW_MS = 5 * 60 * 1000;
+const CLAIM_TIMEOUT_MS = 10 * 60 * 1000;
+
+function getUserLabel(userDoc, user) {
+  return user.emailAddress || user.email || userDoc.id;
+}
+
+function getReminderWindow(now = Timestamp.now()) {
+  return {
+    start: new Date(now.toMillis() - REMINDER_WINDOW_MS),
+    end: new Date(now.toMillis() + REMINDER_WINDOW_MS),
+  };
+}
+
+function matchesExpectedLabel(label, dueLabel) {
+  return (
+    label &&
+    typeof label === "object" &&
+    label.label === dueLabel.label &&
+    label.startTime === dueLabel.startTime
+  );
+}
+
+async function claimReminder(dayRef, dueLabel) {
   return db.runTransaction(async (transaction) => {
-    const sessionSnapshot = await transaction.get(sessionRef);
-    const session = sessionSnapshot.data();
-    if (!sessionSnapshot.exists || session?.reminderSent === true) {
-      return false;
+    const daySnapshot = await transaction.get(dayRef);
+    if (!daySnapshot.exists) {
+      return null;
     }
-    const claimedAt = session?.reminderClaimedAt;
+
+    const dayDocument = daySnapshot.data();
+    const labels = Array.isArray(dayDocument.labels)
+      ? [...dayDocument.labels]
+      : [];
+    const label = labels[dueLabel.index];
+    if (!matchesExpectedLabel(label, dueLabel) || label.reminderSent === true) {
+      return null;
+    }
+
+    const claimedAt = label.reminderClaimedAt;
     if (
       claimedAt?.toMillis &&
-      Timestamp.now().toMillis() - claimedAt.toMillis() < 10 * 60 * 1000
+      Timestamp.now().toMillis() - claimedAt.toMillis() < CLAIM_TIMEOUT_MS
+    ) {
+      return null;
+    }
+
+    const claimId = randomUUID();
+    labels[dueLabel.index] = {
+      ...label,
+      reminderClaimedAt: Timestamp.now(),
+      reminderClaimId: claimId,
+    };
+    transaction.update(dayRef, { labels });
+    return claimId;
+  });
+}
+
+async function updateReminderLabel(dayRef, dueLabel, claimId, update) {
+  return db.runTransaction(async (transaction) => {
+    const daySnapshot = await transaction.get(dayRef);
+    if (!daySnapshot.exists) {
+      return false;
+    }
+
+    const dayDocument = daySnapshot.data();
+    const labels = Array.isArray(dayDocument.labels)
+      ? [...dayDocument.labels]
+      : [];
+    const label = labels[dueLabel.index];
+    if (
+      !matchesExpectedLabel(label, dueLabel) ||
+      label.reminderClaimId !== claimId
     ) {
       return false;
     }
-    transaction.update(sessionRef, {
-      reminderClaimedAt: Timestamp.now(),
-    });
+
+    const updatedLabel = { ...label };
+    delete updatedLabel.reminderClaimedAt;
+    delete updatedLabel.reminderClaimId;
+    labels[dueLabel.index] = { ...updatedLabel, ...update };
+    transaction.update(dayRef, { labels });
     return true;
   });
 }
 
-async function releaseReminderClaim(sessionRef) {
-  await sessionRef.update({ reminderClaimedAt: FieldValue.delete() });
-}
-
-async function sendReminderForAgendaItem(user, recipients, sessionDoc) {
-  const claimed = await claimReminder(sessionDoc.ref);
-  if (!claimed) {
+async function sendReminderForLabel(user, recipients, dayDoc, dueLabel) {
+  const claimId = await claimReminder(dayDoc.ref, dueLabel);
+  if (!claimId) {
     return false;
   }
 
   try {
-    const session = sessionDoc.data();
     const results = await sendPushToRecipients(recipients, {
       title: "Session Starting Soon!",
-      body: `Your "${session.title}" is starting soon.`,
-      data: { sessionId: sessionDoc.id },
+      body: `Your "${dueLabel.label}" is starting soon.`,
+      data: {
+        dayNumber: String(dueLabel.dayNumber ?? ""),
+        agendaLabel: dueLabel.label,
+      },
       link: "/",
     });
     const successfulResults = results.filter((result) => result.success);
@@ -55,21 +120,57 @@ async function sendReminderForAgendaItem(user, recipients, sessionDoc) {
           .join(", ")}`
       );
     }
-    await sessionDoc.ref.update({
-      reminderSent: true,
-      reminderSentAt: Timestamp.now(),
-      reminderClaimedAt: FieldValue.delete(),
-      fcmMessageId: successfulResults[0].messageId,
-      fcmMessageIds: successfulResults
-        .map((result) => result.messageId)
-        .filter(Boolean),
-    });
-    console.log(`✅ Sent FCM reminder for "${session.title}" to ${user.email}`);
+
+    const markedSent = await updateReminderLabel(
+      dayDoc.ref,
+      dueLabel,
+      claimId,
+      {
+        reminderSent: true,
+        reminderSentAt: Timestamp.now(),
+        fcmMessageId: successfulResults[0].messageId,
+        fcmMessageIds: successfulResults
+          .map((result) => result.messageId)
+          .filter(Boolean),
+      }
+    );
+    if (!markedSent) {
+      throw new Error("Could not mark the agenda label reminder as sent.");
+    }
+
+    console.log(
+      `✅ Sent FCM reminder for "${dueLabel.label}" to ${user.email}`
+    );
     return true;
   } catch (error) {
-    await releaseReminderClaim(sessionDoc.ref);
+    await updateReminderLabel(dayDoc.ref, dueLabel, claimId, {});
     throw error;
   }
+}
+
+async function findDueLabelsForUser(userDoc, window) {
+  const agendaSnapshot = await db
+    .collection(`users/${userDoc.id}/agenda`)
+    .get();
+  return agendaSnapshot.docs.flatMap((dayDoc) =>
+    getDueAgendaLabels(dayDoc.data(), window.start, window.end).map(
+      (dueLabel) => ({ dayDoc, dueLabel })
+    )
+  );
+}
+
+async function processDueLabels(user, recipients, dueLabels, onError) {
+  let notificationsSent = 0;
+  for (const { dayDoc, dueLabel } of dueLabels) {
+    try {
+      if (await sendReminderForLabel(user, recipients, dayDoc, dueLabel)) {
+        notificationsSent++;
+      }
+    } catch (error) {
+      onError(error, dayDoc, dueLabel);
+    }
+  }
+  return notificationsSent;
 }
 
 export const sendSessionReminders = onSchedule(
@@ -79,11 +180,10 @@ export const sendSessionReminders = onSchedule(
   },
   async () => {
     try {
-      const now = Timestamp.now();
-      const fiveMinutesAgo = Timestamp.fromMillis(now.toMillis() - 5 * 60 * 1000);
-      const fiveMinutesFromNow = Timestamp.fromMillis(now.toMillis() + 5 * 60 * 1000);
-
-      console.log(`Checking agendas for sessions between ${fiveMinutesAgo.toDate()} and ${fiveMinutesFromNow.toDate()}`);
+      const window = getReminderWindow();
+      console.log(
+        `Checking agenda label start times between ${window.start} and ${window.end}`
+      );
 
       const usersSnapshot = await db.collection("users").get();
       if (usersSnapshot.empty) {
@@ -93,27 +193,28 @@ export const sendSessionReminders = onSchedule(
 
       for (const userDoc of usersSnapshot.docs) {
         const user = userDoc.data();
+        const userLabel = getUserLabel(userDoc, user);
         const recipients = getPushRecipientsForUser(userDoc);
-        if (!recipients.length) continue;
-
-        const agendaRef = db.collection(`users/${userDoc.id}/agenda`);
-        const agendaSnapshot = await agendaRef
-          .where("startTime", ">=", fiveMinutesAgo)
-          .where("startTime", "<=", fiveMinutesFromNow)
-          .where("reminderSent", "==", false)
-          .get();
-
-        if (agendaSnapshot.empty) continue;
-
-        console.log(`User ${user.email} has ${agendaSnapshot.size} sessions starting soon`);
-
-        for (const sessionDoc of agendaSnapshot.docs) {
-          try {
-            await sendReminderForAgendaItem(user, recipients, sessionDoc);
-          } catch (error) {
-            console.error(`❌ Failed to send FCM reminder for session ${sessionDoc.id} to ${user.email}:`, error);
-          }
+        if (!recipients.length) {
+          console.warn(
+            `Skipping session reminders for ${userLabel}: no valid FCM device token is registered.`
+          );
+          continue;
         }
+
+        const dueLabels = await findDueLabelsForUser(userDoc, window);
+        if (!dueLabels.length) {
+          continue;
+        }
+        console.log(
+          `User ${userLabel} has ${dueLabels.length} agenda labels starting soon`
+        );
+        await processDueLabels(user, recipients, dueLabels, (error, dayDoc) => {
+          console.error(
+            `❌ Failed to send FCM reminder for label in agenda ${dayDoc.id} to ${userLabel}:`,
+            error
+          );
+        });
       }
 
       console.log("Finished processing all user reminders.");
@@ -145,16 +246,17 @@ export const sendSessionRemindersManual = onRequest(
         await requireAdminIdentity(decodedToken);
       } catch (error) {
         if (error.code === "permission-denied") {
-          return res.status(403).json({ error: "Administrator access is required" });
+          return res
+            .status(403)
+            .json({ error: "Administrator access is required" });
         }
         throw error;
       }
 
-      const now = Timestamp.now();
-      const fiveMinutesAgo = Timestamp.fromMillis(now.toMillis() - 5 * 60 * 1000);
-      const fiveMinutesFromNow = Timestamp.fromMillis(now.toMillis() + 5 * 60 * 1000);
-
-      console.log(`[MANUAL] Checking agendas for sessions between ${fiveMinutesAgo.toDate()} and ${fiveMinutesFromNow.toDate()}`);
+      const window = getReminderWindow();
+      console.log(
+        `[MANUAL] Checking agenda label start times between ${window.start} and ${window.end}`
+      );
 
       const usersSnapshot = await db.collection("users").get();
       const results = [];
@@ -168,10 +270,11 @@ export const sendSessionRemindersManual = onRequest(
 
       for (const userDoc of usersSnapshot.docs) {
         const user = userDoc.data();
+        const userLabel = getUserLabel(userDoc, user);
         const recipients = getPushRecipientsForUser(userDoc);
         const userResult = {
           hasFcmToken: recipients.length > 0,
-          sessionsFound: 0,
+          labelsFound: 0,
           notificationsSent: 0,
           errors: [],
         };
@@ -182,52 +285,49 @@ export const sendSessionRemindersManual = onRequest(
           continue;
         }
 
-        const agendaRef = db.collection(`users/${userDoc.id}/agenda`);
-        const agendaSnapshot = await agendaRef
-          .where("startTime", ">=", fiveMinutesAgo)
-          .where("startTime", "<=", fiveMinutesFromNow)
-          .where("reminderSent", "==", false)
-          .get();
-
-        userResult.sessionsFound = agendaSnapshot.size;
-
-        if (!agendaSnapshot.empty) {
-          console.log(`[MANUAL] User ${user.email} has ${agendaSnapshot.size} sessions starting soon`);
-
-          for (const sessionDoc of agendaSnapshot.docs) {
-            try {
-              const sent = await sendReminderForAgendaItem(user, recipients, sessionDoc);
-              if (sent) {
-                userResult.notificationsSent++;
-              }
-            } catch (error) {
-              const errorMsg = `Failed to send FCM notification for session "${sessionDoc.data().title}": ${error.message}`;
-              userResult.errors.push(errorMsg);
-              console.error(`[MANUAL] ❌ ${errorMsg}`);
-            }
+        const dueLabels = await findDueLabelsForUser(userDoc, window);
+        userResult.labelsFound = dueLabels.length;
+        userResult.notificationsSent = await processDueLabels(
+          user,
+          recipients,
+          dueLabels,
+          (error, dayDoc, dueLabel) => {
+            const errorMessage =
+              `Failed to send FCM notification for label "${dueLabel.label}" ` +
+              `in agenda ${dayDoc.id} for ${userLabel}: ${error.message}`;
+            userResult.errors.push(errorMessage);
+            console.error(`[MANUAL] ❌ ${errorMessage}`);
           }
-        }
-
+        );
         results.push(userResult);
       }
 
-      const totalNotifications = results.reduce((sum, r) => sum + r.notificationsSent, 0);
-      const totalSessions = results.reduce((sum, r) => sum + r.sessionsFound, 0);
+      const totalNotifications = results.reduce(
+        (sum, result) => sum + result.notificationsSent,
+        0
+      );
+      const totalLabels = results.reduce(
+        (sum, result) => sum + result.labelsFound,
+        0
+      );
 
-      console.log(`[MANUAL] Finished. Sent ${totalNotifications} notifications for ${totalSessions} sessions`);
+      console.log(
+        `[MANUAL] Finished. Sent ${totalNotifications} notifications for ${totalLabels} agenda labels`
+      );
 
       return res.status(200).json({
         message: "Manual FCM reminder check complete",
         timestamp: new Date().toISOString(),
         checkWindow: {
-          start: fiveMinutesAgo.toDate(),
-          end: fiveMinutesFromNow.toDate(),
+          start: window.start,
+          end: window.end,
         },
         summary: {
           totalUsers: results.length,
-          totalSessions: totalSessions,
+          totalLabels,
           totalNotificationsSent: totalNotifications,
-          usersWithoutFcmToken: results.filter(r => !r.hasFcmToken).length,
+          usersWithoutFcmToken: results.filter((result) => !result.hasFcmToken)
+            .length,
         },
       });
     } catch (error) {

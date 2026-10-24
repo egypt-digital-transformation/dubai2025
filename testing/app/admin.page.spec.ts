@@ -1,8 +1,8 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { AlertController } from '@ionic/angular';
 import { vi } from 'vitest';
-import { AdminDashboard, AdminService } from '../services/admin.service';
-import { AdminPage } from './admin.page';
+import { AdminDashboard, AdminService } from '../../src/app/services/admin.service';
+import { AdminPage } from '../../src/app/admin/admin.page';
 
 describe('AdminPage', () => {
   let fixture: ComponentFixture<AdminPage>;
@@ -36,10 +36,6 @@ describe('AdminPage', () => {
         name: 'Delegate A',
         firstName: 'Delegate',
         nationality: 'Egyptian',
-        day2Group: '1',
-        day3Type: 'SV',
-        day3GroupAM: '',
-        day3GroupPM: '',
         participantsGroup: 'Leadership',
         hasPushToken: true,
         loggedIn: true,
@@ -53,10 +49,6 @@ describe('AdminPage', () => {
         name: 'Delegate B',
         firstName: 'Delegate',
         nationality: 'Egyptian',
-        day2Group: '2',
-        day3Type: 'WS',
-        day3GroupAM: '3',
-        day3GroupPM: '',
         participantsGroup: 'Operations',
         hasPushToken: true,
         loggedIn: false,
@@ -124,25 +116,11 @@ describe('AdminPage', () => {
     fixture.destroy();
   });
 
-  it('builds group targeting options from the delegate profiles', () => {
-    expect(component.segments).toEqual(expect.arrayContaining([
-      expect.objectContaining({
-        field: 'day2.group',
-        value: '1',
-        label: 'Day 2 group: 1',
-      }),
-    ]));
+  it('builds targeting options from the delegate profiles', () => {
     expect(component.notificationSegments.map((segment) => segment.label)).toEqual([
       'Participants group: Leadership',
       'Participants group: Operations',
     ]);
-    expect(component.segments).toEqual(expect.arrayContaining([
-      expect.objectContaining({
-        field: 'day3.type',
-        value: 'SV',
-        label: 'Day 3 track/type: SV',
-      }),
-    ]));
     expect(component.segments).toEqual(expect.arrayContaining([
       expect.objectContaining({
         field: 'participantsGroup',

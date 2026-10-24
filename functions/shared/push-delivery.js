@@ -19,22 +19,22 @@ const INVALID_REGISTRATION_TOKEN_CODES = new Set([
 
 async function removeInvalidToken(recipient) {
   if (!recipient.tokenOwner || !recipient.token) {
-    return;
+    return false;
   }
 
   const ownerRef = db
     .collection(recipient.tokenOwner.collection)
     .doc(recipient.tokenOwner.id);
-  await db.runTransaction(async (transaction) => {
+  const invalidated = await db.runTransaction(async (transaction) => {
     const ownerSnapshot = await transaction.get(ownerRef);
     if (!ownerSnapshot.exists) {
-      return;
+      return false;
     }
 
     const ownerData = ownerSnapshot.data();
     if (recipient.isLegacy) {
       if (ownerData.fcmToken !== recipient.token) {
-        return;
+        return false;
       }
       transaction.update(ownerRef, {
         fcmToken: FieldValue.delete(),
@@ -42,7 +42,7 @@ async function removeInvalidToken(recipient) {
         fcmTokenInvalidatedHash: tokenFingerprint(recipient.token),
         fcmTokenInvalidatedAt: FieldValue.serverTimestamp(),
       });
-      return;
+      return true;
     }
 
     const devices = Array.isArray(ownerData.devices) ? ownerData.devices : [];
@@ -54,7 +54,7 @@ async function removeInvalidToken(recipient) {
       return deviceId === recipient.deviceId && device.token === recipient.token;
     });
     if (deviceIndex < 0) {
-      return;
+      return false;
     }
 
     const invalidatedDevice = {
@@ -67,7 +67,16 @@ async function removeInvalidToken(recipient) {
     const updatedDevices = [...devices];
     updatedDevices[deviceIndex] = invalidatedDevice;
     transaction.update(ownerRef, { devices: updatedDevices });
+    return true;
   });
+
+  if (invalidated) {
+    console.info(
+      `[PushDelivery] Invalidated stale FCM registration for ${recipient.email} ` +
+      `(device ${recipient.deviceId || "legacy"})`
+    );
+  }
+  return invalidated;
 }
 
 function recipientsFromDocument(document, collection) {
@@ -124,9 +133,9 @@ export async function sendPushToRecipients(recipients, { title, body, data = {},
     const batchResults = response.responses.map((result, recipientIndex) => {
       if (!result.success) {
         console.warn(
-          `[PushDelivery] Push failed for recipient ${batch[recipientIndex].email}:`,
-          result.error?.code,
-          result.error?.message
+          `[PushDelivery] Push failed for recipient ${batch[recipientIndex].email} ` +
+          `(device ${batch[recipientIndex].deviceId || "legacy"}):`,
+          result.error?.code
         );
       }
       return {
@@ -142,14 +151,17 @@ export async function sendPushToRecipients(recipients, { title, body, data = {},
         .filter((result) =>
           INVALID_REGISTRATION_TOKEN_CODES.has(result.errorCode)
         )
-        .map(({ recipient, errorCode }) =>
-          removeInvalidToken(recipient).catch((error) => {
+        .map(async ({ recipient, errorCode }) => {
+          try {
+            await removeInvalidToken(recipient);
+          } catch (error) {
             console.error(
-              `[PushDelivery] Failed to remove an invalid token (${errorCode}):`,
-              error
+              `[PushDelivery] Failed to invalidate FCM registration for ${recipient.email} ` +
+              `(device ${recipient.deviceId || "legacy"}, ${errorCode}):`,
+              error?.message || String(error)
             );
-          })
-        )
+          }
+        })
     );
   }
 

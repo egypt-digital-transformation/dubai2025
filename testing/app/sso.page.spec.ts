@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { SsoPage } from './sso.page';
+import { SsoPage } from '../../src/app/sso/sso.page';
 
 describe('SsoPage', () => {
   let component: SsoPage;

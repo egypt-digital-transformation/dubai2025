@@ -48,11 +48,13 @@ import {
   takeUntil,
   shareReplay,
   startWith,
+  BehaviorSubject,
 } from 'rxjs';
 import { RouterModule } from '@angular/router';
 import { greetingForNationality } from '../shared/nationality-greetings';
 import { AdminPreviewService } from '../services/admin-preview.service';
 import QRCode from 'qrcode';
+import { mapAgendaDaySessions, parseAgendaDate } from '../shared/agenda-day';
 
 interface Session {
   id: string;
@@ -129,8 +131,10 @@ export class HomePage implements OnInit, OnDestroy {
   isPlantVisitRequired = false;
 
   private destroy$ = new Subject<void>();
+  private readonly agendaSessions$ = new BehaviorSubject<Session[] | null>(null);
   private readonly TICK_MS = 1000;
   private safetyInductionUnsubscribe?: Unsubscribe;
+  private agendaUnsubscribe?: Unsubscribe;
   private viewGeneration = 0;
   private profileDocumentId = '';
 
@@ -150,9 +154,14 @@ export class HomePage implements OnInit, OnDestroy {
 this.showQR = false;
 
     // sessions$ from data service but ensure it's sorted and convert timestamps lazily when needed.
-    const sessionsSorted$ = this.data.sessions$.pipe(
-      map((sessions) =>
-        (sessions || []).slice().sort((a, b) => this.toDate(a.startTime).getTime() - this.toDate(b.startTime).getTime())
+    const sessionsSorted$ = combineLatest([
+      this.data.sessions$,
+      this.agendaSessions$,
+    ]).pipe(
+      map(([sharedSessions, agendaSessions]) =>
+        (agendaSessions ?? sharedSessions)
+          .slice()
+          .sort((a, b) => this.toDate(a.startTime).getTime() - this.toDate(b.startTime).getTime())
       ),
       shareReplay(1)
     );
@@ -267,11 +276,14 @@ this.showQR = false;
     this.profileMobile = '';
     this.profileQrCode = '';
     this.profileDocumentId = '';
+    this.agendaUnsubscribe?.();
+    this.agendaUnsubscribe = undefined;
     this.shareContactCard = false;
     this.contactSharingError = '';
     this.welcomeGreeting = 'Ahlan';
     this.eventStartDate = EVENT_START;
     this.agendaDayDates = [];
+    this.agendaSessions$.next(null);
     this.isPlantVisitRequired = false;
     if (!email) {
       this.updateSafetyInductionStatus();
@@ -423,56 +435,66 @@ this.showQR = false;
     ].join('\r\n');
   }
 
-  private async loadAgendaStartDate(
+  private loadAgendaStartDate(
     userId: string,
     email: string,
     uid: string | null,
     generation: number
-  ): Promise<void> {
+  ): void {
+    this.agendaUnsubscribe?.();
+    this.agendaUnsubscribe = undefined;
     try {
-      const agendaSnapshot = await this.firebaseContext.run(() =>
-        getDocs(collection(this.firestore, 'users', userId, 'agenda'))
+      this.agendaUnsubscribe = this.firebaseContext.run(() =>
+        onSnapshot(
+          firebaseCollection(getFirestore(), 'users', userId, 'agenda'),
+          (agendaSnapshot) => {
+            if (!this.isCurrentViewingUser(email, uid, generation)) return;
+            const agendaDocuments = agendaSnapshot.docs
+              .map((agendaDocument) => agendaDocument.data())
+              .filter((day) =>
+                typeof day['dayNumber'] === 'number' &&
+                Array.isArray(day['sessions'])
+              );
+            const agendaDays = agendaDocuments
+              .map((day) => ({
+                dayNumber: Number(day['dayNumber']),
+                date: parseAgendaDate(day['date']),
+              }))
+              .filter(
+                (day): day is { dayNumber: number; date: Date } =>
+                  Number.isInteger(day.dayNumber) &&
+                  day.dayNumber > 0 &&
+                  day.date !== null
+              )
+              .sort((a, b) => a.date.getTime() - b.date.getTime());
+            const sessions = agendaDocuments
+              .flatMap((day) => mapAgendaDaySessions(day))
+              .filter(
+                (session) =>
+                  session.startTime !== null &&
+                  session.endTime !== null
+              )
+              .map((session) => ({
+                ...session,
+                startTime: Timestamp.fromDate(session.startTime!),
+                endTime: Timestamp.fromDate(session.endTime!),
+              }));
+            this.zone.run(() => {
+              this.agendaSessions$.next(agendaDocuments.length ? sessions : null);
+              this.agendaDayDates = agendaDays;
+              if (agendaDays.length) {
+                this.eventStartDate = agendaDays[0].date;
+              }
+            });
+          },
+          (error) => {
+            console.error('[HomePage] Failed to listen to the user agenda:', error);
+          }
+        )
       );
-      const agendaDays = agendaSnapshot.docs
-        .map((agendaDocument) => agendaDocument.data())
-        .filter(
-          (day) =>
-            typeof day['dayNumber'] === 'number' &&
-            Array.isArray(day['sessions'])
-        )
-        .map((day) => ({
-          dayNumber: Number(day['dayNumber']),
-          date: this.parseAgendaDate(day['date']),
-        }))
-        .filter(
-          (day): day is { dayNumber: number; date: Date } =>
-            Number.isInteger(day.dayNumber) &&
-            day.dayNumber > 0 &&
-            day.date !== null
-        )
-        .sort((a, b) => a.date.getTime() - b.date.getTime());
-
-      if (agendaDays.length && this.isCurrentViewingUser(email, uid, generation)) {
-        this.zone.run(() => {
-          this.agendaDayDates = agendaDays;
-          this.eventStartDate = agendaDays[0].date;
-        });
-      }
     } catch (error) {
-      console.error('[HomePage] Failed to load the agenda start date:', error);
+      console.error('[HomePage] Failed to listen to the user agenda:', error);
     }
-  }
-
-  private parseAgendaDate(value: unknown): Date | null {
-    if (typeof value !== 'string') return null;
-    const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-    if (!match) return null;
-    const date = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
-    return date.getFullYear() === Number(match[1]) &&
-      date.getMonth() === Number(match[2]) - 1 &&
-      date.getDate() === Number(match[3])
-      ? date
-      : null;
   }
 
   private async loadPlantVisitRequirement(email: string, uid: string | null, generation: number): Promise<void> {
@@ -497,6 +519,7 @@ this.showQR = false;
 
   ngOnDestroy() {
     this.safetyInductionUnsubscribe?.();
+    this.agendaUnsubscribe?.();
     this.destroy$.next();
     this.destroy$.complete();
   }

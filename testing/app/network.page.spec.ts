@@ -2,7 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ModalController } from '@ionic/angular';
 import { vi } from 'vitest';
 
-import { NetworkPage } from './network.page';
+import { NetworkPage } from '../../src/app/network/network.page';
 
 describe('NetworkPage', () => {
   let component: NetworkPage;

@@ -67,6 +67,26 @@ function getPushDeviceId(): string {
   return deviceId;
 }
 
+function getMessagingErrorCode(error: unknown): string | undefined {
+  if (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    typeof error.code === 'string'
+  ) {
+    return error.code;
+  }
+  return undefined;
+}
+
+function isRecoverableSubscriptionError(error: unknown): boolean {
+  const code = getMessagingErrorCode(error);
+  return (
+    code === 'messaging/token-subscribe-failed' ||
+    code === 'messaging/token-unsubscribe-failed'
+  );
+}
+
 async function clearStaleBrowserPushSubscriptions(
   swRegistration?: ServiceWorkerRegistration
 ): Promise<void> {
@@ -223,6 +243,7 @@ export class FcmService {
    * ✅ Request browser notification permission and get FCM token
    */
   async requestPermissionAndRegisterToken(): Promise<string | null> {
+    let registrationStage = 'checking browser permission';
     try {
       if (typeof window === 'undefined' || !('Notification' in window)) {
         console.warn('[FCM] Notifications are not supported in this environment');
@@ -250,6 +271,7 @@ export class FcmService {
         this.messagingInstance = getMessaging();
       }
 
+      registrationStage = 'registering Firebase service worker';
       const swRegistration = await navigator.serviceWorker.register(
         '/firebase-messaging-sw.js',
         { scope: '/firebase-cloud-messaging-push-scope' },
@@ -267,14 +289,17 @@ export class FcmService {
       }
 
       console.log('[FCM] Fetching FCM device token...');
+      registrationStage = 'acquiring FCM token';
       let currentToken: string | null = null;
       try {
         currentToken = await getToken(this.messagingInstance, tokenOptions);
-      } catch (tokenErr: any) {
-        console.warn(
-          '[FCM] Stale push subscription detected or token acquisition failed; resetting push storage:',
-          tokenErr
-        );
+      } catch (tokenErr: unknown) {
+        if (!isRecoverableSubscriptionError(tokenErr)) {
+          throw tokenErr;
+        }
+        console.warn('[FCM] Push subscription recovery required:', {
+          code: getMessagingErrorCode(tokenErr),
+        });
         await clearStaleBrowserPushSubscriptions(swRegistration);
         currentToken = await getToken(this.messagingInstance, tokenOptions);
       }
@@ -284,14 +309,18 @@ export class FcmService {
         return null;
       }
 
+      registrationStage = 'registering FCM token with the server';
       let registration = await this.saveTokenToFirestore(currentToken);
       if (registration.refreshRequired) {
-        console.warn('[FCM] Firebase rejected the previously registered token; refreshing it.');
+        console.warn('[FCM] Server marked this device token invalid; requesting a replacement.');
         const rejectedToken = currentToken;
+        registrationStage = 'replacing invalid FCM token';
         try {
           await deleteToken(this.messagingInstance);
-        } catch (delErr) {
-          console.warn('[FCM] deleteToken failed (cross-project 403); clearing push storage:', delErr);
+        } catch (delErr: unknown) {
+          console.warn('[FCM] Could not delete the invalid token through Firebase; clearing local push storage:', {
+            code: getMessagingErrorCode(delErr),
+          });
         }
         await clearStaleBrowserPushSubscriptions(swRegistration);
         currentToken = await getToken(this.messagingInstance, tokenOptions);
@@ -306,6 +335,7 @@ export class FcmService {
         if (currentToken === rejectedToken) {
           throw new Error('Firebase continued returning a token the server marked invalid.');
         }
+        registrationStage = 'registering replacement FCM token with the server';
         registration = await this.saveTokenToFirestore(currentToken);
       }
       if (!registration.registered) {
@@ -316,9 +346,14 @@ export class FcmService {
       this.fcmTokenSubject.next(currentToken);
       this.listenForForegroundMessages();
       return currentToken;
-    } catch (error: any) {
-      console.error('[FCM] ❌ Error acquiring FCM token:', error);
-      if (error?.code === 'messaging/vapid-key-required' || error?.message?.includes('vapidKey')) {
+    } catch (error: unknown) {
+      const errorCode = getMessagingErrorCode(error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error(`[FCM] Failed while ${registrationStage}:`, {
+        code: errorCode,
+        message: errorMessage,
+      });
+      if (errorCode === 'messaging/vapid-key-required' || errorMessage.includes('vapidKey')) {
         console.info(
           '[FCM] 👉 Note: A Web Push Certificate (VAPID Key) is required by Firebase. ' +
           'Generate one in Firebase Console > Project Settings > Cloud Messaging > Web Push Certificates ' +

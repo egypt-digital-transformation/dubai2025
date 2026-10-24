@@ -1,10 +1,6 @@
 import { createHash } from "node:crypto";
 
 export const SEGMENT_FIELDS = new Set([
-  "day2.group",
-  "day3.type",
-  "day3.groupAM",
-  "day3.groupPM",
   "participantsGroup",
   "plantVisit",
 ]);

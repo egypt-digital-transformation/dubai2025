@@ -22,10 +22,16 @@ import { Auth } from '@angular/fire/auth';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { ActivatedRoute, Router, NavigationStart } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { Subscription } from 'rxjs';
+import { interval, Subject, Subscription, takeUntil } from 'rxjs';
 import { filter } from 'rxjs/operators';
 import { AdminPreviewService } from '../services/admin-preview.service';
 import { FirebaseInjectionContext } from '../services/firebase-injection-context.service';
+import {
+  AgendaDayDate,
+  mapAgendaDaySessions,
+  parseAgendaDate,
+  selectAgendaDayForDate,
+} from '../shared/agenda-day';
 
 interface Session {
   id: string;
@@ -38,6 +44,7 @@ interface Session {
   category: string;
   color: string;
   isGeneral: boolean;
+  labelGroupId?: string;
   rotationalSchedule?: any;
   material?: string;
   qnaLink?: string;
@@ -47,6 +54,13 @@ interface Session {
     photoURL: string | null;
     userID: string;
   };
+}
+
+interface AgendaSessionGroup {
+  key: string;
+  panelId: string;
+  label: string;
+  sessions: Session[];
 }
 
 @Component({
@@ -67,6 +81,7 @@ export class AgendaPage implements OnInit, OnDestroy {
 
   sessions: Session[] = [];
   filteredSessions: Session[] = [];
+  filteredSessionGroups: AgendaSessionGroup[] = [];
   searchQuery = '';
 
   currentUser: any = null;
@@ -81,6 +96,11 @@ export class AgendaPage implements OnInit, OnDestroy {
   private userAgendaSubscription?: Subscription;
   private agendaLoadId = 0;
   private hasUserAgenda = false;
+  private readonly destroy$ = new Subject<void>();
+  private agendaDayDates: AgendaDayDate[] = [];
+  private lastAutoSelectedDate = '';
+  private hasAutoSelectedAgendaDay = false;
+  private readonly collapsedGroupKeys = new Set<string>();
 
   constructor(
     private firestore: Firestore,
@@ -108,6 +128,16 @@ export class AgendaPage implements OnInit, OnDestroy {
           this.searchQuery = '';
         }
       });
+
+    interval(60_000)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => this.updateAgendaDayForCurrentDate());
+    window.addEventListener('focus', this.onAppForeground);
+    document.addEventListener('visibilitychange', this.onVisibilityChange);
+  }
+
+  ionViewWillEnter(): void {
+    this.updateAgendaDayForCurrentDate();
   }
 
   ngOnDestroy() {
@@ -117,7 +147,21 @@ export class AgendaPage implements OnInit, OnDestroy {
     this.previewSubscription?.unsubscribe();
     this.sessionsSubscription?.unsubscribe();
     this.userAgendaSubscription?.unsubscribe();
+    this.destroy$.next();
+    this.destroy$.complete();
+    window.removeEventListener('focus', this.onAppForeground);
+    document.removeEventListener('visibilitychange', this.onVisibilityChange);
   }
+
+  private readonly onAppForeground = (): void => {
+    this.updateAgendaDayForCurrentDate();
+  };
+
+  private readonly onVisibilityChange = (): void => {
+    if (document.visibilityState === 'visible') {
+      this.updateAgendaDayForCurrentDate();
+    }
+  };
 
   async initializeAgenda(emailOverride?: string) {
     const loadId = ++this.agendaLoadId;
@@ -127,11 +171,16 @@ export class AgendaPage implements OnInit, OnDestroy {
     this.userAgendaSubscription = undefined;
     this.hasUserAgenda = false;
     this.availableDays = [];
+    this.agendaDayDates = [];
+    this.hasAutoSelectedAgendaDay = false;
+    this.lastAutoSelectedDate = '';
 
     try {
       this.currentUser = null;
       this.sessions = [];
       this.filteredSessions = [];
+      this.filteredSessionGroups = [];
+      this.collapsedGroupKeys.clear();
       const user = this.auth.currentUser;
       const email = emailOverride ?? user?.email?.toLowerCase() ?? null;
       if (!email) {
@@ -178,6 +227,18 @@ export class AgendaPage implements OnInit, OnDestroy {
             this.availableDays = [...new Set(
               dayDocuments.map((dayDocument) => String(dayDocument.dayNumber))
             )].sort((a, b) => Number(a) - Number(b));
+            this.agendaDayDates = dayDocuments
+              .map((dayDocument) => ({
+                dayNumber: Number(dayDocument.dayNumber),
+                date: parseAgendaDate(dayDocument.date),
+              }))
+              .filter(
+                (day): day is AgendaDayDate =>
+                  Number.isInteger(day.dayNumber) &&
+                  day.dayNumber > 0 &&
+                  day.date !== null
+              );
+            this.updateAgendaDayForCurrentDate();
             this.keepSelectedDayAvailable();
             this.sessions = [];
             dayDocuments.forEach((dayDocument) => {
@@ -231,91 +292,7 @@ export class AgendaPage implements OnInit, OnDestroy {
   }
 
   private mapUserAgendaSessions(dayDocument: any): Session[] {
-    const day = String(dayDocument.dayNumber);
-    const dayDate = dayDocument.date;
-    return dayDocument.sessions
-      .filter((session: any) => session && typeof session === 'object')
-      .map((session: any, index: number) => {
-        const speaker =
-          typeof session.speaker === 'string'
-            ? {
-                name: session.speaker,
-                title: '',
-                photoURL: null,
-                userID: '',
-              }
-            : session.speaker;
-        const startTime = this.combineAgendaDateAndTime(dayDate, session.timeFrom);
-        const endTime = this.combineAgendaDateAndTime(dayDate, session.timeTo);
-
-        return {
-          ...session,
-          id: session.sessionId || `${day}-${index}`,
-          title: session.title || session.label || session.content || session.description || 'Session',
-          startTime,
-          endTime,
-          location: session.location || '',
-          day,
-          description: session.description || session.content || '',
-          category: session.track || 'general',
-          color: session.color || '#0f766e',
-          isGeneral: true,
-          speaker,
-          material: session.material || session.attachment || '',
-          qnaLink: session.qnaLink || '',
-        } as Session;
-      });
-  }
-
-  private combineAgendaDateAndTime(dayDate: unknown, timeValue: unknown): Date | null {
-    if (timeValue && typeof timeValue === 'object' && 'toDate' in timeValue) {
-      const timeDate = (timeValue as { toDate: () => Date }).toDate();
-      if (Number.isNaN(timeDate.getTime())) return null;
-      if (typeof dayDate !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(dayDate)) {
-        return timeDate;
-      }
-      const [, year, month, day] = dayDate.match(/^(\d{4})-(\d{2})-(\d{2})$/)!;
-      return new Date(
-        Number(year),
-        Number(month) - 1,
-        Number(day),
-        timeDate.getHours(),
-        timeDate.getMinutes(),
-        timeDate.getSeconds()
-      );
-    }
-
-    if (typeof timeValue !== 'string') return null;
-    const timeMatch = timeValue.match(/(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM)?/i);
-    if (!timeMatch) {
-      const parsed = new Date(timeValue);
-      return Number.isNaN(parsed.getTime()) ? null : parsed;
-    }
-
-    let hours = Number(timeMatch[1]);
-    const minutes = Number(timeMatch[2]);
-    const seconds = Number(timeMatch[3] || 0);
-    const meridiem = timeMatch[4]?.toUpperCase();
-    if (meridiem === 'PM' && hours < 12) hours += 12;
-    if (meridiem === 'AM' && hours === 12) hours = 0;
-    if (hours > 23 || minutes > 59 || seconds > 59) return null;
-
-    if (typeof dayDate === 'string') {
-      const dayMatch = dayDate.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-      if (dayMatch) {
-        return new Date(
-          Number(dayMatch[1]),
-          Number(dayMatch[2]) - 1,
-          Number(dayMatch[3]),
-          hours,
-          minutes,
-          seconds
-        );
-      }
-    }
-
-    const parsed = new Date(timeValue);
-    return Number.isNaN(parsed.getTime()) ? null : parsed;
+    return mapAgendaDaySessions(dayDocument);
   }
 
   private applyFilters() {
@@ -412,8 +389,42 @@ export class AgendaPage implements OnInit, OnDestroy {
       const bTime = this.asDate(b.startTime)?.getTime() ?? Number.POSITIVE_INFINITY;
       return aTime - bTime;
     });
+    const groups = new Map<string, AgendaSessionGroup>();
+    for (const session of this.filteredSessions) {
+      const groupingId =
+        session.labelGroupId ||
+        `category:${session.category || 'general'}`;
+      const key = `${session.day}:${groupingId}`;
+      let group = groups.get(key);
+      if (!group) {
+        group = {
+          key,
+          panelId: `agenda-group-${this.selectedDay}-${groups.size}`,
+          label:
+            session.category && session.category !== 'general'
+              ? session.category
+              : 'Sessions',
+          sessions: [],
+        };
+        groups.set(key, group);
+      }
+      group.sessions.push(session);
+    }
+    this.filteredSessionGroups = [...groups.values()];
 
     console.log('[DEBUG] Filtered sessions:', this.filteredSessions);
+  }
+
+  isGroupCollapsed(groupKey: string): boolean {
+    return this.collapsedGroupKeys.has(groupKey);
+  }
+
+  toggleSessionGroup(groupKey: string): void {
+    if (this.collapsedGroupKeys.has(groupKey)) {
+      this.collapsedGroupKeys.delete(groupKey);
+    } else {
+      this.collapsedGroupKeys.add(groupKey);
+    }
   }
 
   private scrollToSession(sessionId: string | null, retries = 12) {
@@ -459,6 +470,27 @@ export class AgendaPage implements OnInit, OnDestroy {
   private keepSelectedDayAvailable() {
     if (this.availableDays.length && !this.availableDays.includes(this.selectedDay)) {
       this.selectedDay = this.availableDays[0];
+    }
+  }
+
+  private updateAgendaDayForCurrentDate(): void {
+    if (!this.agendaDayDates.length) return;
+
+    const now = new Date();
+    const today = `${now.getFullYear()}-${now.getMonth()}-${now.getDate()}`;
+    if (this.hasAutoSelectedAgendaDay && today === this.lastAutoSelectedDate) {
+      return;
+    }
+
+    this.lastAutoSelectedDate = today;
+    this.hasAutoSelectedAgendaDay = true;
+    const dayNumber = selectAgendaDayForDate(this.agendaDayDates, now);
+    if (dayNumber === null) return;
+
+    const day = String(dayNumber);
+    if (this.availableDays.includes(day) && this.selectedDay !== day) {
+      this.selectedDay = day;
+      this.applyFilters();
     }
   }
 

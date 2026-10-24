@@ -294,6 +294,10 @@ export const registerPushToken = onCall(
     });
 
     if (refreshRequired) {
+      console.warn(
+        `[PushToken] Device ${deviceId} for ${user.email} submitted an invalidated FCM token; ` +
+        "client refresh required"
+      );
       return { registered: false, refreshRequired: true };
     }
 
