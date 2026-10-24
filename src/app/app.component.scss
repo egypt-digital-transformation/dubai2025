@@ -67,55 +67,110 @@
   }
 }
 
-.notification-permission-prompt {
+.notification-permission-backdrop {
   position: fixed;
-  right: max(16px, env(safe-area-inset-right));
-  bottom: calc(5.5rem + env(safe-area-inset-bottom));
-  left: max(16px, env(safe-area-inset-left));
-  z-index: 1100;
+  inset: 0;
+  z-index: 11000;
   display: grid;
+  place-items: center;
+  overflow-y: auto;
+  padding: max(20px, env(safe-area-inset-top)) 20px max(20px, env(safe-area-inset-bottom));
+  background: rgb(18 35 54 / 62%);
+  backdrop-filter: blur(7px);
+  -webkit-backdrop-filter: blur(7px);
+  animation: notification-backdrop-in 180ms ease-out;
+}
+
+.notification-permission-dialog {
+  display: grid;
+  justify-items: center;
   gap: 14px;
-  width: min(calc(100% - 32px), 560px);
-  margin: 0 auto;
-  border: 1px solid #d7e2eb;
-  border-radius: 16px;
-  padding: 18px;
+  width: min(100%, 420px);
+  border: 1px solid rgb(255 255 255 / 75%);
+  border-radius: 24px;
+  padding: 30px 26px 22px;
   background: #fff;
   color: #203b5d;
-  box-shadow: 0 12px 38px rgb(20 42 66 / 24%);
+  box-shadow: 0 24px 70px rgb(12 31 52 / 34%);
+  text-align: center;
+  animation: notification-dialog-in 240ms cubic-bezier(0.2, 0.8, 0.2, 1);
 
-  h2 {
-    margin: 0 0 6px;
-    font-size: 1.05rem;
+  .notification-permission-icon {
+    display: grid;
+    width: 76px;
+    height: 76px;
+    place-items: center;
+    border-radius: 24px;
+    background: linear-gradient(145deg, #e7f5fb, #eff7e7);
+
+    svg {
+      width: 42px;
+      height: 42px;
+      fill: none;
+      stroke: #1d5b83;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-width: 2.6;
+    }
   }
 
-  p {
+  .notification-permission-eyebrow {
     margin: 0;
-    color: #586d82;
-    font-size: 0.88rem;
-    line-height: 1.5;
+    color: #64829c;
+    font-size: 0.72rem;
+    font-weight: 750;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
   }
 
-  .notification-permission-error {
-    margin-top: 8px;
-    color: #a13c36;
+  .notification-permission-copy {
+    h2 {
+      margin: 0 0 8px;
+      color: #203b5d;
+      font-size: clamp(1.35rem, 5vw, 1.65rem);
+      font-weight: 750;
+      line-height: 1.2;
+    }
+
+    p {
+      margin: 0;
+      color: #586d82;
+      font-size: 0.95rem;
+      line-height: 1.55;
+    }
+
+    .notification-permission-error {
+      margin-top: 10px;
+      color: #a13c36;
+    }
   }
 }
 
 .notification-permission-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  display: grid;
+  width: 100%;
+  gap: 7px;
+  margin-top: 2px;
 
   button {
-    min-height: 40px;
+    min-height: 48px;
     border: 0;
-    border-radius: 8px;
-    padding: 8px 12px;
+    border-radius: 12px;
+    padding: 11px 14px;
     font: inherit;
-    font-size: 0.85rem;
+    font-size: 0.92rem;
     font-weight: 650;
     cursor: pointer;
+    transition: background-color 150ms ease, transform 150ms ease, opacity 150ms ease;
+
+    &:active:not(:disabled) {
+      transform: scale(0.985);
+    }
+
+    &:focus-visible {
+      outline: 3px solid #91c9e2;
+      outline-offset: 3px;
+    }
 
     &:disabled {
       opacity: 0.6;
@@ -124,19 +179,39 @@
   }
 
   .notification-permission-enable {
-    background: #1d4370;
+    background: linear-gradient(135deg, #1d4370, #176b88);
     color: #fff;
+
+    &:hover:not(:disabled) {
+      background: linear-gradient(135deg, #17395f, #125a74);
+    }
   }
 
   .notification-permission-later {
-    background: #eef2f6;
-    color: #38536f;
+    min-height: 42px;
+    background: transparent;
+    color: #60758a;
+
+    &:hover:not(:disabled) {
+      background: #f2f5f8;
+      color: #294766;
+    }
   }
 }
 
-@media (max-width: 480px) {
-  .notification-permission-actions {
-    display: grid;
-    grid-template-columns: 1fr;
+@keyframes notification-backdrop-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes notification-dialog-in {
+  from { opacity: 0; transform: translateY(12px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .notification-permission-backdrop,
+  .notification-permission-dialog {
+    animation: none;
   }
 }

@@ -153,6 +153,9 @@ export class TabsPage implements OnInit, OnDestroy {
   }
 
   openNotifications(): void {
+    if (this.router.url.startsWith('/tabs/notifications')) {
+      window.dispatchEvent(new Event('notifications-page-requested'));
+    }
     void this.router.navigateByUrl('/tabs/notifications');
   }
 

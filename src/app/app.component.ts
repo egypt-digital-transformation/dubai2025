@@ -40,6 +40,8 @@ export class AppComponent implements OnInit {
   deferredPrompt: any;
   private installedApp = false;
   private readonly openedCampaigns = new Set<string>();
+  private notificationPromptDismissed = false;
+  private notificationPromptUser: string | null = null;
 
   async ngOnInit() {
     console.log('[APP] Initializing...');
@@ -54,17 +56,33 @@ export class AppComponent implements OnInit {
 
     // ✅ Initialize Firebase Cloud Messaging push notifications
     this.fcmService.initPushNotifications();
+    this.checkInstallSupport();
+    this.installedApp = this.isInstalledExperience();
     this.authService.user$.subscribe((user) => {
-      void this.updateNotificationPrompt(!!user?.email);
+      const email = user?.email ?? null;
+      if (email !== this.notificationPromptUser) {
+        this.notificationPromptUser = email;
+        this.notificationPromptDismissed = false;
+      }
+      void this.updateNotificationPrompt(!!email);
+    });
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState !== 'visible') {
+        return;
+      }
+      this.notificationPromptDismissed = false;
+      void this.updateNotificationPrompt(!!this.authService.currentUser?.email);
+    });
+    window.addEventListener('notifications-page-requested', () => {
+      this.notificationPromptDismissed = false;
+      void this.updateNotificationPrompt(!!this.authService.currentUser?.email);
     });
 
     // ✅ Watch for new deploys and update installed home-screen apps automatically
     this.watchForPwaUpdates();
 
     // ✅ Handle PWA install banners
-    this.checkInstallSupport();
     this.handleBeforeInstallPrompt();
-    this.installedApp = this.isInstalledExperience();
     window.addEventListener('appinstalled', () => {
       this.installedApp = true;
       this.recordAppActivity();
@@ -88,6 +106,9 @@ export class AppComponent implements OnInit {
       .pipe(filter((event) => event instanceof NavigationEnd))
       .subscribe(() => {
         this.trackNotificationCampaignOpen();
+        if (this.router.url.startsWith('/tabs/notifications')) {
+          this.notificationPromptDismissed = false;
+        }
         void this.updateNotificationPrompt(!!this.authService.currentUser?.email);
       });
     this.trackNotificationCampaignOpen();
@@ -141,16 +162,22 @@ export class AppComponent implements OnInit {
   }
 
   private async updateNotificationPrompt(isAuthenticated: boolean): Promise<void> {
+    const isNotificationsPage = this.router.url.startsWith('/tabs/notifications');
     if (
       !isAuthenticated ||
-      this.router.url.startsWith('/tabs/notifications') ||
-      !(this.installedApp || this.isInstalledExperience())
+      (this.notificationPromptDismissed && !isNotificationsPage) ||
+      (!(this.installedApp || this.isInstalledExperience()) && !isNotificationsPage)
     ) {
       this.showNotificationPrompt = false;
       return;
     }
 
     if (!(await this.fcmService.isPushSupported()) || !this.authService.currentUser?.email) {
+      this.showNotificationPrompt = false;
+      return;
+    }
+
+    if (!this.authService.currentUser?.email) {
       this.showNotificationPrompt = false;
       return;
     }
@@ -186,6 +213,7 @@ export class AppComponent implements OnInit {
   }
 
   continueWithoutNotifications(): void {
+    this.notificationPromptDismissed = true;
     this.showNotificationPrompt = false;
   }
 

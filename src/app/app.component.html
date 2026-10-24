@@ -30,45 +30,60 @@
     </div>
   </div>
 
-  <section
-    *ngIf="showNotificationPrompt"
-    class="notification-permission-prompt"
-    aria-labelledby="notification-permission-title"
-    aria-describedby="notification-permission-description"
-  >
-    <div class="notification-permission-copy">
-      <h2 id="notification-permission-title">
-        {{ notificationPermissionDenied ? 'Notifications are turned off' : 'Stay up to date' }}
-      </h2>
-      <p id="notification-permission-description" *ngIf="notificationPermissionDenied">
-        Allow notifications for AMEA 2026 in your device or browser settings, then try again.
-        You can continue using the app without them.
-      </p>
-      <p id="notification-permission-description" *ngIf="!notificationPermissionDenied">
-        Enable notifications to receive agenda reminders, event updates, and important announcements.
-      </p>
-      <p *ngIf="notificationSetupMessage" class="notification-permission-error" role="alert">
-        {{ notificationSetupMessage }}
-      </p>
-    </div>
-    <div class="notification-permission-actions">
-      <button
-        type="button"
-        class="notification-permission-enable"
-        (click)="enableNotifications()"
-        [disabled]="isEnablingNotifications"
-      >
-        {{
-          isEnablingNotifications
-            ? 'Setting up…'
-            : notificationPermissionDenied
-              ? 'I changed settings — try again'
-              : 'Enable notifications'
-        }}
-      </button>
-      <button type="button" class="notification-permission-later" (click)="continueWithoutNotifications()">
-        Continue without notifications
-      </button>
-    </div>
-  </section>
+  <div *ngIf="showNotificationPrompt" class="notification-permission-backdrop">
+    <section
+      class="notification-permission-dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="notification-permission-title"
+      aria-describedby="notification-permission-description"
+    >
+      <div class="notification-permission-icon" aria-hidden="true">
+        <svg viewBox="0 0 48 48" focusable="false">
+          <path d="M24 5a3 3 0 0 0-3 3v1.2A13 13 0 0 0 11 22v8l-3 5v2h32v-2l-3-5v-8A13 13 0 0 0 27 9.2V8a3 3 0 0 0-3-3Z" />
+          <path d="M19 40a5 5 0 0 0 10 0" />
+        </svg>
+      </div>
+      <p class="notification-permission-eyebrow">AMEA 2026</p>
+      <div class="notification-permission-copy">
+        <h2 id="notification-permission-title">
+          {{ notificationPermissionDenied ? 'Notifications are turned off' : 'Never miss a moment' }}
+        </h2>
+        <p id="notification-permission-description" *ngIf="notificationPermissionDenied">
+          Allow notifications for AMEA 2026 in your device or browser settings, then try again.
+          You can continue using the app without them.
+        </p>
+        <p id="notification-permission-description" *ngIf="!notificationPermissionDenied">
+          Get timely agenda reminders, event updates, and important announcements right on your device.
+        </p>
+        <p *ngIf="notificationSetupMessage" class="notification-permission-error" role="alert">
+          {{ notificationSetupMessage }}
+        </p>
+      </div>
+      <div class="notification-permission-actions">
+        <button
+          type="button"
+          class="notification-permission-enable"
+          (click)="enableNotifications()"
+          [disabled]="isEnablingNotifications"
+        >
+          {{
+            isEnablingNotifications
+              ? 'Enabling notifications…'
+              : notificationPermissionDenied
+                ? 'I changed settings — try again'
+                : 'Enable notifications'
+          }}
+        </button>
+        <button
+          type="button"
+          class="notification-permission-later"
+          (click)="continueWithoutNotifications()"
+          [disabled]="isEnablingNotifications"
+        >
+          Not now
+        </button>
+      </div>
+    </section>
+  </div>
 </ion-app>

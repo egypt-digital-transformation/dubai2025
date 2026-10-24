@@ -2,7 +2,6 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import {
-  IonButton,
   IonContent,
   IonIcon,
 } from '@ionic/angular/standalone';
@@ -14,7 +13,7 @@ import { FcmService } from '../services/fcm.service';
 @Component({
   selector: 'app-notifications',
   standalone: true,
-  imports: [CommonModule, IonContent, IonButton, IonIcon],
+  imports: [CommonModule, IonContent, IonIcon],
   templateUrl: './notifications.page.html',
   styleUrls: ['./notifications.page.scss'],
 })
@@ -29,9 +28,6 @@ export class NotificationsPage implements OnInit {
   isPushSupported = false;
   isPermissionGranted = false;
   isPermissionDenied = false;
-  isEnablingNotifications = false;
-  notificationSetupMessage = '';
-  notificationSetupSucceeded = false;
 
   constructor() {
     addIcons({ notificationsOutline, openOutline });
@@ -58,33 +54,6 @@ export class NotificationsPage implements OnInit {
       this.loadError = 'Notifications could not be loaded. Please try again.';
     } finally {
       this.isLoading = false;
-    }
-  }
-
-  async enableNotifications(): Promise<void> {
-    if (this.isEnablingNotifications) {
-      return;
-    }
-
-    this.isEnablingNotifications = true;
-    this.notificationSetupMessage = '';
-    this.notificationSetupSucceeded = false;
-    try {
-      const token = await this.fcmService.requestPermissionAndRegisterToken();
-      await this.refreshPermissionState();
-      if (token) {
-        this.notificationSetupMessage = 'This device is registered for push notifications.';
-        this.notificationSetupSucceeded = true;
-      } else if (!this.isPermissionDenied) {
-        this.notificationSetupMessage =
-          'We could not finish notification setup. Please try again.';
-      }
-    } catch (error) {
-      console.error('[NotificationsPage] Failed to enable push notifications:', error);
-      this.notificationSetupMessage =
-        'We could not finish notification setup. Please try again.';
-    } finally {
-      this.isEnablingNotifications = false;
     }
   }
 

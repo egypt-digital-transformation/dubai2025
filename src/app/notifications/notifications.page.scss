@@ -82,28 +82,8 @@ h1 {
   line-height: 1.5;
 }
 
-.push-card .setup-error,
 .list-error {
   color: #a13c36;
-}
-
-.push-card .setup-success {
-  color: #267447;
-}
-
-.push-card .setup-error {
-  grid-column: 1 / -1;
-}
-
-.enable-push-button {
-  --background: #0b2343;
-  --border-radius: 0.65rem;
-  --box-shadow: none;
-  --color: #fff;
-  font-size: 0.82rem;
-  font-weight: 700;
-  min-height: 2.8rem;
-  margin: 0;
 }
 
 .notification-list {

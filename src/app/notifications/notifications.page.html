@@ -11,38 +11,29 @@
             <ion-icon name="notifications-outline" aria-hidden="true"></ion-icon>
           </span>
           <div>
-            <h2>{{ isPermissionGranted ? 'Notifications enabled' : 'Get event updates' }}</h2>
+            <h2>
+              {{
+                isPermissionGranted
+                  ? 'Notifications enabled'
+                  : isPermissionDenied
+                    ? 'Notifications are turned off'
+                    : 'Enable event updates'
+              }}
+            </h2>
             <p *ngIf="isPermissionGranted">
               This device allows notifications. Push registration is maintained automatically.
             </p>
             <p *ngIf="!isPermissionGranted && !isPermissionDenied && isPushSupported">
-              Turn on push notifications for reminders and announcements.
+              Enable push notifications from the prompt to receive reminders and announcements.
             </p>
             <p *ngIf="isPermissionDenied">
-              Notifications are blocked. Allow them in your device or browser settings.
+              Allow notifications in your device or browser settings, then reopen this tab.
             </p>
             <p *ngIf="!isPushSupported">
               Push notifications aren’t available in this browser or device.
             </p>
           </div>
         </div>
-        <ion-button
-          *ngIf="isPushSupported && !isPermissionGranted"
-          class="enable-push-button"
-          (click)="enableNotifications()"
-          [disabled]="isEnablingNotifications"
-        >
-          <ion-icon slot="start" name="notifications-outline"></ion-icon>
-          {{ isEnablingNotifications ? 'Setting up…' : isPermissionDenied ? 'Try again' : 'Enable notifications' }}
-        </ion-button>
-        <p
-          *ngIf="notificationSetupMessage"
-          class="setup-error"
-          [class.setup-success]="notificationSetupSucceeded"
-          [attr.role]="notificationSetupSucceeded ? 'status' : 'alert'"
-        >
-          {{ notificationSetupMessage }}
-        </p>
       </section>
 
       <p *ngIf="isLoading" class="list-message" role="status">Loading your notifications…</p>
