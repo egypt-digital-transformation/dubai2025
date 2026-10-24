@@ -68,7 +68,7 @@
         #sessionCard
         class="session-card"
         [id]="session.id"
-        [style.--session-accent]="session.color || '#087f78'"
+        [style.--session-accent]="session.color || 'var(--holcim-dark-turquoise)'"
       >
           <div class="session-content">
             <div class="session-card-topline">
@@ -135,7 +135,7 @@
                 >
                   <div
                     class="material-icon-wrapper"
-                    [style.background-color]="session.color + '15'"
+                    [style.background-color]="'color-mix(in srgb, ' + session.color + ' 10%, var(--white))'"
                   >
                     <ion-icon
                       [name]="getMaterialIcon(getMaterialType(session.material!))"
@@ -181,12 +181,12 @@
                 >
                   <div
                     class="material-icon-wrapper"
-                    style="background-color: #7ab02315"
+                    [style.background-color]="'color-mix(in srgb, var(--holcim-bright-green) 10%, var(--white))'"
                   >
                     <ion-icon
                       name="chatbubble-ellipses-outline"
                       class="material-icon"
-                      style="color: #7ab023"
+                      [style.color]="'var(--holcim-bright-green)'"
                     ></ion-icon>
                   </div>
 
@@ -196,7 +196,7 @@
                     </div>
                   </div>
 
-                  <div class="material-download-btn" style="color: #7ab023">
+                  <div class="material-download-btn" [style.color]="'var(--holcim-bright-green)'">
                     <ion-icon name="open-outline"></ion-icon>
                   </div>
                 </a>

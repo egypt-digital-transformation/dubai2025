@@ -55,7 +55,7 @@
       <span
         class="product-pill"
         *ngFor="let product of project.products"
-        [style.backgroundColor]="product.color || '#2E7D32'"
+        [style.backgroundColor]="product.color || 'var(--holcim-green)'"
       >
         {{ product.name }}
       </span>

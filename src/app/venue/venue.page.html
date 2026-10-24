@@ -27,8 +27,8 @@
             <ion-col size="6" *ngFor="let hall of halls">
               <div 
                 class="room-item hall-item" 
-                [style.background-color]="hall.color + '1A'"
-                [style.border-color]="hall.color + '4D'"
+                [style.background-color]="'color-mix(in srgb, ' + hall.color + ' 10%, var(--white))'"
+                [style.border-color]="'color-mix(in srgb, ' + hall.color + ' 30%, var(--white))'"
                 (click)="onRoomClick(hall)">
                 <div class="room-name">{{ hall.name }}</div>
                 <div class="room-subtitle">{{ hall.subtitle }}</div>

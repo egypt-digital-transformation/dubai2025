@@ -1,24 +1,24 @@
 // Mobile-First AMEA Resources Styles
 
-$holcim-green: #7AB023; // Primary green
-$holcim-dark-green: #5c8b1c; // Darker tone for active/hover
-$holcim-light-green: #eaf5df; // Subtle background highlight
+$holcim-green: var(--holcim-bright-green); // Primary green
+$holcim-dark-green: var(--dark-gray); // Darker tone for active/hover
+$holcim-light-green: var(--border-color); // Subtle background highlight
 
 .resources-content {
-  --background: #ffffff;
+  --background: var(--white);
 }
 
 .resource-library {
-  color: #092d4f;
+  color: var(--holcim-dark-blue);
   margin: 0 auto;
   max-width: 760px;
   padding: 2rem 1rem 6rem;
 }
 
 .resource-library-header {
-  background: linear-gradient(to bottom right, #041739 0%, #041739 40%, #1d4370 100%);
+  background: linear-gradient(to bottom right, var(--black) 0%, var(--black) 40%, var(--holcim-dark-blue) 100%);
   border-radius: 0 0 1.25rem 1.25rem;
-  color: #fff;
+  color: var(--white);
   overflow: hidden;
   padding: 2rem 1.25rem 2.25rem;
   position: relative;
@@ -26,7 +26,7 @@ $holcim-light-green: #eaf5df; // Subtle background highlight
 }
 
 .resource-kicker {
-  color: #8ed9e5;
+  color: var(--border-color);
   font-size: .68rem;
   font-weight: 800;
   letter-spacing: .16em;
@@ -42,7 +42,7 @@ $holcim-light-green: #eaf5df; // Subtle background highlight
 }
 
 .resource-library-header p:last-child {
-  color: rgba(255, 255, 255, .8);
+  color: rgba(var(--white-rgb), 0.8);
   margin: 0;
   position: relative;
   z-index: 1;
@@ -75,10 +75,10 @@ $holcim-light-green: #eaf5df; // Subtle background highlight
 }
 
 .resource-filters button {
-  background: #fff;
-  border: 1px solid #dfe7ea;
+  background: var(--white);
+  border: 1px solid var(--border-color);
   border-radius: 999px;
-  color: #506778;
+  color: var(--dark-gray);
   flex: 0 0 auto;
   font: inherit;
   font-size: .78rem;
@@ -87,15 +87,15 @@ $holcim-light-green: #eaf5df; // Subtle background highlight
 }
 
 .resource-filters button.active {
-  background: #e8f7f8;
-  border-color: #a9dfe5;
-  color: #08798c;
+  background: var(--background-color);
+  border-color: var(--border-color);
+  color: var(--holcim-dark-turquoise);
 }
 
 .resource-search {
   align-items: center;
-  background: #fff;
-  border: 1px solid #dfe7ea;
+  background: var(--white);
+  border: 1px solid var(--border-color);
   border-radius: .8rem;
   display: flex;
   gap: .55rem;
@@ -103,14 +103,14 @@ $holcim-light-green: #eaf5df; // Subtle background highlight
 }
 
 .resource-search > ion-icon {
-  color: #079db4;
+  color: var(--holcim-bright-turquoise);
   font-size: 1.15rem;
 }
 
 .resource-search input {
   background: transparent;
   border: 0;
-  color: #092d4f;
+  color: var(--holcim-dark-blue);
   flex: 1;
   font: inherit;
   min-width: 0;
@@ -121,13 +121,13 @@ $holcim-light-green: #eaf5df; // Subtle background highlight
 .clear-search {
   background: transparent;
   border: 0;
-  color: #71808d;
+  color: var(--bright-gray);
   display: flex;
   padding: .35rem;
 }
 
 .resource-empty {
-  color: #71808d;
+  color: var(--bright-gray);
   padding: 3rem 1.5rem;
   text-align: center;
 }
@@ -143,8 +143,8 @@ $holcim-light-green: #eaf5df; // Subtle background highlight
   border: 1px solid var(--line);
   border-radius: 14px;
   padding: 20px;
-  background: #fff;
-  box-shadow: 0 8px 20px rgb(23 43 77 / 6%);
+  background: var(--white);
+  box-shadow: 0 8px 20px rgba(var(--holcim-dark-blue-rgb), 0.06);
 
   h2 {
     margin: 6px 0 8px;
@@ -155,14 +155,14 @@ $holcim-light-green: #eaf5df; // Subtle background highlight
   }
 
   a {
-    color: #1769e0;
+    color: var(--holcim-bright-blue);
     font-weight: 700;
   }
 }
 
 .resource-card-type {
   margin: 0;
-  color: #57708f;
+  color: var(--bright-gray);
   font-size: 0.7rem;
   font-weight: 750;
   letter-spacing: 0.12em;
@@ -170,12 +170,12 @@ $holcim-light-green: #eaf5df; // Subtle background highlight
 }
 
 .resource-empty ion-icon {
-  color: #079db4;
+  color: var(--holcim-bright-turquoise);
   font-size: 2.75rem;
 }
 
 .resource-empty h2 {
-  color: #092d4f;
+  color: var(--holcim-dark-blue);
   font-size: 1.15rem;
   margin: .8rem 0 .4rem;
 }
@@ -194,7 +194,7 @@ $holcim-light-green: #eaf5df; // Subtle background highlight
   width: 80%;
   height: 2px;
   margin: 2rem auto;
-  background: linear-gradient(to right, transparent, #00A9E0, transparent);
+  background: linear-gradient(to right, transparent, var(--holcim-bright-blue), transparent);
   border-radius: 2px;
   opacity: 0.8;
   transition: opacity 0.3s ease-in-out;
@@ -208,7 +208,7 @@ $holcim-light-green: #eaf5df; // Subtle background highlight
 // HEADER SECTION  (mobile-first)
 // ============================================
 .header-gradient {
-  background: linear-gradient(to bottom right, #041739 0%, #041739 40%, #1d4370 100%);
+  background: linear-gradient(to bottom right, var(--black) 0%, var(--black) 40%, var(--holcim-dark-blue) 100%);
   padding: 4.5rem 1.25rem 3rem;  // ⬆️ more vertical padding on mobile
   position: relative;
   overflow: hidden;
@@ -248,7 +248,7 @@ $holcim-light-green: #eaf5df; // Subtle background highlight
 
 .header-title {
   position: relative;
-  color: white;
+  color: var(--white);
   font-size: 1.5rem;
   line-height: 1.3;
   font-weight: 700;
@@ -262,7 +262,7 @@ $holcim-light-green: #eaf5df; // Subtle background highlight
   .header-kicker {
     position: relative;
     z-index: 2;
-    color: #8ed9e5;
+    color: var(--border-color);
     font-size: .7rem;
     font-weight: 800;
     letter-spacing: .16em;
@@ -277,7 +277,7 @@ $holcim-light-green: #eaf5df; // Subtle background highlight
 
 .header-subtitle {
   position: relative;
-  color: rgba(255, 255, 255, 0.9);
+  color: rgba(var(--white-rgb), 0.9);
   font-size: 0.85rem;
   line-height: 1.4;
   margin: 0;
@@ -289,10 +289,10 @@ $holcim-light-green: #eaf5df; // Subtle background highlight
 
   .resource-search {
     align-items: center;
-    background: #fff;
-    border: 1px solid #e5e7eb;
+    background: var(--white);
+    border: 1px solid var(--border-color);
     border-radius: .75rem;
-    box-shadow: 0 3px 8px rgba(29, 67, 112, .12);
+    box-shadow: 0 3px 8px rgba(var(--holcim-dark-blue-rgb), 0.12);
     display: flex;
     gap: .55rem;
     margin: 0 1rem 1rem;
@@ -302,13 +302,13 @@ $holcim-light-green: #eaf5df; // Subtle background highlight
   }
 
   .resource-search ion-icon {
-    color: #079db4;
+    color: var(--holcim-bright-turquoise);
     font-size: 1.15rem;
   }
 
   .resource-search input {
     border: 0;
-    color: #092d4f;
+    color: var(--holcim-dark-blue);
     flex: 1;
     min-width: 0;
     outline: 0;
@@ -318,23 +318,23 @@ $holcim-light-green: #eaf5df; // Subtle background highlight
   .resource-search button {
     background: transparent;
     border: 0;
-    color: #71808d;
+    color: var(--bright-gray);
     padding: .35rem;
   }
 
   .resource-empty {
-    color: #71808d;
+    color: var(--bright-gray);
     padding: 3rem 1.5rem;
     text-align: center;
   }
 
   .resource-empty ion-icon {
-    color: #079db4;
+    color: var(--holcim-bright-turquoise);
     font-size: 2.5rem;
   }
 
   .resource-empty h3 {
-    color: #092d4f;
+    color: var(--holcim-dark-blue);
     margin: .75rem 0 .35rem;
   }
 
@@ -378,12 +378,12 @@ $holcim-light-green: #eaf5df; // Subtle background highlight
 }
 
 .tabs-wrapper {
-  background: #ffffff;
+  background: var(--white);
   border-radius: 0.75rem;
   padding: 0.35rem;
   display: flex;
-  box-shadow: 0 3px 6px rgba(29, 67, 112, 0.15);
-  border: 1px solid #e5e7eb;
+  box-shadow: 0 3px 6px rgba(var(--holcim-dark-blue-rgb), 0.15);
+  border: 1px solid var(--border-color);
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   transition: box-shadow 0.3s ease;
@@ -397,7 +397,7 @@ $holcim-light-green: #eaf5df; // Subtle background highlight
   }
 
   .tabs-container.is-sticky & {
-    box-shadow: 0 6px 12px rgba(29, 67, 112, 0.25);
+    box-shadow: 0 6px 12px rgba(var(--holcim-dark-blue-rgb), 0.25);
   }
 }
 
@@ -415,7 +415,7 @@ $holcim-light-green: #eaf5df; // Subtle background highlight
   text-transform: capitalize;
   transition: all 0.2s ease;
   background: transparent;
-  color: #6b7280;
+  color: var(--bright-gray);
   border: none;
   cursor: pointer;
   white-space: nowrap;
@@ -425,13 +425,13 @@ $holcim-light-green: #eaf5df; // Subtle background highlight
   }
 
   &:hover:not(.active) {
-    background: #f3f4f6;
+    background: var(--background-color);
   }
 
   &.active {
-    background: #1D4370;
-    color: white;
-    box-shadow: 0 2px 4px rgba(0, 169, 224, 0.25);
+    background: var(--holcim-dark-blue);
+    color: var(--white);
+    box-shadow: 0 2px 4px rgba(var(--holcim-bright-blue-rgb), 0.25);
   }
 
   @media (min-width: 480px) {
@@ -477,8 +477,8 @@ $holcim-light-green: #eaf5df; // Subtle background highlight
   border-radius: 0.5rem;
   font-weight: 600;
   font-size: 0.8rem;
-  background: #f9fafb;
-  color: #18376e;
+  background: var(--background-color);
+  color: var(--holcim-dark-blue);
   cursor: pointer;
   transition: all 0.25s ease;
   white-space: nowrap;
@@ -491,9 +491,9 @@ $holcim-light-green: #eaf5df; // Subtle background highlight
 
   &.active {
     background: $holcim-green;
-    color: white;
+    color: var(--white);
     font-weight: 700;
-    box-shadow: 0 2px 6px rgba(122, 176, 35, 0.25);
+    box-shadow: 0 2px 6px rgba(var(--holcim-bright-green-rgb), 0.25);
   }
 
   @media (min-width: 768px) {
@@ -534,7 +534,7 @@ $holcim-light-green: #eaf5df; // Subtle background highlight
 .section-title {
   font-size: 1.5rem;
   font-weight: 700;
-  color: #1e293b;
+  color: var(--holcim-dark-blue);
   margin: 0 0 0.5rem;
   
   @media (min-width: 768px) {
@@ -545,7 +545,7 @@ $holcim-light-green: #eaf5df; // Subtle background highlight
 .section-subtitle {
   font-size: 1.25rem;
   font-weight: 600;
-  color: #1e293b;
+  color: var(--holcim-dark-blue);
   margin: 0 0 0.5rem;
   
   @media (min-width: 768px) {
@@ -554,7 +554,7 @@ $holcim-light-green: #eaf5df; // Subtle background highlight
 }
 
 .section-desc {
-  color: #64748b;
+  color: var(--bright-gray);
   font-size: 0.9rem;
   font-weight: 600;
   margin: 0;
@@ -580,9 +580,9 @@ $holcim-light-green: #eaf5df; // Subtle background highlight
   align-items: center;
   gap: 1rem;
   padding: 1rem;
-  background: #ffffff;
+  background: var(--white);
   border-radius: 12px;
-  box-shadow: 0 2px 6px rgba(29, 67, 112, 0.1);
+  box-shadow: 0 2px 6px rgba(var(--holcim-dark-blue-rgb), 0.1);
   transition: all 0.3s ease;
 
   &:active {
@@ -593,7 +593,7 @@ $holcim-light-green: #eaf5df; // Subtle background highlight
     padding: 1.25rem;
 
     &:hover {
-      box-shadow: 0 6px 16px rgba(0, 169, 224, 0.25);
+      box-shadow: 0 6px 16px rgba(var(--holcim-bright-blue-rgb), 0.25);
       transform: translateY(-3px);
     }
   }
@@ -606,7 +606,7 @@ $holcim-light-green: #eaf5df; // Subtle background highlight
   margin: 1rem 0; /* spacing above and below */
 
   /* Holcim gradient colors example */
-  background: linear-gradient(to right, #00a9e0, #94c12e);
+  background: linear-gradient(to right, var(--holcim-bright-blue), var(--holcim-bright-green));
   border-radius: 2px;
 }
 
@@ -617,9 +617,9 @@ $holcim-light-green: #eaf5df; // Subtle background highlight
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #E0F4FB;
+  background: var(--border-color);
   border-radius: 10px;
-  color: #00A9E0;
+  color: var(--holcim-bright-blue);
 
   ion-icon {
     font-size: 1.5rem;
@@ -632,8 +632,8 @@ $holcim-light-green: #eaf5df; // Subtle background highlight
 }
 
 .doc-icon-summary {
-  background: #F9F7E0;
-  color: #6CC24A;
+  background: var(--background-color);
+  color: var(--holcim-bright-green);
 }
 
 .doc-info {
@@ -644,7 +644,7 @@ $holcim-light-green: #eaf5df; // Subtle background highlight
 .doc-title {
   font-size: 0.95rem;
   font-weight: 600;
-  color: #1D4370;
+  color: var(--holcim-dark-blue);
   margin-bottom: 0.25rem;
 
   @media (min-width: 768px) {
@@ -654,7 +654,7 @@ $holcim-light-green: #eaf5df; // Subtle background highlight
 
 .doc-meta {
   font-size: 0.8rem;
-  color: #64748B;
+  color: var(--bright-gray);
 
   @media (min-width: 768px) {
     font-size: 0.85rem;
@@ -668,8 +668,8 @@ $holcim-light-green: #eaf5df; // Subtle background highlight
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #7AB023;
-  color: white;
+  background: var(--holcim-bright-green);
+  color: var(--white);
   border: none;
   border-radius: 10px;
   cursor: pointer;
@@ -681,12 +681,12 @@ $holcim-light-green: #eaf5df; // Subtle background highlight
 
   &:active {
     transform: scale(0.95);
-    background: #67951c;
+    background: var(--holcim-bright-green);
   }
 
   @media (min-width: 768px) {
     &:hover {
-      background: #00A9E0;
+      background: var(--holcim-bright-blue);
       transform: scale(1.05);
     }
   }
@@ -714,7 +714,7 @@ $holcim-light-green: #eaf5df; // Subtle background highlight
 .section-title-main {
   font-size: 1.5rem;
   font-weight: 700;
-  color: #203049;
+  color: var(--holcim-dark-blue);
   margin: 0;
   text-align: center;
   padding-bottom: 0.4rem; /* adds natural space below title */
@@ -727,7 +727,7 @@ $holcim-light-green: #eaf5df; // Subtle background highlight
 }
 
 .section-desc-main {
-  color: #64748b;
+  color: var(--bright-gray);
   font-size: 0.95rem;
   margin: 0;
   line-height: 1.6;       /* improves readability */
@@ -753,16 +753,16 @@ $holcim-light-green: #eaf5df; // Subtle background highlight
 }
 
 .landmark-card {
-  background: white;
+  background: var(--white);
   border-radius: 16px;
   overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgba(var(--black-rgb), 0.1);
   transition: all 0.3s ease;
   
   @media (min-width: 768px) {
     &:hover {
       transform: translateY(-4px);
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+      box-shadow: 0 8px 24px rgba(var(--black-rgb), 0.15);
     }
   }
 }
@@ -793,12 +793,12 @@ $holcim-light-green: #eaf5df; // Subtle background highlight
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.95);
-  color: #6CC24A;
+  background: rgba(var(--white-rgb), 0.95);
+  color: var(--holcim-bright-green);
   font-size: 1.25rem;
   font-weight: 700;
   border-radius: 50%;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 2px 8px rgba(var(--black-rgb), 0.15);
 }
 
 .landmark-content {
@@ -812,7 +812,7 @@ $holcim-light-green: #eaf5df; // Subtle background highlight
 .landmark-title {
   font-size: 1.15rem;
   font-weight: 700;
-  color: #1e293b;
+  color: var(--holcim-dark-blue);
   margin: 0 0 0.75rem;
   
   @media (min-width: 768px) {
@@ -823,7 +823,7 @@ $holcim-light-green: #eaf5df; // Subtle background highlight
 .landmark-description {
   font-size: 0.9rem;
   line-height: 1.6;
-  color: #475569;
+  color: var(--dark-gray);
   margin: 0 0 1rem;
   
   @media (min-width: 768px) {
@@ -836,10 +836,10 @@ $holcim-light-green: #eaf5df; // Subtle background highlight
   align-items: flex-start;
   gap: 0.5rem;
   padding: 0.75rem;
-  background: #f0f9ff;
+  background: var(--background-color);
   border-radius: 8px;
   font-size: 0.85rem;
-  color: #0369a1;
+  color: var(--holcim-dark-turquoise);
   
   ion-icon {
     flex-shrink: 0;
@@ -861,7 +861,7 @@ $holcim-light-green: #eaf5df; // Subtle background highlight
   display: flex;
   flex-direction: column;
   gap: 2.5rem;
-  background-color: #f9fafb;
+  background-color: var(--background-color);
 }
 
 .section-header {
@@ -871,7 +871,7 @@ $holcim-light-green: #eaf5df; // Subtle background highlight
 .section-title-main {
   font-size: 2rem;
   font-weight: 800;
-  background: #041739;
+  background: var(--black);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   margin-bottom: 0.5rem;
@@ -880,7 +880,7 @@ $holcim-light-green: #eaf5df; // Subtle background highlight
 .section-desc {
   max-width: 650px;
   margin: 0 auto;
-  color: #475569;
+  color: var(--dark-gray);
   line-height: 1.5;
 }
 
@@ -894,11 +894,11 @@ $holcim-light-green: #eaf5df; // Subtle background highlight
 .section-subtitle {
   font-size: 1.1rem;
   font-weight: 700;
-  color: #1D4370;
+  color: var(--holcim-dark-blue);
 }
 
 .purpose-text {
-  color: #475569;
+  color: var(--dark-gray);
   max-width: 700px;
   margin-bottom: 1rem;
 }
@@ -914,7 +914,7 @@ $holcim-light-green: #eaf5df; // Subtle background highlight
 .purpose-card {
   padding: 1.5rem;
   border-radius: 16px;
-  color: white;
+  color: var(--white);
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
@@ -934,15 +934,15 @@ $holcim-light-green: #eaf5df; // Subtle background highlight
 }
 
 .people-card {
-  background: linear-gradient(135deg, #94C12E, #709a1d);
+  background: linear-gradient(135deg, var(--holcim-bright-green), var(--holcim-bright-green));
 }
 
 .performance-card {
-  background: linear-gradient(135deg, #00A9E0, #079fd2);
+  background: linear-gradient(135deg, var(--holcim-bright-blue), var(--holcim-bright-blue));
 }
 
 .purpose-card-main {
-  background: linear-gradient(135deg, #1D4370, #112742);
+  background: linear-gradient(135deg, var(--holcim-dark-blue), var(--holcim-dark-blue));
 }
 
 /* Performance / Projects */
@@ -979,13 +979,13 @@ $holcim-light-green: #eaf5df; // Subtle background highlight
     padding: 1rem 1.25rem;
     
     /* BACKGROUND ADJUSTMENT: Reduced opacity for a sleeker look that lets more image through */
-    background-color: rgba(0, 0, 0, 0.65); /* Increased opacity from 0.5 to 0.65 for better text contrast */
+    background-color: rgba(var(--black-rgb), 0.65); /* Increased opacity from 0.5 to 0.65 for better text contrast */
     
     position: absolute;
     bottom: 0;
     left: 0;
     width: 100%;
-    color: white;
+    color: var(--white);
     backdrop-filter: blur(6px); /* Slightly stronger blur for a sleeker effect */
 
     h5 {
@@ -993,7 +993,7 @@ $holcim-light-green: #eaf5df; // Subtle background highlight
       font-size: 1.1rem;
       font-weight: 700;
       /* Subtle text shadow for crispness over image */
-      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4); 
+      text-shadow: 0 1px 2px rgba(var(--black-rgb), 0.4);
     }
 
     p {
@@ -1027,7 +1027,7 @@ $holcim-light-green: #eaf5df; // Subtle background highlight
   }
 
   &::-webkit-scrollbar-thumb {
-    background-color: #cbd5e1;
+    background-color: var(--border-color);
     border-radius: 10px;
   }
 }
@@ -1035,9 +1035,9 @@ $holcim-light-green: #eaf5df; // Subtle background highlight
 .profile-item {
   flex: 0 0 260px;
   border-radius: 16px;
-  background: white;
+  background: var(--white);
   overflow: hidden;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+  box-shadow: 0 2px 10px rgba(var(--black-rgb), 0.08);
   transition: transform 0.3s ease;
 
   &:hover {
@@ -1054,18 +1054,18 @@ $holcim-light-green: #eaf5df; // Subtle background highlight
     padding: 1rem;
     h5 {
       margin: 0 0 0.25rem;
-      color: #1D4370;
+      color: var(--holcim-dark-blue);
       font-size: 1rem;
     }
     p {
       margin: 0 0 0.5rem;
       font-size: 0.85rem;
-      color: #475569;
+      color: var(--dark-gray);
     }
     q {
       font-size: 0.9rem;
       font-style: italic;
-      color: #64748b;
+      color: var(--bright-gray);
     }
   }
 }
@@ -1088,8 +1088,8 @@ $holcim-light-green: #eaf5df; // Subtle background highlight
 .fact-card {
   padding: 1.5rem;
   border-radius: 14px;
-  background: linear-gradient(135deg, #1D4370, #1D4370);
-  color: #ffffff;
+  background: linear-gradient(135deg, var(--holcim-dark-blue), var(--holcim-dark-blue));
+  color: var(--white);
   h5 {
     margin: 0 0 0.5rem;
     font-size: 1rem;
@@ -1105,7 +1105,7 @@ $holcim-light-green: #eaf5df; // Subtle background highlight
 .closing-statement {
   text-align: center;
   p {
-    color: #0d1e35;
+    color: var(--black);
     font-size: 1rem;
     max-width: 650px;
     margin: 0 auto;

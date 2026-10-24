@@ -7,7 +7,7 @@
 }
 
 .networking-page .module-hero {
-  background: linear-gradient(135deg, #102f52, var(--app-primary));
+  background: linear-gradient(135deg, var(--holcim-dark-blue), var(--app-primary));
 }
 
 .networking-page .eyebrow {
@@ -81,7 +81,7 @@
   align-items: center;
   background: var(--app-primary);
   border-radius: 50%;
-  color: white;
+  color: var(--white);
   display: inline-flex;
   flex: 0 0 2.35rem;
   font-size: 0.85rem;

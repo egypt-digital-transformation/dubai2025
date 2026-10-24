@@ -14,9 +14,6 @@
 @import "@ionic/angular/css/text-transformation.css";
 @import "@ionic/angular/css/flex-utils.css";
 
-/* Dark Mode (system preferred) */
-@import "@ionic/angular/css/palettes/dark.system.css";
-
 /* =========================================
    ✅ GLOBAL IONIC ELEMENT FIXES
    ========================================= */
@@ -48,12 +45,12 @@ ion-item {
    ========================================= */
 .toast-success {
   --background: var(--app-success);
-  --color: #fff;
+  --color: var(--white);
 }
 
 .toast-error {
   --background: var(--app-error);
-  --color: #fff;
+  --color: var(--white);
 }
 
 .toast-warning {
@@ -63,17 +60,17 @@ ion-item {
 
 .toast-info {
   --background: var(--app-action);
-  --color: #fff;
+  --color: var(--white);
 }
 
 /* =========================================
    ✅ MODERN SPINNER OVERLAY
    ========================================= */
 .spinner-only {
-  --backdrop-color: #ffffff;
+  --backdrop-color: var(--white);
   --backdrop-opacity: 0.6;
   --background: transparent;
-  --spinner-color: #ffffff;
+  --spinner-color: var(--white);
 
   backdrop-filter: blur(3px);
   animation: fadeIn 0.3s ease-in-out;
@@ -89,7 +86,7 @@ ion-item {
     width: 64px;
     height: 64px;
     color: var(--spinner-color);
-    filter: drop-shadow(0 4px 12px rgba(4, 187, 241, 0.3));
+    filter: drop-shadow(0 4px 12px rgba(var(--holcim-bright-blue-rgb), 0.3));
     animation: smoothSpin 1s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite;
   }
 }
@@ -204,30 +201,30 @@ ion-label {
 // Override Ionic's dark mode variables
 body {
   --ion-background-color: var(--app-surface) !important;
-  --ion-background-color-rgb: 255, 255, 255 !important;
+  --ion-background-color-rgb: var(--white-rgb) !important;
   
   --ion-text-color: var(--app-text) !important;
-  --ion-text-color-rgb: 29, 67, 112 !important;
+  --ion-text-color-rgb: var(--holcim-dark-blue-rgb) !important;
   
-  --ion-color-step-50: #f2f2f2 !important;
-  --ion-color-step-100: #e6e6e6 !important;
-  --ion-color-step-150: #d9d9d9 !important;
-  --ion-color-step-200: #cccccc !important;
-  --ion-color-step-250: #bfbfbf !important;
-  --ion-color-step-300: #b3b3b3 !important;
-  --ion-color-step-350: #a6a6a6 !important;
-  --ion-color-step-400: #999999 !important;
-  --ion-color-step-450: #8c8c8c !important;
-  --ion-color-step-500: #808080 !important;
-  --ion-color-step-550: #737373 !important;
-  --ion-color-step-600: #666666 !important;
-  --ion-color-step-650: #595959 !important;
-  --ion-color-step-700: #4d4d4d !important;
-  --ion-color-step-750: #404040 !important;
-  --ion-color-step-800: #333333 !important;
-  --ion-color-step-850: #262626 !important;
-  --ion-color-step-900: #191919 !important;
-  --ion-color-step-950: #0d0d0d !important;
+  --ion-color-step-50: var(--background-color) !important;
+  --ion-color-step-100: var(--border-color) !important;
+  --ion-color-step-150: var(--border-color) !important;
+  --ion-color-step-200: var(--border-color) !important;
+  --ion-color-step-250: var(--border-color) !important;
+  --ion-color-step-300: var(--bright-gray) !important;
+  --ion-color-step-350: var(--bright-gray) !important;
+  --ion-color-step-400: var(--bright-gray) !important;
+  --ion-color-step-450: var(--bright-gray) !important;
+  --ion-color-step-500: var(--bright-gray) !important;
+  --ion-color-step-550: var(--bright-gray) !important;
+  --ion-color-step-600: var(--dark-gray) !important;
+  --ion-color-step-650: var(--dark-gray) !important;
+  --ion-color-step-700: var(--dark-gray) !important;
+  --ion-color-step-750: var(--dark-gray) !important;
+  --ion-color-step-800: var(--dark-gray) !important;
+  --ion-color-step-850: var(--black) !important;
+  --ion-color-step-900: var(--black) !important;
+  --ion-color-step-950: var(--black) !important;
 
   // Card and item backgrounds
   --ion-item-background: var(--app-surface) !important;
@@ -255,9 +252,9 @@ ion-toast {
 @media (prefers-color-scheme: dark) {
   body {
     --ion-background-color: var(--app-surface) !important;
-    --ion-background-color-rgb: 255, 255, 255 !important;
+    --ion-background-color-rgb: var(--white-rgb) !important;
     --ion-text-color: var(--app-text) !important;
-    --ion-text-color-rgb: 29, 67, 112 !important;
+    --ion-text-color-rgb: var(--holcim-dark-blue-rgb) !important;
   }
 
   ion-content {
@@ -280,7 +277,7 @@ ion-toast {
 ion-tab-bar {
   --background: var(--app-surface);
   --border: 1px solid var(--app-border);
-  box-shadow: 0 -2px 6px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 -2px 6px rgba(var(--black-rgb), 0.05);
   height: 68px; // ⬆️ slightly taller for mobile touch targets
   padding-bottom: env(safe-area-inset-bottom);
 }
@@ -288,7 +285,7 @@ ion-tab-bar {
 ion-tab-button {
   --color: var(--app-text-subtle);
   --color-selected: var(--app-primary);
-  --ripple-color: rgba(4, 187, 241, 0.15);
+  --ripple-color: rgba(var(--holcim-bright-blue-rgb), 0.15);
   flex-direction: column;
   justify-content: center;
   align-items: center;
@@ -361,8 +358,8 @@ ion-fab-button {
 ion-fab-button {
   --background: var(--app-primary) !important;
   --background-activated: var(--ion-color-primary-shade) !important;
-  --color: white !important;
-  --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+  --color: var(--white) !important;
+  --box-shadow: 0 4px 12px rgba(var(--black-rgb), 0.3) !important;
   --border-radius: 50% !important;
   
   width: 56px !important;
@@ -371,7 +368,7 @@ ion-fab-button {
 
 ion-fab-button::part(native) {
   background-color: var(--app-primary) !important;
-  color: white !important;
+  color: var(--white) !important;
   border-radius: 50% !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+  box-shadow: 0 4px 12px rgba(var(--black-rgb), 0.3) !important;
 }

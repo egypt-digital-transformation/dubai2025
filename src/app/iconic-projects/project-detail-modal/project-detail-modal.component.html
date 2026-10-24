@@ -63,7 +63,7 @@
       </h3>
       <div class="products-list">
         <div class="product-card" *ngFor="let product of project.products"
-             [style.borderLeftColor]="product.color || '#2E7D32'">
+             [style.borderLeftColor]="product.color || 'var(--holcim-green)'">
           <div class="product-name">{{ product.name }}</div>
           <div class="product-desc">{{ product.percentage || product.description }}</div>
         </div>

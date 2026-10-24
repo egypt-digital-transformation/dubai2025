@@ -38,14 +38,14 @@ imports: [
 })
 export class VenuePage {
   halls: Room[] = [
-    { name: 'Hall A', subtitle: 'Main Stage', color: '#94C12E', type: 'hall' },
-    { name: 'Hall B', subtitle: 'Breakouts', color: '#00A9E0', type: 'hall' }
+    { name: 'Hall A', subtitle: 'Main Stage', color: 'var(--holcim-bright-green)', type: 'hall' },
+    { name: 'Hall B', subtitle: 'Breakouts', color: 'var(--holcim-bright-blue)', type: 'hall' }
   ];
 
   rooms: Room[] = [
-    { name: 'Room 1', subtitle: '', color: '', type: 'room' },
-    { name: 'Room 2', subtitle: '', color: '', type: 'room' },
-    { name: 'Room 3', subtitle: '', color: '', type: 'room' }
+    { name: 'Room 1', subtitle: '', color: 'var(--holcim-dark-blue)', type: 'room' },
+    { name: 'Room 2', subtitle: '', color: 'var(--holcim-dark-blue)', type: 'room' },
+    { name: 'Room 3', subtitle: '', color: 'var(--holcim-dark-blue)', type: 'room' }
   ];
 
   locations: Location[] = [

@@ -366,6 +366,7 @@ this.showQR = false;
       ]);
       const profilePosition = String(data.currentPosition ?? '').trim();
       const profileName = [firstName, lastName].filter(Boolean).join(' ');
+      const themeColors = getComputedStyle(document.documentElement);
       const profileQrCode = await QRCode.toDataURL(
         this.createContactVCard(
           firstName,
@@ -378,7 +379,10 @@ this.showQR = false;
           errorCorrectionLevel: 'M',
           margin: 2,
           width: 240,
-          color: { dark: '#1D4370', light: '#FFFFFF' },
+          color: {
+            dark: themeColors.getPropertyValue('--holcim-dark-blue').trim(),
+            light: themeColors.getPropertyValue('--white').trim(),
+          },
         }
       );
       if (!this.isCurrentViewingUser(email, uid, generation)) return;

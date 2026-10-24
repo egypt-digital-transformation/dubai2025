@@ -1,5 +1,5 @@
 .splash-content {
-  --background: #ffffff;
+  --background: var(--white);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -24,7 +24,7 @@
 .splash-title {
   font-size: 1.5rem;
   font-weight: 600;
-  color: #081b46;
+  color: var(--holcim-dark-blue);
 }
 
 @keyframes fadeIn {

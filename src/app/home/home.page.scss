@@ -1,7 +1,7 @@
 @use "sass:color";
 
 ion-content {
-  --background: #f9fafb;
+  --background: var(--background-color);
 }
 
 .home-wrapper {
@@ -14,7 +14,7 @@ ion-content {
 // HEADER SECTION  (mobile-first)
 // ============================================
 .header-gradient {
-  background: linear-gradient(to bottom right, #041739 0%, #041739 40%, #1d4370 100%);
+  background: linear-gradient(to bottom right, var(--black) 0%, var(--black) 40%, var(--holcim-dark-blue) 100%);
   padding: 4.5rem 1.25rem 3rem;  // ⬆️ more vertical padding on mobile
   position: relative;
   overflow: hidden;
@@ -54,7 +54,7 @@ ion-content {
 
 .header-title {
   position: relative;
-  color: white;
+  color: var(--white);
   font-size: 1.5rem;
   line-height: 1.3;
   font-weight: 700;
@@ -73,7 +73,7 @@ ion-content {
 
 .header-subtitle {
   position: relative;
-  color: rgba(255, 255, 255, 0.9);
+  color: rgba(var(--white-rgb), 0.9);
   font-size: 0.85rem;
   line-height: 1.4;
   margin: 0;
@@ -88,7 +88,7 @@ ion-content {
   }
 }
 .event-label {
-  color: rgba(255, 255, 255, 0.7);
+  color: rgba(var(--white-rgb), 0.7);
   font-size: 0.875rem;
   font-weight: 500;
   letter-spacing: 0.05em;
@@ -97,7 +97,7 @@ ion-content {
 }
 
 .day-title {
-  color: white;
+  color: var(--white);
   font-size: 1.5rem;
   font-weight: 700;
   margin: 0;
@@ -106,7 +106,7 @@ ion-content {
 }
 
 .date-text {
-  color: rgba(255, 255, 255, 0.8);
+  color: rgba(var(--white-rgb), 0.8);
   font-size: 0.875rem;
   margin: 0.25rem 0 0;
   line-height: 1.5;
@@ -121,12 +121,12 @@ ion-content {
 
 
 .hotel-card {
-  background: #ffffff;
+  background: var(--white);
   border-radius: 1rem;
 
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.09),
-              0 2px 5px rgba(0, 0, 0, 0.03);
-  border: 1px solid rgba(229, 231, 235, 0.7);
+  box-shadow: 0 8px 25px rgba(var(--black-rgb), 0.09),
+              0 2px 5px rgba(var(--black-rgb), 0.03);
+  border: 1px solid rgba(var(--border-color-rgb), 0.7);
   margin-bottom: 1.5rem; /* Reduced external margin */
 
   .card-content {
@@ -153,15 +153,15 @@ ion-content {
       /* Reduced icon size and padding */
       font-size: 1.3rem;
       padding: 0.5rem;
-      background: #e6f0ff;
-      color: #0d47a1;
+      background: var(--background-color);
+      color: var(--holcim-dark-blue);
       border-radius: 50%;
-      box-shadow: inset 0 1px 3px rgba(13, 71, 161, 0.1);
+      box-shadow: inset 0 1px 3px rgba(var(--holcim-dark-blue-rgb), 0.1);
     }
   }
 
   .card-title {
-    color: #0a2a5a;
+    color: var(--holcim-dark-blue);
     /* Slightly reduced font size */
     font-size: 1.1rem;
     font-weight: 700;
@@ -173,7 +173,7 @@ ion-content {
     /* Reduced body font size and line height */
     font-size: 0.95rem;
     line-height: 1.6;
-    color: #4b5563;
+    color: var(--dark-gray);
 
     p {
       /* Significantly reduced vertical margin between detail lines */
@@ -185,17 +185,17 @@ ion-content {
       ion-icon {
         /* Reduced detail icon size */
         font-size: 1rem;
-        color: #2c5aa0;
+        color: var(--holcim-dark-blue);
         min-width: 1rem;
       }
 
       strong {
-        color: #1f2937;
+        color: var(--holcim-dark-blue);
         font-weight: 600;
       }
 
       span {
-        color: #6b7280;
+        color: var(--bright-gray);
         font-weight: 400;
       }
     }
@@ -205,14 +205,14 @@ ion-content {
    All session cards (next, no-session, current) share the same styling
    ======================================== */
 .session-card {
-  background: white;
+  background: var(--white);
   border-radius: 1rem;
   margin-top: -1rem;
   position: relative;
   z-index: 100;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.06),
-    0 2px 4px -1px rgba(0, 0, 0, 0.04);
-  border: 1px solid #e5e7eb;
+  box-shadow: 0 4px 6px -1px rgba(var(--black-rgb), 0.06),
+    0 2px 4px -1px rgba(var(--black-rgb), 0.04);
+  border: 1px solid var(--border-color);
   margin-bottom: 1.5em;
   transition: all 0.2s ease;
 
@@ -222,12 +222,12 @@ ion-content {
 
   &.next-session:hover {
     transform: translateY(-1px);
-    box-shadow: 0 6px 12px -2px rgba(0, 0, 0, 0.08),
-      0 3px 6px -2px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 6px 12px -2px rgba(var(--black-rgb), 0.08),
+      0 3px 6px -2px rgba(var(--black-rgb), 0.05);
   }
 
   &.live {
-    border-left: 4px solid #4bb05b; // Green accent for live
+    border-left: 4px solid var(--holcim-green); // Green accent for live
   }
 
   // untouched no-session
@@ -236,15 +236,15 @@ ion-content {
 
     &.today {
       &:hover {
-        box-shadow: 0 10px 15px -3px rgba(148, 193, 46, 0.1),
-          0 4px 6px -2px rgba(148, 193, 46, 0.05);
+        box-shadow: 0 10px 15px -3px rgba(var(--holcim-bright-green-rgb), 0.1),
+          0 4px 6px -2px rgba(var(--holcim-bright-green-rgb), 0.05);
       }
     }
 
     &.complete {
       &:hover {
-        box-shadow: 0 10px 15px -3px rgba(0, 169, 224, 0.1),
-          0 4px 6px -2px rgba(0, 169, 224, 0.05);
+        box-shadow: 0 10px 15px -3px rgba(var(--holcim-bright-blue-rgb), 0.1),
+          0 4px 6px -2px rgba(var(--holcim-bright-blue-rgb), 0.05);
       }
     }
   }
@@ -270,15 +270,15 @@ ion-content {
     gap: 0.4rem;
 
     &.next {
-      background: linear-gradient(135deg, #00a9e0 0%, #0092c4 100%);
-      color: white;
+      background: linear-gradient(135deg, var(--holcim-bright-blue) 0%, var(--holcim-bright-turquoise) 100%);
+      color: var(--white);
     }
 
     /* 🟢 LIVE NOW badge with pulsing dot */
     &.live {
-      background: #e8f9e9;
-      color: #4bb05b;
-      border: 1px solid rgba(19, 136, 8, 0.25);
+      background: var(--border-color);
+      color: var(--holcim-green);
+      border: 1px solid rgba(var(--holcim-green-rgb), 0.25);
       padding-left: 1.5rem;
 
       &::before {
@@ -290,8 +290,8 @@ ion-content {
         width: 8px;
         height: 8px;
         border-radius: 50%;
-        background-color: #4bb05b;
-        box-shadow: 0 0 0 0 rgba(39, 174, 96, 0.5);
+        background-color: var(--holcim-green);
+        box-shadow: 0 0 0 0 rgba(var(--holcim-green-rgb), 0.5);
         animation: pulse 1.4s infinite;
       }
     }
@@ -299,7 +299,7 @@ ion-content {
 
   .time-remaining {
     font-size: 0.75rem;
-    color: #6b7280;
+    color: var(--bright-gray);
     font-weight: 500;
     line-height: 1.5;
   }
@@ -309,21 +309,21 @@ ion-content {
 @keyframes pulse {
   0% {
     transform: translateY(-50%) scale(1);
-    box-shadow: 0 0 0 0 rgba(39, 174, 96, 0.4);
+    box-shadow: 0 0 0 0 rgba(var(--holcim-green-rgb), 0.4);
   }
   70% {
     transform: translateY(-50%) scale(1.5);
-    box-shadow: 0 0 0 8px rgba(39, 174, 96, 0);
+    box-shadow: 0 0 0 8px rgba(var(--holcim-green-rgb), 0);
   }
   100% {
     transform: translateY(-50%) scale(1);
-    box-shadow: 0 0 0 0 rgba(39, 174, 96, 0);
+    box-shadow: 0 0 0 0 rgba(var(--holcim-green-rgb), 0);
   }
 }
 
 /* --- SESSION DETAILS --- */
 .session-title {
-  color: #1d4370;
+  color: var(--holcim-dark-blue);
   font-size: 1.125rem;
   font-weight: 600;
   margin: 0 0 0.875rem;
@@ -339,7 +339,7 @@ ion-content {
 
   ion-icon {
     font-size: 1rem;
-    color: rgb(0, 115, 255);
+    color: var(--holcim-bright-blue);
   }
 
   .info-item {
@@ -347,7 +347,7 @@ ion-content {
     align-items: center;
     gap: 0.4rem;
     font-size: 0.8125rem;
-    color: #4b5563;
+    color: var(--dark-gray);
     line-height: 1;
   }
 }
@@ -358,18 +358,18 @@ ion-content {
   align-items: center;
   gap: 0.75rem;
   padding-top: 1rem;
-  border-top: 1px solid #f3f4f6;
+  border-top: 1px solid var(--background-color);
 
   .avatar,
   .avatar-img {
     width: 2.5rem;
     height: 2.5rem;
     border-radius: 50%;
-    background: linear-gradient(135deg, #041739, #041739);
+    background: linear-gradient(135deg, var(--black), var(--black));
     display: flex;
     align-items: center;
     justify-content: center;
-    color: white;
+    color: var(--white);
     font-weight: 600;
     font-size: 0.8125rem;
     flex-shrink: 0;
@@ -386,7 +386,7 @@ ion-content {
   }
 
   .speaker-name {
-    color: #1d4370;
+    color: var(--holcim-dark-blue);
     font-weight: 600;
     font-size: 0.875rem;
     line-height: 1.4;
@@ -394,7 +394,7 @@ ion-content {
   }
 
   .speaker-role {
-    color: #6b7280;
+    color: var(--bright-gray);
     font-size: 0.75rem;
     line-height: 1.5;
   }
@@ -402,7 +402,7 @@ ion-content {
 // untouched no-session text
 .session-text {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--bright-gray);
   margin: 0;
   line-height: 1.6;
   max-width: 28rem;
@@ -421,18 +421,18 @@ ion-content {
   margin-bottom: 1.25rem;
 
   .action-card {
-    background: white;
+    background: var(--white);
     border-radius: 1rem;
     padding: 1rem;
     text-align: center;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    border: 2px solid #f3f4f6;
+    box-shadow: 0 4px 6px -1px rgba(var(--black-rgb), 0.1), 0 2px 4px -1px rgba(var(--black-rgb), 0.06);
+    border: 2px solid var(--background-color);
     cursor: pointer;
     transition: all 0.2s ease;
 
     &:active {
       transform: scale(0.95);
-      box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 2px 4px -1px rgba(var(--black-rgb), 0.1);
     }
 
     .action-content {
@@ -455,18 +455,19 @@ ion-content {
       margin-bottom: 0.5rem;
 
       &.qr {
-        background: linear-gradient(135deg, #007fad 0%, #007fad 100%);
+        background: linear-gradient(135deg, var(--holcim-bright-turquoise) 0%, var(--holcim-bright-turquoise) 100%);
       }
 
-      &.venue {                      background: linear-gradient(135deg, #94C12E 0%, #94C12E 100%);
-
-
+      &.venue {
+        background: linear-gradient(135deg, var(--holcim-bright-green) 0%, var(--holcim-bright-green) 100%);
       }
 
-      &.networking {background: linear-gradient(135deg, #1D4370 0%, #1d4370 100%); 
+      &.networking {
+        background: linear-gradient(135deg, var(--holcim-dark-blue) 0%, var(--holcim-dark-blue) 100%);
       }
 
-      &.hse {background: linear-gradient(135deg, #4bb05b 0%, #4bb05b 100%); 
+      &.hse {
+        background: linear-gradient(135deg, var(--holcim-green) 0%, var(--holcim-green) 100%);
       }
 
       &.hse img {
@@ -478,20 +479,20 @@ ion-content {
 
       ion-icon {
         font-size: 1.5rem;
-        color: white;
+        color: var(--white);
       }
     }
 
     .action-title {
       font-size: 0.75rem;
       font-weight: 600;
-      color: #1D4370;
+      color: var(--holcim-dark-blue);
       margin-bottom: 0.125rem;
     }
 
     .action-desc {
       font-size: 0.625rem;
-      color: #6b7280;
+      color: var(--bright-gray);
     }
   }
 }
@@ -500,10 +501,10 @@ ion-content {
 // AGENDA CARD
 // ========================================
 .agenda-card {
-  background: white;
+  background: var(--white);
   border-radius: 1rem;
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  border: 1px solid #f3f4f6;
+  box-shadow: 0 1px 2px 0 rgba(var(--black-rgb), 0.05);
+  border: 1px solid var(--background-color);
   margin-bottom: 1.25rem;
 
   .card-content {
@@ -519,7 +520,7 @@ ion-content {
 }
 
 .card-title {
-  color: #1D4370;
+  color: var(--holcim-dark-blue);
   font-size: 1.125rem;
   font-weight: 700;
   margin: 0;
@@ -529,7 +530,7 @@ ion-content {
 .view-all-btn {
   background: none;
   border: none;
-  color: #00A9E0;
+  color: var(--holcim-bright-blue);
   font-weight: 500;
   font-size: 0.875rem;
   cursor: pointer;
@@ -537,7 +538,7 @@ ion-content {
   transition: color 0.15s ease;
 
   &:hover {
-    color: #0088B8;
+    color: var(--holcim-bright-turquoise);
   }
 }
 
@@ -557,13 +558,13 @@ ion-content {
   display: flex;
   gap: 1rem;
   padding: 0.75rem;
-  background: #f9fafb;
+  background: var(--background-color);
   border-radius: 0.75rem;
   cursor: pointer;
   transition: background 0.15s ease;
 
   &:hover {
-    background: #f3f4f6;
+    background: var(--background-color);
   }
 }
 
@@ -577,7 +578,7 @@ ion-content {
 
 .time-label,
 .time-green {
-  color: #94C12E;
+  color: var(--holcim-bright-green);
   font-size: 0.9rem;
   font-weight: 700;
   line-height: 1.3;
@@ -585,7 +586,7 @@ ion-content {
 
 .room {
   font-size: 0.7rem;
-  color: #6b7280;
+  color: var(--bright-gray);
   line-height: 1.5;
 }
 
@@ -595,7 +596,7 @@ ion-content {
 }
 
 .session-name {
-  color: #1D4370;
+  color: var(--holcim-dark-blue);
   font-weight: 600;
   font-size: 0.875rem;
   margin-bottom: 0.125rem;
@@ -606,7 +607,7 @@ ion-content {
 }
 
 .session-speaker {
-  color: #4b5563;
+  color: var(--dark-gray);
   font-size: 0.75rem;
   line-height: 1.5;
 }
@@ -615,15 +616,15 @@ ion-content {
 .no-session {
   position: relative;
   overflow: hidden;
-  border: 2px solid #e5e7eb;
+  border: 2px solid var(--border-color);
 }
 
 .no-session.today {
-  background: linear-gradient(135deg, #ffffff 0%, #ffffff 100%);
+  background: linear-gradient(135deg, var(--white) 0%, var(--white) 100%);
 }
 
 .no-session.over {
-  background: linear-gradient(135deg, #ffffff 0%, #ffffff 100%);
+  background: linear-gradient(135deg, var(--white) 0%, var(--white) 100%);
 }
 
 .no-session .card-content {
@@ -647,22 +648,22 @@ ion-content {
 }
 
 .no-session.today .no-session-icon {
-  background: linear-gradient(135deg, #94C12E 0%, #7da625 100%);
-  box-shadow: 0 8px 16px rgba(148, 193, 46, 0.25);
+  background: linear-gradient(135deg, var(--holcim-bright-green) 0%, var(--holcim-bright-green) 100%);
+  box-shadow: 0 8px 16px rgba(var(--holcim-bright-green-rgb), 0.25);
 }
 
 .no-session.over .no-session-icon {
-  background: linear-gradient(135deg, #94C12E 0%, #7da625 100%);
-  box-shadow: 0 8px 16px rgba(148, 193, 46, 0.25);
+  background: linear-gradient(135deg, var(--holcim-bright-green) 0%, var(--holcim-bright-green) 100%);
+  box-shadow: 0 8px 16px rgba(var(--holcim-bright-green-rgb), 0.25);
 }
 .no-session.before .no-session-icon {
-  background: linear-gradient(135deg, #00A9E0 0%, #0092c4 100%);
-  box-shadow: 0 8px 16px rgba(0, 169, 224, 0.25);
+  background: linear-gradient(135deg, var(--holcim-bright-blue) 0%, var(--holcim-bright-turquoise) 100%);
+  box-shadow: 0 8px 16px rgba(var(--holcim-bright-blue-rgb), 0.25);
 }
 
 .no-session-icon ion-icon {
   font-size: 2.25rem;
-  color: white;
+  color: var(--white);
   animation: iconFloat 3s ease-in-out infinite;
 }
 
@@ -680,7 +681,7 @@ ion-content {
   font-size: 1.25rem;
   font-weight: 700;
   margin-bottom: 0.875rem;
-  color: #1D4370;
+  color: var(--holcim-dark-blue);
   letter-spacing: -0.01em;
 }
 
@@ -688,7 +689,7 @@ ion-content {
 .no-session .session-text {
   font-size: 0.9375rem;
   line-height: 1.6;
-  color: #6b7280;
+  color: var(--bright-gray);
   margin: 0;
   max-width: 22rem;
   margin-left: auto;
@@ -731,16 +732,16 @@ ion-content {
   width: 0.5rem;
   height: 0.5rem;
   border-radius: 50%;
-  background: #d1d5db;
+  background: var(--border-color);
   margin-top: 0.375rem;
   flex-shrink: 0;
 
   &.active {
-    background: #94C12E;
+    background: var(--holcim-bright-green);
   }
 
   &.pulse {
-    background: #ef4444;
+    background: var(--holcim-orange);
     animation: pulse 2s ease-in-out infinite;
   }
 }
@@ -751,7 +752,7 @@ ion-content {
 }
 
 .announcement-title {
-  color: #1D4370;
+  color: var(--holcim-dark-blue);
   font-weight: 600;
   font-size: 0.875rem;
   margin-bottom: 0.125rem;
@@ -759,14 +760,14 @@ ion-content {
 }
 
 .announcement-desc {
-  color: #4b5563;
+  color: var(--dark-gray);
   font-size: 0.75rem;
   margin-bottom: 0.25rem;
   line-height: 1.5;
 }
 
 .announcement-time {
-  color: #9ca3af;
+  color: var(--bright-gray);
   font-size: 0.75rem;
   line-height: 1.5;
 }
@@ -778,13 +779,13 @@ ion-content {
 
   .fun-icon {
     font-size: 3rem;
-    color: #d1d5db;
+    color: var(--border-color);
     margin-bottom: 1rem;
   }
 
   p {
     font-size: 0.875rem;
-    color: #6b7280;
+    color: var(--bright-gray);
     line-height: 1.6;
     margin: 0;
   }
@@ -801,7 +802,7 @@ ion-content {
     width: 3rem;
     height: 3rem;
     border-radius: 50%;
-    background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
+    background: linear-gradient(135deg, var(--border-color) 0%, var(--border-color) 100%);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -809,20 +810,20 @@ ion-content {
 
     ion-icon {
       font-size: 1.5rem;
-      color: #1D4370;
+      color: var(--holcim-dark-blue);
     }
   }
 
   .empty-title {
     font-size: 1rem;
     font-weight: 600;
-    color: #1D4370;
+    color: var(--holcim-dark-blue);
     margin: 0 0 0.5rem;
   }
 
   .empty-text {
     font-size: 0.875rem;
-    color: #6b7280;
+    color: var(--bright-gray);
     line-height: 1.6;
     margin: 0;
   }
@@ -836,9 +837,9 @@ ion-content {
 .skeleton {
   background: linear-gradient(
     90deg,
-    #f0f0f0 25%,
-    #e0e0e0 50%,
-    #f0f0f0 75%
+    var(--background-color) 25%,
+    var(--border-color) 50%,
+    var(--background-color) 75%
   );
   background-size: 200% 100%;
   animation: loading 1.5s infinite;
@@ -936,11 +937,11 @@ ion-content {
 // ========================================
 
 // Brand Colors
-$color-primary: #1D4370; // Holcim Dark Blue
-$color-secondary: #00A9E0; // Holcim Blue
-$color-accent: #94C12E; // Holcim Green
-$color-bg-light: #f9fafb;
-$color-border: #e5e7eb;
+$color-primary: var(--holcim-dark-blue); // Holcim Dark Blue
+$color-secondary: var(--holcim-bright-blue); // Holcim Blue
+$color-accent: var(--holcim-bright-green); // Holcim Green
+$color-bg-light: var(--background-color);
+$color-border: var(--border-color);
 
 // ========================================
 // Footer
@@ -951,7 +952,7 @@ $color-border: #e5e7eb;
 
   p {
     font-size: 0.7rem;
-    color: #9ca3af;
+    color: var(--bright-gray);
     margin: 0;
   }
 }
@@ -986,7 +987,7 @@ ion-header {
 }
 /* Add this to your component's SCSS or a global stylesheet */
 .deeplink-text {
-  color: #00A9E0; /* Use your brand's secondary/accent color */
+  color: var(--holcim-bright-blue); /* Use your brand's secondary/accent color */
   text-decoration: none; /* Clearly indicates it's a link */
   font-weight: 500; /* Optional: Make it slightly bolder */
   cursor: pointer;
@@ -994,14 +995,14 @@ ion-header {
 
 /* If you want the color to change on hover/tap (optional) */
 .deeplink-text:hover {
-  color: color.adjust(#00A9E0, $lightness: -10%);
+  color: var(--holcim-dark-blue);
 }
 
 .logout-btn {
   position: absolute;
   top: 90px;
   right: 8px;
-  color: white;
+  color: var(--white);
   font-size: 1.4rem;
   z-index: 100;
   
@@ -1018,9 +1019,9 @@ ion-header {
 
 .notification-card {
   margin: 16px;
-  background: var(--ion-card-background, #fff);
+  background: var(--ion-card-background, var(--white));
   border-radius: 16px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgba(var(--black-rgb), 0.1);
   overflow: hidden;
 
   .card-content {
@@ -1077,7 +1078,7 @@ ion-header {
       left: 0;
       right: 0;
       bottom: 0;
-      background-color: #ccc;
+      background-color: var(--border-color);
       transition: 0.3s;
       border-radius: 28px;
 
@@ -1088,7 +1089,7 @@ ion-header {
         width: 20px;
         left: 4px;
         bottom: 4px;
-        background-color: white;
+        background-color: var(--white);
         transition: 0.3s;
         border-radius: 50%;
       }
@@ -1193,9 +1194,9 @@ ion-header {
   width: 36px;
   height: 36px;
   margin: 0;
-  color: white;
+  color: var(--white);
   font-weight: 600;
-    --background: #003366; /* Dark blue fill */
+    --background: var(--holcim-dark-blue); /* Dark blue fill */
 
   transition: all 0.3s ease;
   
@@ -1242,8 +1243,8 @@ ion-modal {
   --border-radius: 24px;
 
   .add-modal-content {
-    background: #ffffff;
-    color: #1e293b;
+    background: var(--white);
+    color: var(--holcim-dark-blue);
     display: flex;
     flex-direction: column;
     height: 100%;
@@ -1256,14 +1257,14 @@ ion-modal {
     margin-top: 2rem;
     justify-content: space-between;
     padding: 1.5rem 1.75rem;
-    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-    border-bottom: 1px solid #e2e8f0;
+    background: linear-gradient(135deg, var(--background-color) 0%, var(--background-color) 100%);
+    border-bottom: 1px solid var(--border-color);
     flex-shrink: 0;
 
     .modal-title {
       font-size: 1.375rem;
       font-weight: 700;
-      color: #1e293b;
+      color: var(--holcim-dark-blue);
       margin: 0;
       letter-spacing: -0.3px;
     }
@@ -1271,7 +1272,7 @@ ion-modal {
     .close-btn {
       background: transparent;
       border: none;
-      color: #64748b;
+      color: var(--bright-gray);
       font-size: 1.75rem;
       cursor: pointer;
       transition: all 0.2s ease;
@@ -1284,8 +1285,8 @@ ion-modal {
       padding: 0;
 
       &:hover {
-        background: rgba(0, 0, 0, 0.05);
-        color: #1e293b;
+        background: rgba(var(--black-rgb), 0.05);
+        color: var(--holcim-dark-blue);
       }
 
       &:active {
@@ -1301,7 +1302,7 @@ ion-modal {
     gap: 1.25rem;
     overflow-y: auto;
     flex: 1;
-    background: #ffffff;
+    background: var(--white);
 
     ion-input,
     ion-textarea {
@@ -1310,26 +1311,26 @@ ion-modal {
       --padding-top: 12px;
       --padding-bottom: 12px;
       --border-radius: 12px;
-      --border-color: #e2e8f0;
+      --border-color: var(--border-color);
       --border-width: 1.5px;
-      --background: #ffffff;
-      --color: #1e293b;
+      --background: var(--white);
+      --color: var(--holcim-dark-blue);
       font-size: 0.9375rem;
 
       &::part(native) {
-        color: #1e293b;
-        background: #ffffff;
+        color: var(--holcim-dark-blue);
+        background: var(--white);
       }
 
       &::part(label) {
         font-weight: 600;
-        color: #475569;
+        color: var(--dark-gray);
         font-size: 0.875rem;
       }
 
       &.has-focus {
-        --border-color: #00a9e0;
-        --highlight-color: #00a9e0;
+        --border-color: var(--holcim-bright-blue);
+        --highlight-color: var(--holcim-bright-blue);
       }
     }
 
@@ -1348,7 +1349,7 @@ ion-modal {
       --padding-top: 14px;
       --padding-bottom: 14px;
       height: 48px;
-      color: white;
+      color: var(--white);
       font-weight: 700;
       letter-spacing: 0.4px;
       font-size: 0.9375rem;
@@ -1402,14 +1403,14 @@ ion-modal {
   --border-radius: 1.25rem;
   --height: auto;
   --max-height: 85vh;
-  --box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
+  --box-shadow: 0 6px 18px rgba(var(--black-rgb), 0.1);
 
   @media (min-width: 480px) {
     --max-width: 420px;
   }
 
   .qr-modal-content {
-    background: #fff;
+    background: var(--white);
     padding: 1.25rem 1.5rem 1.5rem;
     display: flex;
     flex-direction: column;
@@ -1422,17 +1423,17 @@ ion-modal {
     align-items: center;
     margin-bottom: 0.75rem;
     padding-bottom: 0.75rem;
-    border-bottom: 1px solid #e5e7eb;
+    border-bottom: 1px solid var(--border-color);
 
     .qr-title {
-      color: #1d4370;
+      color: var(--holcim-dark-blue);
       font-size: 1.25rem;
       font-weight: 700;
       margin: 0;
     }
 
     .close-btn {
-      background: rgba(241, 245, 249, 0.8);
+      background: rgba(var(--background-color-rgb), 0.8);
       border: none;
       border-radius: 50%;
       width: 2rem;
@@ -1445,14 +1446,14 @@ ion-modal {
 
       ion-icon {
         font-size: 1.2rem;
-        color: #1d4370;
+        color: var(--holcim-dark-blue);
       }
 
       &:hover {
-        background: rgba(0, 169, 224, 0.15);
+        background: rgba(var(--holcim-bright-blue-rgb), 0.15);
         
         ion-icon {
-          color: #00a9e0;
+          color: var(--holcim-bright-blue);
         }
       }
     }
@@ -1463,10 +1464,10 @@ ion-modal {
     margin: 0.5rem 0 1.25rem;
 
     .qr-frame {
-      background: white;
+      background: var(--white);
       padding: 0.75rem;
       border-radius: 0.75rem;
-      border: 1px solid #e5e7eb;
+      border: 1px solid var(--border-color);
       display: inline-flex;
       justify-content: center;
       align-items: center;
@@ -1491,7 +1492,7 @@ ion-modal {
 
     .qr-instruction {
       margin-top: 0.75rem;
-      color: #6b7280;
+      color: var(--bright-gray);
       font-size: 0.85rem;
     }
 
@@ -1559,7 +1560,7 @@ ion-modal {
     display: flex;
     flex-direction: column;
     gap: 0.9rem;
-    border-top: 1px solid #e5e7eb;
+    border-top: 1px solid var(--border-color);
     padding-top: 1rem;
     margin-top: 0.75rem;
   }
@@ -1571,16 +1572,16 @@ ion-modal {
 
     &.info-row-primary {
       .info-icon {
-        background: rgba(0, 169, 224, 0.15);
+        background: rgba(var(--holcim-bright-blue-rgb), 0.15);
         
         ion-icon {
-          color: #00a9e0;
+          color: var(--holcim-bright-blue);
         }
       }
       
       .info-value {
         font-weight: 700;
-        color: #1d4370;
+        color: var(--holcim-dark-blue);
       }
     }
   }
@@ -1589,14 +1590,14 @@ ion-modal {
     width: 2.25rem;
     height: 2.25rem;
     border-radius: 50%;
-    background: #f1f5f9;
+    background: var(--background-color);
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
 
     ion-icon {
-      color: #00a9e0;
+      color: var(--holcim-bright-blue);
       font-size: 1.15rem;
     }
   }
@@ -1607,7 +1608,7 @@ ion-modal {
 
     .info-label {
       font-size: 0.7rem;
-      color: #9ca3af;
+      color: var(--bright-gray);
       text-transform: uppercase;
       letter-spacing: 0.04em;
       font-weight: 600;
@@ -1616,7 +1617,7 @@ ion-modal {
 
     .info-value {
       font-size: 1rem;
-      color: #1d4370;
+      color: var(--holcim-dark-blue);
       font-weight: 600;
     }
   }
@@ -1644,7 +1645,7 @@ ion-modal::part(content) {
 .home-wrapper {
   min-height: 100%;
   padding-bottom: 1.5rem;
-  background: #f5f7f8;
+  background: var(--background-color);
 }
 
 .content-container {
@@ -1655,11 +1656,11 @@ ion-modal::part(content) {
 
 .welcome-hero {
   background:
-    radial-gradient(ellipse at 82% 15%, rgba(0, 169, 224, 0.22), transparent 37%),
-    linear-gradient(125deg, #071a38 0%, #102f52 63%, #16456d 100%);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+    radial-gradient(ellipse at 82% 15%, rgba(var(--holcim-bright-blue-rgb), 0.22), transparent 37%),
+    linear-gradient(125deg, var(--black) 0%, var(--holcim-dark-blue) 63%, var(--holcim-dark-blue) 100%);
+  border: 1px solid rgba(var(--white-rgb), 0.12);
   border-radius: 1.25rem;
-  color: #fff;
+  color: var(--white);
   isolation: isolate;
   margin-bottom: 1rem;
   overflow: hidden;
@@ -1687,7 +1688,7 @@ ion-modal::part(content) {
 
 .welcome-eyebrow,
 .section-eyebrow {
-  color: #83d4e7;
+  color: var(--border-color);
   font-size: 0.66rem;
   font-weight: 700;
   letter-spacing: 0.15em;
@@ -1697,7 +1698,7 @@ ion-modal::part(content) {
 }
 
 .welcome-hero h1 {
-  color: #fff;
+  color: var(--white);
   font-size: clamp(2rem, 7vw, 3.1rem);
   font-weight: 650;
   letter-spacing: -0.045em;
@@ -1707,7 +1708,7 @@ ion-modal::part(content) {
 }
 
 .welcome-description {
-  color: rgba(255, 255, 255, 0.8);
+  color: rgba(var(--white-rgb), 0.8);
   font-size: 0.95rem;
   line-height: 1.6;
   margin: 0.85rem 0 1.1rem;
@@ -1716,17 +1717,17 @@ ion-modal::part(content) {
 
 .welcome-meta {
   align-items: center;
-  color: rgba(255, 255, 255, 0.75);
+  color: rgba(var(--white-rgb), 0.75);
   display: flex;
   font-size: 0.75rem;
   gap: 0.65rem;
 }
 
 .welcome-day {
-  background: rgba(148, 193, 46, 0.18);
-  border: 1px solid rgba(177, 220, 83, 0.4);
+  background: rgba(var(--holcim-bright-green-rgb), 0.18);
+  border: 1px solid rgba(var(--holcim-bright-green-rgb), 0.4);
   border-radius: 999px;
-  color: #ddf2a5;
+  color: var(--border-color);
   font-size: 0.62rem;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -1735,10 +1736,10 @@ ion-modal::part(content) {
 
 .welcome-link {
   align-items: center;
-  background: #fff;
+  background: var(--white);
   border: 0;
   border-radius: 0.55rem;
-  color: #123457;
+  color: var(--holcim-dark-blue);
   cursor: pointer;
   display: inline-flex;
   font: inherit;
@@ -1755,7 +1756,7 @@ ion-modal::part(content) {
   }
 
   &:hover {
-    background: #eaf7fa;
+    background: var(--background-color);
     transform: translateY(-1px);
   }
 }
@@ -1784,10 +1785,10 @@ ion-modal::part(content) {
 }
 
 .ahlan-card-copy-box {
-  background: #fff;
-  border: 1px solid #e2e8ec;
+  background: var(--white);
+  border: 1px solid var(--border-color);
   border-radius: 1.25rem;
-  box-shadow: 0 8px 24px rgba(12, 47, 75, 0.07);
+  box-shadow: 0 8px 24px rgba(var(--holcim-dark-blue-rgb), 0.07);
   min-width: 0;
   margin-left: 5.75rem;
   padding: 0.65rem 0.85rem;
@@ -1800,13 +1801,13 @@ ion-modal::part(content) {
 }
 
 .ahlan-card-copy h2 {
-  color: #1d4370;
+  color: var(--holcim-dark-blue);
   font-size: 1.45rem;
   margin: 0 0 0.35rem;
 }
 
 .ahlan-card-copy p {
-  color: #627286;
+  color: var(--bright-gray);
   font-size: 0.9rem;
   line-height: 1.55;
   margin: 0;
@@ -1823,7 +1824,7 @@ ion-modal::part(content) {
   margin-bottom: 0.85rem;
 
   h2 {
-    color: #152e48;
+    color: var(--holcim-dark-blue);
     font-size: 1.3rem;
     font-weight: 650;
     letter-spacing: -0.025em;
@@ -1832,16 +1833,16 @@ ion-modal::part(content) {
   }
 
   .section-eyebrow {
-    color: #668092;
+    color: var(--bright-gray);
     font-size: 0.6rem;
     margin-bottom: 0.35rem;
   }
 }
 
 .day-chip {
-  background: #eaf2f4;
+  background: var(--background-color);
   border-radius: 999px;
-  color: #476477;
+  color: var(--dark-gray);
   flex-shrink: 0;
   font-size: 0.62rem;
   font-weight: 700;
@@ -1868,11 +1869,11 @@ ion-modal::part(content) {
 
   .action-card {
     align-items: center;
-    background: #fff;
-    border: 1px solid #e6ecef;
+    background: var(--white);
+    border: 1px solid var(--border-color);
     border-radius: 0.9rem;
-    box-shadow: 0 2px 8px rgba(14, 40, 61, 0.035);
-    color: #1d4370;
+    box-shadow: 0 2px 8px rgba(var(--holcim-dark-blue-rgb), 0.035);
+    color: var(--holcim-dark-blue);
     display: flex;
     font: inherit;
     justify-content: flex-start;
@@ -1882,13 +1883,13 @@ ion-modal::part(content) {
     transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
 
     &:hover {
-      border-color: #9dd9e4;
-      box-shadow: 0 6px 16px rgba(14, 40, 61, 0.08);
+      border-color: var(--border-color);
+      box-shadow: 0 6px 16px rgba(var(--holcim-dark-blue-rgb), 0.08);
       transform: translateY(-2px);
     }
 
     &:focus-visible {
-      outline: 3px solid rgba(0, 169, 224, 0.45);
+      outline: 3px solid rgba(var(--holcim-bright-blue-rgb), 0.45);
       outline-offset: 2px;
     }
   }
@@ -1910,13 +1911,13 @@ ion-modal::part(content) {
   }
 
   .action-title {
-    color: #173a59;
+    color: var(--holcim-dark-blue);
     font-size: 0.79rem;
     line-height: 1.35;
   }
 
   .action-desc {
-    color: #778793;
+    color: var(--bright-gray);
     font-size: 0.68rem;
     line-height: 1.4;
     margin-top: 0.15rem;
@@ -1924,10 +1925,10 @@ ion-modal::part(content) {
 }
 
 .agenda-card.home-section {
-  background: #fff;
-  border: 1px solid #e6ecef;
+  background: var(--white);
+  border: 1px solid var(--border-color);
   border-radius: 1rem;
-  box-shadow: 0 2px 8px rgba(14, 40, 61, 0.035);
+  box-shadow: 0 2px 8px rgba(var(--holcim-dark-blue-rgb), 0.035);
 
   .card-content {
     padding: 1.2rem;
@@ -1939,39 +1940,39 @@ ion-modal::part(content) {
   }
 
   .section-eyebrow {
-    color: #668092;
+    color: var(--bright-gray);
     font-size: 0.58rem;
     margin-bottom: 0.35rem;
   }
 
   .card-title {
-    color: #152e48;
+    color: var(--holcim-dark-blue);
     font-size: 1.2rem;
     font-weight: 650;
     letter-spacing: -0.025em;
   }
 
   .view-all-btn {
-    color: #087f9f;
+    color: var(--holcim-bright-turquoise);
     font-size: 0.78rem;
     font-weight: 650;
   }
 
   .agenda-item {
     align-items: center;
-    background: #f7f9fa;
-    border: 1px solid #edf1f2;
+    background: var(--background-color);
+    border: 1px solid var(--background-color);
     border-radius: 0.7rem;
     min-height: 3.25rem;
   }
 
   .time-label {
-    color: #087f9f;
+    color: var(--holcim-bright-turquoise);
     font-size: 0.78rem;
   }
 
   .session-name {
-    color: #243b50;
+    color: var(--holcim-dark-blue);
     font-size: 0.82rem;
   }
 }

@@ -12,11 +12,16 @@
   --holcim-dark-turquoise: #006d68;
   --holcim-bright-turquoise: #00a499;
 
+  --black: #000000;
+  --white: #ffffff;
+  --dark-gray: #575757;
+  --bright-gray: #8c8c8c;
+
   --app-background: #f5f6fa;
-  --app-surface: #ffffff;
+  --app-surface: var(--white);
   --app-text: var(--holcim-dark-blue);
-  --app-text-muted: #575757;
-  --app-text-subtle: #8c8c8c;
+  --app-text-muted: var(--dark-gray);
+  --app-text-subtle: var(--bright-gray);
   --app-border: #e1e8ed;
   --app-primary: var(--holcim-dark-blue);
   --app-action: var(--holcim-bright-blue);
@@ -25,36 +30,65 @@
   --app-warning: var(--holcim-yellow);
   --app-error: var(--holcim-bright-red);
 
+  --background-color: var(--app-background);
+  --text-color: var(--app-text);
+  --border-color: var(--app-border);
+  --primary-color: var(--holcim-bright-blue);
+  --secondary-color: var(--holcim-bright-green);
+  --accent-color: var(--holcim-bright-turquoise);
+  --error-color: var(--holcim-bright-red);
+  --success-color: var(--holcim-green);
+  --warning-color: var(--holcim-yellow);
+
+  --black-rgb: 0, 0, 0;
+  --white-rgb: 255, 255, 255;
+  --dark-gray-rgb: 87, 87, 87;
+  --bright-gray-rgb: 140, 140, 140;
+  --app-background-rgb: 245, 246, 250;
+  --app-border-rgb: 225, 232, 237;
+  --holcim-dark-blue-rgb: 29, 67, 112;
+  --holcim-bright-green-rgb: 148, 193, 46;
+  --holcim-bright-blue-rgb: 4, 187, 241;
+  --holcim-yellow-rgb: 255, 209, 0;
+  --holcim-bright-red-rgb: 228, 0, 43;
+  --holcim-fuchsia-rgb: 230, 0, 126;
+  --holcim-orange-rgb: 255, 103, 31;
+  --holcim-dark-red-rgb: 154, 0, 57;
+  --holcim-violet-rgb: 102, 36, 131;
+  --holcim-green-rgb: 0, 154, 68;
+  --holcim-dark-turquoise-rgb: 0, 109, 104;
+  --holcim-bright-turquoise-rgb: 0, 164, 153;
+
   --ion-color-primary: var(--app-primary);
   --ion-color-primary-rgb: 29, 67, 112;
-  --ion-color-primary-contrast: #ffffff;
+  --ion-color-primary-contrast: var(--white);
   --ion-color-primary-contrast-rgb: 255, 255, 255;
-  --ion-color-primary-shade: #193a63;
-  --ion-color-primary-tint: #34557e;
+  --ion-color-primary-shade: var(--holcim-dark-blue);
+  --ion-color-primary-tint: var(--holcim-bright-blue);
   --ion-color-secondary: var(--holcim-bright-green);
   --ion-color-secondary-rgb: 148, 193, 46;
   --ion-color-secondary-contrast: var(--holcim-dark-blue);
   --ion-color-secondary-contrast-rgb: 29, 67, 112;
-  --ion-color-secondary-shade: #82aa28;
-  --ion-color-secondary-tint: #a0c743;
+  --ion-color-secondary-shade: var(--holcim-bright-green);
+  --ion-color-secondary-tint: var(--holcim-bright-green);
   --ion-color-success: var(--app-success);
   --ion-color-success-rgb: 0, 154, 68;
-  --ion-color-success-contrast: #ffffff;
+  --ion-color-success-contrast: var(--white);
   --ion-color-success-contrast-rgb: 255, 255, 255;
-  --ion-color-success-shade: #00883c;
-  --ion-color-success-tint: #1aa557;
+  --ion-color-success-shade: var(--holcim-green);
+  --ion-color-success-tint: var(--holcim-green);
   --ion-color-warning: var(--app-warning);
   --ion-color-warning-rgb: 255, 209, 0;
   --ion-color-warning-contrast: var(--holcim-dark-blue);
   --ion-color-warning-contrast-rgb: 29, 67, 112;
-  --ion-color-warning-shade: #e0b800;
-  --ion-color-warning-tint: #ffd61a;
+  --ion-color-warning-shade: var(--holcim-yellow);
+  --ion-color-warning-tint: var(--holcim-yellow);
   --ion-color-danger: var(--app-error);
   --ion-color-danger-rgb: 228, 0, 43;
-  --ion-color-danger-contrast: #ffffff;
+  --ion-color-danger-contrast: var(--white);
   --ion-color-danger-contrast-rgb: 255, 255, 255;
-  --ion-color-danger-shade: #c90026;
-  --ion-color-danger-tint: #e71940;
+  --ion-color-danger-shade: var(--holcim-bright-red);
+  --ion-color-danger-tint: var(--holcim-bright-red);
 
   color-scheme: light;
 }

@@ -59,6 +59,22 @@ describe('mapAgendaDaySessions', () => {
     expect(session.endTime).toEqual(new Date(2026, 10, 10, 9, 5));
   });
 
+  it('limits agenda accents to colors from the Holcim palette', () => {
+    const sessions = mapAgendaDaySessions({
+      date: '2026-10-11',
+      dayNumber: 2,
+      sessions: [
+        { content: 'Green session', color: '#94C12E' },
+        { content: 'Custom color session', color: '#123456' },
+      ],
+    });
+
+    expect(sessions.map((session) => session.color)).toEqual([
+      'var(--holcim-bright-green)',
+      'var(--holcim-dark-turquoise)',
+    ]);
+  });
+
   it('treats a midnight end time as the next day', () => {
     const [session] = mapAgendaDaySessions({
       date: '2026-10-11',

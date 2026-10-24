@@ -10,7 +10,7 @@
 // HEADER SECTION  (mobile-first)
 // ============================================
 .header-gradient {
-  background: linear-gradient(to bottom right, #041739 0%, #041739 40%, var(--app-primary) 100%);
+  background: linear-gradient(to bottom right, var(--black) 0%, var(--black) 40%, var(--app-primary) 100%);
   padding: 4.5rem 1.25rem 3rem;  // ⬆️ more vertical padding on mobile
   position: relative;
   overflow: hidden;
@@ -50,7 +50,7 @@
 
 .header-title {
   position: relative;
-  color: white;
+  color: var(--white);
   font-size: 1.5rem;
   line-height: 1.3;
   font-weight: 700;
@@ -68,7 +68,7 @@
 
 .header-subtitle {
   position: relative;
-  color: rgba(255, 255, 255, 0.9);
+  color: rgba(var(--white-rgb), 0.9);
   font-size: 0.85rem;
   line-height: 1.4;
   margin: 0;
@@ -84,33 +84,33 @@
 }
 // Search Bar Styling
 .search-container {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(var(--white-rgb), 0.1);
   border-radius: 0.75rem;
   padding: 0.75rem;
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(var(--white-rgb), 0.2);
   position: relative;
   z-index: 1;
 }
 
 .search-icon {
   font-size: 1.25rem;
-  color: rgba(255, 255, 255, 0.6);
+  color: rgba(var(--white-rgb), 0.6);
   flex-shrink: 0;
 }
 
 .search-input {
   background: transparent;
-  color: white;
+  color: var(--white);
   border: none;
   outline: none;
   flex: 1;
   font-size: 0.875rem;
 
   &::placeholder {
-    color: rgba(255, 255, 255, 0.5);
+    color: rgba(var(--white-rgb), 0.5);
   }
 }
 
@@ -118,8 +118,8 @@
   width: 28px;
   height: 28px;
   border: none;
-  background: rgba(255, 255, 255, 0.15);
-  color: rgba(255, 255, 255, 0.8);
+  background: rgba(var(--white-rgb), 0.15);
+  color: rgba(var(--white-rgb), 0.8);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -133,8 +133,8 @@
   }
 
   &:hover {
-    background: rgba(255, 255, 255, 0.25);
-    color: white;
+    background: rgba(var(--white-rgb), 0.25);
+    color: var(--white);
   }
 
   &:active {
@@ -171,11 +171,11 @@
 }
 
 .tabs-wrapper {
-  background: #ffffff;
+  background: var(--white);
   border-radius: 0.75rem;
   padding: 0.35rem;
   display: flex;
-  box-shadow: 0 3px 6px rgba(29, 67, 112, 0.15);
+  box-shadow: 0 3px 6px rgba(var(--holcim-dark-blue-rgb), 0.15);
   border: 1px solid var(--app-border);
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
@@ -190,7 +190,7 @@
   }
 
   .tabs-container.is-sticky & {
-    box-shadow: 0 6px 12px rgba(29, 67, 112, 0.25);
+    box-shadow: 0 6px 12px rgba(var(--holcim-dark-blue-rgb), 0.25);
   }
 }
 
@@ -209,7 +209,7 @@
   text-transform: capitalize;
   transition: all 0.2s ease;
   background: transparent;
-  color: #6b7280;
+  color: var(--bright-gray);
   border: none;
   cursor: pointer;
   white-space: nowrap;
@@ -224,8 +224,8 @@
 
   &.active {
     background: var(--app-primary);
-    color: white;
-    box-shadow: 0 2px 4px rgba(0, 169, 224, 0.25);
+    color: var(--white);
+    box-shadow: 0 2px 4px rgba(var(--holcim-bright-blue-rgb), 0.25);
   }
 
   @media (min-width: 480px) {
@@ -246,7 +246,7 @@
 .inline-clear-btn {
   background: none;
   border: none;
-  color: #667eea;
+  color: var(--bright-gray);
   text-decoration: underline;
   cursor: pointer;
   font-size: inherit;
@@ -254,7 +254,7 @@
   margin: 0;
   
   &:hover {
-    color: #764ba2;
+    color: var(--holcim-violet);
   }
 }
 // Sessions Container
@@ -276,7 +276,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  border: 1px solid rgba(4, 23, 57, 0.1);
+  border: 1px solid rgba(var(--black-rgb), 0.1);
   border-left: 4px solid var(--app-primary);
   border-radius: 12px;
   background: var(--app-surface);
@@ -285,7 +285,7 @@
   font-weight: 700;
   text-align: left;
   cursor: pointer;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 1px 3px rgba(var(--black-rgb), 0.06);
 
   &:focus-visible {
     outline: 2px solid var(--app-action);
@@ -315,6 +315,10 @@
   .session-card {
     margin-bottom: 0;
   }
+
+  .material-icon-wrapper {
+    background: color-mix(in srgb, var(--session-accent) 10%, var(--white));
+  }
 }
 
 // Session Card
@@ -322,28 +326,28 @@
   background: var(--app-surface);
   border-radius: 16px;
   margin-bottom: 20px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 1px 3px rgba(var(--black-rgb), 0.08);
   border-left: 5px solid var(--app-primary);
   overflow: hidden;
   transition: all 0.3s ease;
 
   &:hover {
     transform: translateY(-3px);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 6px 20px rgba(var(--black-rgb), 0.1);
   }
 }
 
 // Time Badge
 .time-badge {
   background: var(--app-primary);
-  color: white;
+  color: var(--white);
   padding: 10px 18px;
   font-size: 13px;
   font-weight: 700;
   display: flex;
   align-items: center;
   gap: 6px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  border-bottom: 1px solid rgba(var(--white-rgb), 0.15);
 
   .time-icon {
     font-size: 14px;
@@ -372,7 +376,7 @@
 .session-title {
   font-size: 20px;
   font-weight: 700;
-  color: #1a1a1a;
+  color: var(--black);
   margin: 0 0 14px;
   line-height: 1.4;
 }
@@ -404,7 +408,7 @@
 }
 
 .speaker-label {
-  color: #71808d;
+  color: var(--bright-gray);
   display: inline;
   font-size: 0.68rem;
   font-weight: 700;
@@ -414,7 +418,7 @@
 
 .speaker-role {
   font-size: 13px;
-  color: #6b7280;
+  color: var(--bright-gray);
 }
 
 // Sleek meta layout (no blocks)
@@ -423,7 +427,7 @@
   align-items: center;
   gap: 1.5rem;
   margin-bottom: 18px;
-  border-top: 1px solid #f3f4f6;
+  border-top: 1px solid var(--background-color);
   padding-top: 12px;
 }
 
@@ -432,7 +436,7 @@
   align-items: center;
   gap: 6px;
   font-size: 13px;
-  color: #4b5563;
+  color: var(--dark-gray);
 
   .meta-icon {
     font-size: 14px;
@@ -441,7 +445,7 @@
 
   .meta-value {
     font-weight: 500;
-    color: #1a1a1a;
+    color: var(--black);
   }
 
   &.clickable {
@@ -475,7 +479,7 @@ $holcim-green: var(--app-accent);
 .materials-section {
   margin-top: 1rem;
   padding-top: 1rem;
-  border-top: 1px solid rgba(0, 0, 0, 0.05);
+  border-top: 1px solid rgba(var(--black-rgb), 0.05);
 }
 
 .materials-header {
@@ -491,7 +495,7 @@ $holcim-green: var(--app-accent);
   gap: 0.5rem;
   font-size: 0.9rem;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--black);
 
   ion-icon {
     font-size: 1.1rem;
@@ -511,14 +515,14 @@ $holcim-green: var(--app-accent);
   justify-content: space-between;
   gap: 0.75rem;
   padding: 0.875rem;
-  background: #f9fafb;
+  background: var(--background-color);
   border-radius: 10px;
   text-decoration: none;
   transition: all 0.25s ease;
   cursor: pointer;
 
   &:hover {
-    background: #f0f1f3;
+    background: var(--background-color);
     transform: translateY(-2px);
   }
 }
@@ -545,24 +549,24 @@ $holcim-green: var(--app-accent);
 
   .material-name {
     font-weight: 600;
-    color: #1a1a1a;
+    color: var(--black);
   }
 
   .material-meta {
     font-size: 0.8rem;
-    color: #64748b;
+    color: var(--bright-gray);
   }
 }
 
 .material-download-btn {
-  background: white;
+  background: var(--white);
   border-radius: 8px;
   width: 34px;
   height: 34px;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 2px 4px rgba(var(--black-rgb), 0.06);
   transition: all 0.2s;
   color: $holcim-green;
 
@@ -572,7 +576,7 @@ $holcim-green: var(--app-accent);
 
   &:hover {
     transform: scale(1.08);
-    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 3px 8px rgba(var(--black-rgb), 0.1);
   }
 }
 // Highlight animation for scrolled sessions
@@ -633,13 +637,13 @@ $holcim-green: var(--app-accent);
     border: 1px solid var(--app-border);
     border-left: 3px solid var(--session-accent);
     border-radius: 1rem;
-    box-shadow: 0 5px 18px rgba(15, 45, 62, 0.055);
+    box-shadow: 0 5px 18px rgba(var(--holcim-dark-blue-rgb), 0.055);
     margin-bottom: 0.9rem;
     transition: box-shadow 160ms ease, transform 160ms ease;
   }
 
   .session-card:hover {
-    box-shadow: 0 8px 22px rgba(15, 45, 62, 0.09);
+    box-shadow: 0 8px 22px rgba(var(--holcim-dark-blue-rgb), 0.09);
     transform: translateY(-1px);
   }
 
@@ -656,7 +660,7 @@ $holcim-green: var(--app-accent);
   }
 
   .session-card-topline .category-tag {
-    background: color-mix(in srgb, var(--holcim-bright-turquoise) 9%, white);
+    background: color-mix(in srgb, var(--holcim-bright-turquoise) 9%, var(--white));
     border-radius: 999px;
     color: var(--holcim-dark-turquoise);
     display: block;
@@ -676,7 +680,7 @@ $holcim-green: var(--app-accent);
     align-items: center;
     background: var(--app-background);
     border-radius: 999px;
-    color: #365365;
+    color: var(--holcim-dark-blue);
     display: inline-flex;
     flex: 0 0 auto;
     font-size: 0.72rem;
@@ -720,8 +724,8 @@ $holcim-green: var(--app-accent);
   }
 
   .speaker-avatar {
-    background: #e8f1f3;
-    color: #315a6d;
+    background: var(--border-color);
+    color: var(--holcim-dark-blue);
     font-size: 0.75rem;
   }
 
@@ -730,7 +734,7 @@ $holcim-green: var(--app-accent);
   }
 
   .speaker-name {
-    color: #31576b;
+    color: var(--holcim-dark-blue);
     font-size: 0.8rem;
     line-height: 1.35;
     margin: 0;
@@ -743,7 +747,7 @@ $holcim-green: var(--app-accent);
   }
 
   .session-meta.sleek {
-    border-top: 1px solid #edf1f2;
+    border-top: 1px solid var(--background-color);
     display: flex;
     margin: 0.85rem 0 0;
     padding: 0.75rem 0 0;
@@ -763,7 +767,7 @@ $holcim-green: var(--app-accent);
   }
 
   .session-meta .meta-value {
-    color: #526977;
+    color: var(--dark-gray);
     font-weight: 500;
     overflow-wrap: anywhere;
   }
@@ -773,11 +777,11 @@ $holcim-green: var(--app-accent);
   }
 
   .session-meta .meta-item.clickable .meta-value {
-    color: #526977;
+    color: var(--dark-gray);
   }
 
   .session-meta .meta-item.clickable:hover .meta-value {
-    color: #526977;
+    color: var(--dark-gray);
   }
 
   @media (max-width: 480px) {
@@ -834,7 +838,7 @@ $holcim-green: var(--app-accent);
   padding: 2rem;
 
   ion-spinner {
-    --color: #667eea;
+    --color: var(--bright-gray);
   }
 }
 
@@ -850,44 +854,44 @@ $holcim-green: var(--app-accent);
 
   ion-icon {
     font-size: 3rem;
-    color: #ff6b6b;
+    color: var(--holcim-orange);
   }
 
   p {
-    color: #666;
+    color: var(--dark-gray);
     margin: 0;
   }
 }
 
 // Search Bar Styling (matches network page style)
 .search-container {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(var(--white-rgb), 0.1);
   border-radius: 0.75rem;
   padding: 0.75rem;
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(var(--white-rgb), 0.2);
   position: relative;
   z-index: 1;
 }
 
 .search-icon {
   font-size: 1.25rem;
-  color: rgba(255, 255, 255, 0.6);
+  color: rgba(var(--white-rgb), 0.6);
   flex-shrink: 0;
 }
 
 .search-input {
   background: transparent;
-  color: white;
+  color: var(--white);
   border: none;
   outline: none;
   flex: 1;
   font-size: 0.875rem;
 
   &::placeholder {
-    color: rgba(255, 255, 255, 0.5);
+    color: rgba(var(--white-rgb), 0.5);
   }
 }
 
@@ -895,8 +899,8 @@ $holcim-green: var(--app-accent);
   width: 28px;
   height: 28px;
   border: none;
-  background: rgba(255, 255, 255, 0.15);
-  color: rgba(255, 255, 255, 0.8);
+  background: rgba(var(--white-rgb), 0.15);
+  color: rgba(var(--white-rgb), 0.8);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -910,8 +914,8 @@ $holcim-green: var(--app-accent);
   }
 
   &:hover {
-    background: rgba(255, 255, 255, 0.25);
-    color: white;
+    background: rgba(var(--white-rgb), 0.25);
+    color: var(--white);
   }
 
   &:active {
@@ -922,7 +926,7 @@ $holcim-green: var(--app-accent);
 .inline-clear-btn {
   background: none;
   border: none;
-  color: #667eea;
+  color: var(--bright-gray);
   text-decoration: underline;
   cursor: pointer;
   font-size: inherit;
@@ -930,7 +934,7 @@ $holcim-green: var(--app-accent);
   margin: 0;
   
   &:hover {
-    color: #764ba2;
+    color: var(--holcim-violet);
   }
 }
 
@@ -938,7 +942,7 @@ $holcim-green: var(--app-accent);
 .materials-section {
   margin-top: 1rem;
   padding-top: 1rem;
-  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  border-top: 1px solid rgba(var(--black-rgb), 0.08);
 }
 
 .materials-header {
@@ -954,11 +958,11 @@ $holcim-green: var(--app-accent);
   gap: 0.5rem;
   font-size: 0.875rem;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--black);
 
   .folder-icon {
     font-size: 1.125rem;
-    color: #666;
+    color: var(--dark-gray);
   }
 }
 
@@ -980,14 +984,14 @@ $holcim-green: var(--app-accent);
   position: relative;
 
   &:hover {
-    background: #f0f1f3;
+    background: var(--background-color);
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 4px 12px rgba(var(--black-rgb), 0.08);
   }
 
   &:active {
     transform: translateY(0);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    box-shadow: 0 2px 8px rgba(var(--black-rgb), 0.06);
   }
 }
 
@@ -1019,7 +1023,7 @@ $holcim-green: var(--app-accent);
 .material-name {
   font-size: 0.9rem;
   font-weight: 500;
-  color: #1a1a1a;
+  color: var(--black);
   margin-bottom: 0.25rem;
   white-space: nowrap;
   overflow: hidden;
@@ -1031,7 +1035,7 @@ $holcim-green: var(--app-accent);
   align-items: center;
   gap: 0.5rem;
   font-size: 0.75rem;
-  color: #666;
+  color: var(--dark-gray);
 }
 
 .material-type {
@@ -1039,11 +1043,11 @@ $holcim-green: var(--app-accent);
 }
 
 .material-divider {
-  color: #ccc;
+  color: var(--border-color);
 }
 
 .material-size {
-  color: #999;
+  color: var(--bright-gray);
 }
 
 .material-download-btn {
@@ -1052,13 +1056,13 @@ $holcim-green: var(--app-accent);
   height: 36px;
   border-radius: 8px;
   border: none;
-  background: white;
+  background: var(--white);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 2px 4px rgba(var(--black-rgb), 0.06);
 
   ion-icon {
     font-size: 1.25rem;
@@ -1066,7 +1070,7 @@ $holcim-green: var(--app-accent);
 
   &:hover {
     transform: scale(1.1);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12);
+    box-shadow: 0 4px 8px rgba(var(--black-rgb), 0.12);
   }
 
   &:active {
@@ -1079,7 +1083,7 @@ $holcim-green: var(--app-accent);
   --width: 95%;
   --height: 90%;
   --border-radius: 16px;
-  --box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  --box-shadow: 0 10px 40px rgba(var(--black-rgb), 0.2);
 
   @media (min-width: 768px) {
     --width: 85%;
@@ -1097,7 +1101,7 @@ $holcim-green: var(--app-accent);
   height: 100%;
   display: flex;
   flex-direction: column;
-  background: white;
+  background: var(--white);
   overflow: hidden;
 }
 
@@ -1106,10 +1110,10 @@ $holcim-green: var(--app-accent);
   align-items: center;
   justify-content: space-between;
   padding: 1.25rem 1.5rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  background: linear-gradient(135deg, var(--bright-gray) 0%, var(--holcim-violet) 100%);
+  color: var(--white);
+  border-bottom: 1px solid rgba(var(--white-rgb), 0.1);
+  box-shadow: 0 2px 8px rgba(var(--black-rgb), 0.1);
 }
 
 .modal-title {
@@ -1144,9 +1148,9 @@ $holcim-green: var(--app-accent);
   height: 40px;
   border-radius: 10px;
   border: none;
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(var(--white-rgb), 0.15);
   backdrop-filter: blur(10px);
-  color: white;
+  color: var(--white);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1158,7 +1162,7 @@ $holcim-green: var(--app-accent);
   }
 
   &:hover {
-    background: rgba(255, 255, 255, 0.25);
+    background: rgba(var(--white-rgb), 0.25);
     transform: scale(1.05);
   }
 
@@ -1171,7 +1175,7 @@ $holcim-green: var(--app-accent);
   flex: 1;
   overflow: hidden;
   position: relative;
-  background: #f5f5f5;
+  background: var(--background-color);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1181,7 +1185,7 @@ $holcim-green: var(--app-accent);
   width: 100%;
   height: 100%;
   border: none;
-  background: white;
+  background: var(--white);
 }
 
 .material-image {
@@ -1196,7 +1200,7 @@ $holcim-green: var(--app-accent);
   max-height: 100%;
   outline: none;
   border-radius: 8px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 20px rgba(var(--black-rgb), 0.2);
 }
 
 .unsupported-type {
@@ -1210,12 +1214,12 @@ $holcim-green: var(--app-accent);
 
   ion-icon {
     font-size: 4rem;
-    color: #999;
+    color: var(--bright-gray);
   }
 
   p {
     font-size: 1rem;
-    color: #666;
+    color: var(--dark-gray);
     margin: 0;
   }
 
@@ -1224,15 +1228,15 @@ $holcim-green: var(--app-accent);
     align-items: center;
     gap: 0.5rem;
     padding: 0.75rem 1.5rem;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
+    background: linear-gradient(135deg, var(--bright-gray) 0%, var(--holcim-violet) 100%);
+    color: var(--white);
     border: none;
     border-radius: 12px;
     font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    box-shadow: 0 4px 12px rgba(var(--bright-gray-rgb), 0.4);
 
     ion-icon {
       font-size: 1.25rem;
@@ -1240,7 +1244,7 @@ $holcim-green: var(--app-accent);
 
     &:hover {
       transform: translateY(-2px);
-      box-shadow: 0 6px 16px rgba(102, 126, 234, 0.5);
+      box-shadow: 0 6px 16px rgba(var(--bright-gray-rgb), 0.5);
     }
 
     &:active {
@@ -1259,8 +1263,8 @@ $holcim-green: var(--app-accent);
     background-color: transparent;
   }
   50% {
-    background-color: rgba(102, 126, 234, 0.1);
-    box-shadow: 0 4px 20px rgba(102, 126, 234, 0.2);
+    background-color: rgba(var(--bright-gray-rgb), 0.1);
+    box-shadow: 0 4px 20px rgba(var(--bright-gray-rgb), 0.2);
   }
 }
 
@@ -1327,7 +1331,7 @@ $holcim-green: var(--app-accent);
   padding: 2rem;
 
   ion-spinner {
-    --color: #667eea;
+    --color: var(--bright-gray);
   }
 }
 
@@ -1343,11 +1347,11 @@ $holcim-green: var(--app-accent);
 
   ion-icon {
     font-size: 3rem;
-    color: #ff6b6b;
+    color: var(--holcim-orange);
   }
 
   p {
-    color: #666;
+    color: var(--dark-gray);
     margin: 0;
   }
 }
@@ -1357,7 +1361,7 @@ $holcim-green: var(--app-accent);
   padding: 80px 30px;
   max-width: 400px;
   margin: 0 auto;
-  color: #666;
+  color: var(--dark-gray);
 
   // Plastering image container replaces icon
   .no-sessions-image-container {
@@ -1365,7 +1369,7 @@ $holcim-green: var(--app-accent);
     height: 120px;
     margin: 0 auto 24px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+    background: linear-gradient(135deg, var(--background-color) 0%, var(--border-color) 100%);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1382,34 +1386,34 @@ $holcim-green: var(--app-accent);
   .no-sessions-title {
     font-size: 22px;
     font-weight: 700;
-    color: #11215f;
+    color: var(--holcim-dark-blue);
     margin: 0 0 12px 0;
   }
 
   .no-sessions-text {
     font-size: 15px;
-    color: #6b7280;
+    color: var(--bright-gray);
     line-height: 1.6;
     margin: 0;
     max-width: 360px;
     margin-inline: auto;
 
     .highlight {
-      color: #007bff; // bright blue for search term
+      color: var(--holcim-bright-blue); // bright blue for search term
       font-weight: 600;
     }
 
     .inline-clear-btn {
       background: none;
       border: none;
-      color: #007bff; // bright blue
+      color: var(--holcim-bright-blue); // bright blue
       font-weight: 600;
       cursor: pointer;
       padding: 0 4px;
       transition: color 0.2s ease;
 
       &:hover {
-        color: #339dff; // slightly lighter blue on hover
+        color: var(--holcim-bright-blue); // slightly lighter blue on hover
       }
     }
   }
@@ -1451,7 +1455,7 @@ $holcim-green: var(--app-accent);
   height: 100%;
   display: flex;
   flex-direction: column;
-  background: white;
+  background: var(--white);
 }
 
 .viewer-header {
@@ -1459,14 +1463,14 @@ $holcim-green: var(--app-accent);
   align-items: center;
   justify-content: space-between;
   padding: 16px 20px;
-  border-bottom: 1px solid #e5e5e5;
-  background: white;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--white);
 }
 
 .viewer-title {
   font-size: 18px;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--black);
   margin: 0;
   flex: 1;
   overflow: hidden;
@@ -1494,7 +1498,7 @@ $holcim-green: var(--app-accent);
   transition: background 0.2s ease;
 
   &:hover {
-    background: #f0f0f0;
+    background: var(--background-color);
   }
 }
 
@@ -1528,19 +1532,19 @@ $holcim-green: var(--app-accent);
 
   .doc-icon {
     font-size: 80px;
-    color: #ccc;
+    color: var(--border-color);
     margin-bottom: 16px;
   }
 
   p {
     font-size: 16px;
-    color: #666;
+    color: var(--dark-gray);
     margin: 0 0 24px 0;
   }
 
   .download-btn {
     background: var(--app-primary);
-    color: white;
+    color: var(--white);
     border: none;
     padding: 12px 24px;
     border-radius: 8px;
@@ -1553,7 +1557,7 @@ $holcim-green: var(--app-accent);
     transition: background 0.2s ease;
 
     &:hover {
-      background: #2d5a8f;
+      background: var(--holcim-dark-blue);
     }
 
     ion-icon {
@@ -1562,20 +1566,20 @@ $holcim-green: var(--app-accent);
   }
 }
 .no-sessions-card {
-  background: white;
+  background: var(--white);
   border-radius: 1rem;
   padding: 3rem 1.5rem;
   text-align: center;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  border: 2px solid #f3f4f6;
+  box-shadow: 0 4px 6px -1px rgba(var(--black-rgb), 0.1), 0 2px 4px -1px rgba(var(--black-rgb), 0.06);
+  border: 2px solid var(--background-color);
   margin: 2rem 0;
 
   &.search-empty {
-    border-color: #fbbf24;
-    background: linear-gradient(to bottom, white 0%, #fef3c7 100%);
+    border-color: var(--holcim-yellow);
+    background: linear-gradient(to bottom, white 0%, var(--border-color) 100%);
 
     .no-sessions-icon {
-      background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+      background: linear-gradient(135deg, var(--holcim-yellow) 0%, var(--holcim-yellow) 100%);
     }
   }
 }
@@ -1584,7 +1588,7 @@ $holcim-green: var(--app-accent);
   width: 4.5rem;
   height: 4.5rem;
   border-radius: 50%;
-  background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
+  background: linear-gradient(135deg, var(--border-color) 0%, var(--border-color) 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1592,21 +1596,21 @@ $holcim-green: var(--app-accent);
 
   ion-icon {
     font-size: 2.25rem;
-    color: #1D4370;
+    color: var(--holcim-dark-blue);
   }
 }
 
 .no-sessions-title {
   font-size: 1.25rem;
   font-weight: 700;
-  color: #1D4370;
+  color: var(--holcim-dark-blue);
   margin: 0 0 0.75rem;
   line-height: 1.3;
 }
 
 .no-sessions-text {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--bright-gray);
   margin: 0;
   line-height: 1.6;
 }
@@ -1614,7 +1618,7 @@ $holcim-green: var(--app-accent);
 .inline-clear-btn {
   background: none;
   border: none;
-  color: #00A9E0;
+  color: var(--holcim-bright-blue);
   font-weight: 600;
   padding: 0;
   text-decoration: underline;
@@ -1622,7 +1626,7 @@ $holcim-green: var(--app-accent);
   font-size: inherit;
   
   &:active {
-    color: #1D4370;
+    color: var(--holcim-dark-blue);
   }
 }
 

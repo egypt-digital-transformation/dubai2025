@@ -23,8 +23,16 @@ export const EGYPT_PROJECTS: IconicProject[] = [
       ],
     },
     products: [
-      { name: 'ECOPlanet', percentage: 'Low-carbon cement', color: '#2E7D32' },
-      { name: 'High-Performance Concrete', description: 'Supertall-grade mix design', color: '#1565C0' },
+      {
+        name: 'ECOPlanet',
+        percentage: 'Low-carbon cement',
+        color: 'var(--holcim-green)',
+      },
+      {
+        name: 'High-Performance Concrete',
+        description: 'Supertall-grade mix design',
+        color: 'var(--holcim-bright-blue)',
+      },
     ],
     tags: ['Low-Carbon', 'Supertall', 'Smart Infrastructure'],
     order: 1,
@@ -51,8 +59,16 @@ export const EGYPT_PROJECTS: IconicProject[] = [
       ],
     },
     products: [
-      { name: 'Sustainable Concrete', percentage: 'Heritage-grade solutions', color: '#E65100' },
-      { name: 'ECOPlanet', percentage: 'Reduced embodied carbon', color: '#2E7D32' },
+      {
+        name: 'Sustainable Concrete',
+        percentage: 'Heritage-grade solutions',
+        color: 'var(--holcim-orange)',
+      },
+      {
+        name: 'ECOPlanet',
+        percentage: 'Reduced embodied carbon',
+        color: 'var(--holcim-green)',
+      },
     ],
     tags: ['Heritage', 'Sustainability', 'World-Class'],
     order: 2,
@@ -78,7 +94,7 @@ export const EGYPT_PROJECTS: IconicProject[] = [
       ],
     },
     products: [
-      { name: 'ECOPlanet', percentage: '40% less CO₂', color: '#2E7D32' },
+      { name: 'ECOPlanet', percentage: '40% less CO₂', color: 'var(--holcim-green)' },
     ],
     tags: ['Low-Carbon', 'Coastal', 'Smart City'],
     order: 3,
@@ -104,7 +120,7 @@ export const EGYPT_PROJECTS: IconicProject[] = [
       ],
     },
     products: [
-      { name: 'ECOPlanet', percentage: '45% CO₂ reduction', color: '#2E7D32' },
+      { name: 'ECOPlanet', percentage: '45% CO₂ reduction', color: 'var(--holcim-green)' },
     ],
     tags: ['Infrastructure', 'Low-Carbon', 'Maritime'],
     order: 4,
@@ -134,7 +150,7 @@ export const AMEA_PROJECTS: IconicProject[] = [
       ],
     },
     products: [
-      { name: 'ECOPact', percentage: 'Low-carbon concrete', color: '#00897B' },
+      { name: 'ECOPact', percentage: 'Low-carbon concrete', color: 'var(--holcim-dark-turquoise)' },
     ],
     tags: ['Supertall', 'Low-Carbon', 'Landmark'],
     order: 1,
@@ -161,7 +177,7 @@ export const AMEA_PROJECTS: IconicProject[] = [
       ],
     },
     products: [
-      { name: 'ECOPlanet', percentage: '30% less CO₂', color: '#2E7D32' },
+      { name: 'ECOPlanet', percentage: '30% less CO₂', color: 'var(--holcim-green)' },
     ],
     tags: ['Sports', 'Low-Carbon', 'World-Class'],
     order: 2,
@@ -188,8 +204,8 @@ export const AMEA_PROJECTS: IconicProject[] = [
       ],
     },
     products: [
-      { name: 'ECOPact', percentage: 'Low-carbon ready-mix', color: '#00897B' },
-      { name: 'ECOPlanet', percentage: 'Tunnel segments', color: '#2E7D32' },
+      { name: 'ECOPact', percentage: 'Low-carbon ready-mix', color: 'var(--holcim-dark-turquoise)' },
+      { name: 'ECOPlanet', percentage: 'Tunnel segments', color: 'var(--holcim-green)' },
     ],
     tags: ['Infrastructure', 'Urban Mobility', 'Low-Carbon'],
     order: 3,
@@ -216,7 +232,7 @@ export const AMEA_PROJECTS: IconicProject[] = [
       ],
     },
     products: [
-      { name: 'ECOPlanet', percentage: 'Low-carbon cement', color: '#2E7D32' },
+      { name: 'ECOPlanet', percentage: 'Low-carbon cement', color: 'var(--holcim-green)' },
     ],
     tags: ['Smart City', 'Mixed-Use', 'Low-Carbon'],
     order: 4,

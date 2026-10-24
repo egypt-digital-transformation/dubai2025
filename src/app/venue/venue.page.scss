@@ -16,14 +16,14 @@
 .page-title {
   font-size: 24px;
   font-weight: 700;
-  color: #1D4370;
+  color: var(--holcim-dark-blue);
   margin: 0;
   flex: 1; // ensures proper spacing before button
 }
 
 // Close Button (now inline, not absolute)
 .close-button {
-  background: rgba(0, 0, 0, 0.05);
+  background: rgba(var(--black-rgb), 0.05);
   border-radius: 50%;
   width: 40px;
   height: 40px;
@@ -36,11 +36,11 @@
 
   ion-icon {
     font-size: 22px;
-    color: #1a1a1a; // darker X
+    color: var(--black); // darker X
   }
 
   &:hover {
-    background: rgba(0, 0, 0, 0.1);
+    background: rgba(var(--black-rgb), 0.1);
     transform: scale(1.05);
   }
 
@@ -51,7 +51,7 @@
 
 .page-subtitle {
   font-size: 14px;
-  color: #6B7280;
+  color: var(--bright-gray);
   margin: 0;
 }
 
@@ -59,8 +59,8 @@
 .map-card {
   margin-bottom: 32px;
   border-radius: 16px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  border: 1px solid #E5E7EB;
+  box-shadow: 0 1px 3px rgba(var(--black-rgb), 0.1);
+  border: 1px solid var(--border-color);
 
   ion-card-content {
     padding: 24px;
@@ -75,7 +75,7 @@
 .map-icon-container {
   width: 64px;
   height: 64px;
-  background: rgba(0, 169, 224, 0.1);
+  background: rgba(var(--holcim-bright-blue-rgb), 0.1);
   border-radius: 16px;
   display: flex;
   align-items: center;
@@ -84,12 +84,12 @@
 
   ion-icon {
     font-size: 32px;
-    color: #00A9E0;
+    color: var(--holcim-bright-blue);
   }
 }
 
 .map-title {
-  color: #1D4370;
+  color: var(--holcim-dark-blue);
   font-weight: 600;
   font-size: 15px;
   margin: 0 0 4px 0;
@@ -97,7 +97,7 @@
 
 .map-subtitle {
   font-size: 12px;
-  color: #6B7280;
+  color: var(--bright-gray);
   margin: 0;
 }
 
@@ -128,37 +128,37 @@
   }
 
   &.small-room {
-    background: #F9FAFB;
-    border: 1px solid #E5E7EB;
+    background: var(--background-color);
+    border: 1px solid var(--border-color);
     padding: 12px;
 
     &:hover {
-      background: #F3F4F6;
+      background: var(--background-color);
     }
   }
 }
 
 .room-name {
   font-weight: 700;
-  color: #1D4370;
+  color: var(--holcim-dark-blue);
   font-size: 14px;
   margin-bottom: 4px;
 }
 
 .room-subtitle {
   font-size: 12px;
-  color: #6B7280;
+  color: var(--bright-gray);
 }
 
 .room-name-small {
   font-weight: 600;
   font-size: 12px;
-  color: #1D4370;
+  color: var(--holcim-dark-blue);
 }
 
 .main-hall-item {
-  background: rgba(29, 67, 112, 0.05);
-  border: 2px dashed rgba(29, 67, 112, 0.2);
+  background: rgba(var(--holcim-dark-blue-rgb), 0.05);
+  border: 2px dashed rgba(var(--holcim-dark-blue-rgb), 0.2);
   border-radius: 12px;
   padding: 16px;
   text-align: center;
@@ -166,14 +166,14 @@
 
 .main-hall-name {
   font-weight: 700;
-  color: #1D4370;
+  color: var(--holcim-dark-blue);
   font-size: 14px;
   margin-bottom: 4px;
 }
 
 .main-hall-subtitle {
   font-size: 12px;
-  color: #6B7280;
+  color: var(--bright-gray);
 }
 
 // Key Locations
@@ -184,20 +184,20 @@
 .section-title {
   font-size: 14px;
   font-weight: 700;
-  color: #1D4370;
+  color: var(--holcim-dark-blue);
   margin: 0 0 16px 0;
 }
 
 .location-card {
   margin-bottom: 8px;
   border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  border: 1px solid #E5E7EB;
+  box-shadow: 0 1px 3px rgba(var(--black-rgb), 0.1);
+  border: 1px solid var(--border-color);
   cursor: pointer;
   transition: box-shadow 0.3s ease;
 
   &:hover {
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 6px rgba(var(--black-rgb), 0.1);
   }
 
   ion-card-content {
@@ -224,18 +224,18 @@
 .location-name {
   font-size: 14px;
   font-weight: 600;
-  color: #1D4370;
+  color: var(--holcim-dark-blue);
   margin-bottom: 4px;
 }
 
 .location-desc {
   font-size: 12px;
-  color: #6B7280;
+  color: var(--bright-gray);
 }
 
 .chevron-icon {
   font-size: 16px;
-  color: #9CA3AF;
+  color: var(--bright-gray);
   flex-shrink: 0;
 }
 

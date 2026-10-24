@@ -1,10 +1,10 @@
 :host {
   display: block;
-  --ink: #132b42;
-  --muted: #66737d;
-  --paper: #f7f7f4;
-  --line: #dfe3e2;
-  --accent: #8fbf3f;
+  --ink: var(--holcim-dark-blue);
+  --muted: var(--bright-gray);
+  --paper: var(--background-color);
+  --line: var(--border-color);
+  --accent: var(--holcim-bright-green);
 }
 
 .portfolio-content {
@@ -13,12 +13,12 @@
 
 .portfolio-state {
   padding: 80px 24px;
-  color: #476173;
+  color: var(--dark-gray);
   text-align: center;
 }
 
 .portfolio-error {
-  color: #a33f35;
+  color: var(--holcim-dark-red);
 }
 
 .portfolio-page {
@@ -31,8 +31,8 @@
 }
 
 .masthead {
-  background: #102b43;
-  color: #fff;
+  background: var(--holcim-dark-blue);
+  color: var(--white);
 }
 
 .masthead-inner {
@@ -59,12 +59,12 @@
 .brand-divider {
   width: 1px;
   height: 15px;
-  background: rgba(255, 255, 255, 0.36);
+  background: rgba(var(--white-rgb), 0.36);
 }
 
 .brand-region,
 .masthead-note {
-  color: rgba(255, 255, 255, 0.68);
+  color: rgba(var(--white-rgb), 0.68);
   font-size: 0.65rem;
   font-weight: 600;
   letter-spacing: 0.16em;
@@ -76,8 +76,8 @@
 }
 
 .opening-section {
-  background: #102b43;
-  color: #fff;
+  background: var(--holcim-dark-blue);
+  color: var(--white);
 }
 
 .opening-copy {
@@ -121,7 +121,7 @@
 .opening-description {
   max-width: 540px;
   margin: 0;
-  color: rgba(255, 255, 255, 0.7);
+  color: rgba(var(--white-rgb), 0.7);
   font-size: 0.94rem;
   line-height: 1.7;
 }
@@ -132,7 +132,7 @@
   height: clamp(370px, 76vw, 620px);
   margin: 0;
   overflow: hidden;
-  background: #183a52;
+  background: var(--holcim-dark-blue);
 }
 
 .asset-clickable {
@@ -152,7 +152,7 @@
   align-items: center;
   justify-content: center;
   padding: 28px;
-  background: rgba(5, 18, 30, 0.92);
+  background: rgba(var(--black-rgb), 0.92);
 }
 
 .asset-viewer-image {
@@ -160,7 +160,7 @@
   max-width: min(1100px, 94vw);
   max-height: 90vh;
   object-fit: contain;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 20px 60px rgba(var(--black-rgb), 0.4);
 }
 
 .asset-viewer-close {
@@ -169,10 +169,10 @@
   right: 22px;
   width: 42px;
   height: 42px;
-  border: 1px solid rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(var(--white-rgb), 0.5);
   border-radius: 50%;
-  background: rgba(0, 0, 0, 0.25);
-  color: #fff;
+  background: rgba(var(--black-rgb), 0.25);
+  color: var(--white);
   cursor: pointer;
   font-size: 1.8rem;
   line-height: 1;
@@ -195,8 +195,8 @@
   position: absolute;
   z-index: 2;
   inset: 0;
-  background: linear-gradient(90deg, rgba(7, 23, 37, 0.68), transparent 84%),
-    linear-gradient(0deg, rgba(7, 23, 37, 0.76), transparent 62%);
+  background: linear-gradient(90deg, rgba(var(--black-rgb), 0.68), transparent 84%),
+    linear-gradient(0deg, rgba(var(--black-rgb), 0.76), transparent 62%);
   pointer-events: none;
 }
 
@@ -206,11 +206,11 @@
   right: 24px;
   bottom: 30px;
   left: 24px;
-  color: #fff;
+  color: var(--white);
 }
 
 .feature-kicker {
-  color: #c5df9b;
+  color: var(--border-color);
 }
 
 .feature-caption h2 {
@@ -224,7 +224,7 @@
 
 .feature-caption > p {
   margin: 0;
-  color: rgba(255, 255, 255, 0.77);
+  color: rgba(var(--white-rgb), 0.77);
   font-size: 0.91rem;
 }
 
@@ -232,8 +232,8 @@
   display: inline-block;
   margin-top: 16px;
   padding: 7px 10px;
-  border: 1px solid rgba(255, 255, 255, 0.45);
-  color: #fff;
+  border: 1px solid rgba(var(--white-rgb), 0.45);
+  color: var(--white);
   font-size: 0.56rem;
   font-weight: 700;
   letter-spacing: 0.12em;
@@ -242,8 +242,8 @@
 .asset-badge.dark {
   flex: 0 0 auto;
   margin-top: 2px;
-  border-color: #c5df9b;
-  color: #526d39;
+  border-color: var(--border-color);
+  color: var(--dark-gray);
 }
 
 .feature-metrics {
@@ -266,7 +266,7 @@
 }
 
 .feature-metrics small {
-  color: rgba(255, 255, 255, 0.72);
+  color: rgba(var(--white-rgb), 0.72);
   font-size: 0.56rem;
   letter-spacing: 0.12em;
 }
@@ -274,7 +274,7 @@
 .metric-divider {
   width: 1px;
   height: 31px;
-  background: rgba(255, 255, 255, 0.42);
+  background: rgba(var(--white-rgb), 0.42);
 }
 
 .image-index {
@@ -282,7 +282,7 @@
   z-index: 3;
   top: 22px;
   right: 24px;
-  color: rgba(255, 255, 255, 0.86);
+  color: rgba(var(--white-rgb), 0.86);
   font-family: Georgia, 'Times New Roman', serif;
   font-size: 1rem;
   letter-spacing: 0.1em;
@@ -297,16 +297,16 @@
   justify-content: center;
   gap: 8px;
   background:
-    linear-gradient(140deg, rgba(17, 48, 70, 0.92), rgba(40, 81, 96, 0.76)),
-    radial-gradient(ellipse at 68% 26%, rgba(197, 223, 155, 0.36), transparent 38%);
-  color: rgba(255, 255, 255, 0.8);
+    linear-gradient(140deg, rgba(var(--holcim-dark-blue-rgb), 0.92), rgba(var(--holcim-dark-blue-rgb), 0.76)),
+    radial-gradient(ellipse at 68% 26%, rgba(var(--border-color-rgb), 0.36), transparent 38%);
+  color: rgba(var(--white-rgb), 0.8);
   text-align: center;
 }
 
 .image-placeholder::after {
   position: absolute;
   inset: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(var(--white-rgb), 0.2);
   content: '';
   pointer-events: none;
 }
@@ -342,14 +342,14 @@
   align-items: center;
   gap: 9px;
   padding-top: 8px;
-  color: #74813d;
+  color: var(--dark-gray);
   font-size: 0.59rem;
 }
 
 .section-number span {
   width: 18px;
   height: 1px;
-  background: #a3b08b;
+  background: var(--bright-gray);
 }
 
 .section-heading h2 {
@@ -384,7 +384,7 @@
   height: clamp(180px, 32vw, 290px);
   margin: 0;
   overflow: hidden;
-  background: #24475c;
+  background: var(--holcim-dark-blue);
 }
 
 .card-index {
@@ -392,10 +392,10 @@
   z-index: 2;
   top: 13px;
   left: 15px;
-  color: #fff;
+  color: var(--white);
   font-family: Georgia, 'Times New Roman', serif;
   font-size: 0.9rem;
-  text-shadow: 0 1px 5px rgba(0, 0, 0, 0.45);
+  text-shadow: 0 1px 5px rgba(var(--black-rgb), 0.45);
 }
 
 .card-copy {
@@ -404,7 +404,7 @@
 
 .project-location {
   margin: 0 0 7px;
-  color: #77828a;
+  color: var(--bright-gray);
   font-size: 0.63rem;
   font-weight: 600;
   letter-spacing: 0.1em;
@@ -437,14 +437,14 @@
 }
 
 .card-metric strong {
-  color: #526d39;
+  color: var(--dark-gray);
   font-family: Georgia, 'Times New Roman', serif;
   font-size: 1.15rem;
   font-weight: 400;
 }
 
 .card-metric small {
-  color: #7c8785;
+  color: var(--bright-gray);
   font-size: 0.48rem;
   letter-spacing: 0.08em;
 }
@@ -484,7 +484,7 @@
   width: min(100% - 48px, 1100px);
   margin: 0 auto;
   padding: 0 0 26px;
-  color: #7b8588;
+  color: var(--bright-gray);
   font-size: 0.53rem;
   font-weight: 600;
   letter-spacing: 0.12em;
@@ -498,7 +498,7 @@
 
 .footer-mark {
   float: right;
-  color: #526d39;
+  color: var(--dark-gray);
 }
 
 @media (max-width: 620px) {

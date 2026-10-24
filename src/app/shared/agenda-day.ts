@@ -22,6 +22,26 @@ export interface MappedAgendaSession {
 
 type RecordValue = Record<string, unknown>;
 
+const AGENDA_PALETTE: Record<string, string> = {
+  '#1d4370': 'var(--holcim-dark-blue)',
+  '#94c12e': 'var(--holcim-bright-green)',
+  '#04bbf1': 'var(--holcim-bright-blue)',
+  '#ffd100': 'var(--holcim-yellow)',
+  '#e4002b': 'var(--holcim-bright-red)',
+  '#e6007e': 'var(--holcim-fuchsia)',
+  '#ff671f': 'var(--holcim-orange)',
+  '#9a0039': 'var(--holcim-dark-red)',
+  '#662483': 'var(--holcim-violet)',
+  '#009a44': 'var(--holcim-green)',
+  '#006d68': 'var(--holcim-dark-turquoise)',
+  '#00a499': 'var(--holcim-bright-turquoise)',
+};
+
+function getAgendaColor(value: unknown): string {
+  const color = asText(value).toLowerCase();
+  return AGENDA_PALETTE[color] ?? 'var(--holcim-dark-turquoise)';
+}
+
 function asRecord(value: unknown): RecordValue | null {
   return value && typeof value === 'object' && !Array.isArray(value)
     ? (value as RecordValue)
@@ -266,7 +286,7 @@ export function mapAgendaDaySessions(dayDocument: RecordValue): MappedAgendaSess
       day,
       description: content || asText(session['description']),
       category,
-      color: asText(session['color']) || '#0f766e',
+      color: getAgendaColor(session['color']),
       isGeneral: true,
       material: asText(session['material']) || asText(session['attachment']),
       qnaLink: asText(session['qnaLink']),
