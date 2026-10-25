@@ -47,14 +47,14 @@
       <p class="notification-permission-eyebrow">AMEA 2026</p>
       <div class="notification-permission-copy">
         <h2 id="notification-permission-title">
-          {{ notificationPermissionDenied ? 'Notifications are turned off' : 'Never miss a moment' }}
+          {{ notificationPermissionDenied ? 'Notifications are required' : 'Turn on Event Notifications' }}
         </h2>
         <p id="notification-permission-description" *ngIf="notificationPermissionDenied">
-          Allow notifications for AMEA 2026 in your device or browser settings, then try again.
-          You can continue using the app without them.
+          Notifications are required for session reminders, agenda schedule alerts, and event announcements.
+          Please allow notifications for AMEA 2026 in your browser or device settings, then tap below.
         </p>
         <p id="notification-permission-description" *ngIf="!notificationPermissionDenied">
-          Get timely agenda reminders, event updates, and important announcements right on your device.
+          Real-time agenda reminders, session schedule alerts, and important event announcements are required to keep you on schedule throughout AMEA 2026.
         </p>
         <p *ngIf="notificationSetupMessage" class="notification-permission-error" role="alert">
           {{ notificationSetupMessage }}
@@ -71,17 +71,9 @@
             isEnablingNotifications
               ? 'Enabling notifications…'
               : notificationPermissionDenied
-                ? 'I changed settings — try again'
+                ? 'I enabled permissions — check again'
                 : 'Enable notifications'
           }}
-        </button>
-        <button
-          type="button"
-          class="notification-permission-later"
-          (click)="continueWithoutNotifications()"
-          [disabled]="isEnablingNotifications"
-        >
-          Not now
         </button>
       </div>
     </section>

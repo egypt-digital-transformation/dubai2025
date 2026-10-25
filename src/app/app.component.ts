@@ -162,28 +162,20 @@ export class AppComponent implements OnInit {
   }
 
   private async updateNotificationPrompt(isAuthenticated: boolean): Promise<void> {
-    const isNotificationsPage = this.router.url.startsWith('/tabs/notifications');
-    if (
-      !isAuthenticated ||
-      (this.notificationPromptDismissed && !isNotificationsPage) ||
-      (!(this.installedApp || this.isInstalledExperience()) && !isNotificationsPage)
-    ) {
+    if (!isAuthenticated || !this.authService.currentUser?.email) {
       this.showNotificationPrompt = false;
       return;
     }
 
-    if (!(await this.fcmService.isPushSupported()) || !this.authService.currentUser?.email) {
+    if (!(await this.fcmService.isPushSupported())) {
       this.showNotificationPrompt = false;
       return;
     }
 
-    if (!this.authService.currentUser?.email) {
-      this.showNotificationPrompt = false;
-      return;
-    }
-
-    this.notificationPermissionDenied = Notification.permission === 'denied';
-    this.showNotificationPrompt = Notification.permission !== 'granted';
+    this.notificationPermissionDenied =
+      typeof Notification !== 'undefined' && Notification.permission === 'denied';
+    this.showNotificationPrompt =
+      typeof Notification !== 'undefined' && Notification.permission !== 'granted';
   }
 
   async enableNotifications(): Promise<void> {
@@ -200,21 +192,17 @@ export class AppComponent implements OnInit {
         return;
       }
 
-      this.notificationPermissionDenied = Notification.permission === 'denied';
+      this.notificationPermissionDenied =
+        typeof Notification !== 'undefined' && Notification.permission === 'denied';
       this.notificationSetupMessage = this.notificationPermissionDenied
-        ? ''
-        : 'We could not finish notification setup. Please try again.';
+        ? 'Notifications are currently blocked. Please allow notifications for AMEA 2026 in your site permissions and try again.'
+        : 'Please tap Enable notifications to allow event reminders.';
     } catch (error) {
       console.error('[APP] Failed to enable push notifications:', error);
       this.notificationSetupMessage = 'We could not finish notification setup. Please try again.';
     } finally {
       this.isEnablingNotifications = false;
     }
-  }
-
-  continueWithoutNotifications(): void {
-    this.notificationPromptDismissed = true;
-    this.showNotificationPrompt = false;
   }
 
   private recordAppActivity(): void {

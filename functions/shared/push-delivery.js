@@ -14,7 +14,6 @@ import { getRegisteredPushDevices } from "./push-tokens.js";
 const INVALID_REGISTRATION_TOKEN_CODES = new Set([
   "messaging/registration-token-not-registered",
   "messaging/invalid-registration-token",
-  "messaging/mismatched-credential",
 ]);
 
 async function removeInvalidToken(recipient) {

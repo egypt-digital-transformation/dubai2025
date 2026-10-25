@@ -90,6 +90,7 @@ function isRecoverableSubscriptionError(error: unknown): boolean {
 async function clearStaleBrowserPushSubscriptions(
   swRegistration?: ServiceWorkerRegistration
 ): Promise<void> {
+  // 1. Unsubscribe from the passed service worker registration
   try {
     const sub = await swRegistration?.pushManager?.getSubscription();
     if (sub) {
@@ -98,35 +99,81 @@ async function clearStaleBrowserPushSubscriptions(
   } catch (err) {
     console.warn('[FCM] Failed to unsubscribe push subscription:', err);
   }
+
+  // 2. Unsubscribe push subscriptions across all browser service worker registrations
+  try {
+    if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
+      const allRegistrations = await navigator.serviceWorker.getRegistrations();
+      for (const reg of allRegistrations) {
+        try {
+          const sub = await reg.pushManager?.getSubscription();
+          if (sub) {
+            await sub.unsubscribe();
+          }
+        } catch (subErr) {
+          console.warn('[FCM] Failed to unsubscribe SW push subscription:', subErr);
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('[FCM] Failed to query SW registrations:', err);
+  }
+
+  // 3. Clear IndexedDB token tables without blocking on deleteDatabase
   try {
     if (typeof window !== 'undefined' && window.indexedDB) {
+      const databasesToClear = ['firebase-messaging-database', 'fcm_token_details_db'];
       await Promise.all(
-        ['firebase-messaging-database', 'fcm_token_details_db'].map(
-          (databaseName) =>
+        databasesToClear.map(
+          (dbName) =>
             new Promise<void>((resolve) => {
-              const timeout = window.setTimeout(() => {
-                console.warn(`[FCM] Timed out clearing ${databaseName}`);
+              const req = window.indexedDB.open(dbName);
+              req.onsuccess = () => {
+                const idb = req.result;
+                try {
+                  const storeNames = Array.from(idb.objectStoreNames);
+                  if (storeNames.length > 0) {
+                    const tx = idb.transaction(storeNames, 'readwrite');
+                    for (const storeName of storeNames) {
+                      try {
+                        tx.objectStore(storeName).clear();
+                      } catch (storeErr) {
+                        console.warn(`[FCM] Could not clear store ${storeName}:`, storeErr);
+                      }
+                    }
+                    tx.oncomplete = () => {
+                      idb.close();
+                      resolve();
+                    };
+                    tx.onerror = () => {
+                      idb.close();
+                      resolve();
+                    };
+                    return;
+                  }
+                } catch (txErr) {
+                  console.warn(`[FCM] Error clearing stores in ${dbName}:`, txErr);
+                }
+                idb.close();
                 resolve();
-              }, 5000);
-              const finish = () => {
-                window.clearTimeout(timeout);
-                resolve();
               };
-              const request = window.indexedDB.deleteDatabase(databaseName);
-              request.onsuccess = finish;
-              request.onerror = () => {
-                console.warn(`[FCM] Failed to clear ${databaseName}:`, request.error);
-                finish();
-              };
-              request.onblocked = () => {
-                console.warn(`[FCM] Clearing ${databaseName} is blocked by an open connection`);
-              };
-            }),
-        ),
+              req.onerror = () => resolve();
+              req.onblocked = () => resolve();
+            })
+        )
       );
     }
   } catch (err) {
     console.warn('[FCM] Failed to delete FCM IndexedDB databases:', err);
+  }
+
+  // 4. Reset device ID in localStorage to force a fresh identity on backend
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      window.localStorage.removeItem('fcmPushDeviceId');
+    }
+  } catch (err) {
+    console.warn('[FCM] Failed to reset push device ID:', err);
   }
 }
 
@@ -144,7 +191,7 @@ export class FcmService {
   private isInitialized = false;
   private isRefreshingTokenRegistration = false;
   private lastTokenRegistrationAttempt = 0;
-  private readonly tokenRegistrationCooldownMs = 5 * 60 * 1000;
+  private readonly tokenRegistrationCooldownMs = 60 * 1000;
 
   private fcmTokenSubject = new BehaviorSubject<string | null>(null);
   readonly fcmToken$ = this.fcmTokenSubject.asObservable();
@@ -164,7 +211,7 @@ export class FcmService {
       .pipe(filter((user) => !!user && !!user.email))
       .subscribe((user) => {
         console.log(`[FCM] Authenticated user active: ${user?.email}`);
-        void this.refreshTokenRegistration();
+        void this.ensurePushTokenRegistered();
       });
 
     if (typeof window !== 'undefined') {
@@ -323,17 +370,18 @@ export class FcmService {
           });
         }
         await clearStaleBrowserPushSubscriptions(swRegistration);
+        this.messagingInstance = null;
+        this.messagingInstance = getMessaging();
         currentToken = await getToken(this.messagingInstance, tokenOptions);
         if (currentToken === rejectedToken) {
           console.warn('[FCM] Firebase returned the rejected token after cleanup; retrying once.');
           await clearStaleBrowserPushSubscriptions(swRegistration);
+          this.messagingInstance = null;
+          this.messagingInstance = getMessaging();
           currentToken = await getToken(this.messagingInstance, tokenOptions);
         }
         if (!currentToken) {
           throw new Error('Firebase did not provide a replacement push token.');
-        }
-        if (currentToken === rejectedToken) {
-          throw new Error('Firebase continued returning a token the server marked invalid.');
         }
         registrationStage = 'registering replacement FCM token with the server';
         registration = await this.saveTokenToFirestore(currentToken);
