@@ -6,7 +6,7 @@ import {
   IonIcon,
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { notificationsOutline, openOutline } from 'ionicons/icons';
+import { notificationsOutline, refreshOutline } from 'ionicons/icons';
 import { AdminService, ReceivedNotification } from '../services/admin.service';
 import { FcmService } from '../services/fcm.service';
 
@@ -29,8 +29,12 @@ export class NotificationsPage implements OnInit {
   isPermissionGranted = false;
   isPermissionDenied = false;
 
+  get unreadCount(): number {
+    return this.notifications.filter((n) => !n.opened).length;
+  }
+
   constructor() {
-    addIcons({ notificationsOutline, openOutline });
+    addIcons({ notificationsOutline, refreshOutline });
   }
 
   ngOnInit(): void {

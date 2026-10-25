@@ -1,54 +1,73 @@
 <ion-content [scrollY]="true">
   <main class="notifications-page">
     <section class="notifications-content" aria-labelledby="notifications-title">
-      <p class="notifications-eyebrow">STAY IN THE KNOW</p>
-      <h1 id="notifications-title">Event updates</h1>
-      <p class="notifications-intro">The latest from your event team.</p>
+      <header class="notifications-header">
+        <div class="header-titles">
+          <p class="notifications-eyebrow">AMEA 2026</p>
+          <h1 id="notifications-title">Notifications</h1>
+        </div>
+        <span *ngIf="!isLoading && unreadCount > 0" class="header-unread-badge">
+          {{ unreadCount }} New
+        </span>
+      </header>
 
-    
+      <!-- Skeleton Loading State -->
+      <div *ngIf="isLoading" class="skeleton-list" role="status">
+        <div class="skeleton-card" *ngFor="let item of [1, 2, 3]">
+          <div class="skeleton-header">
+            <div class="skeleton-line skeleton-title"></div>
+            <div class="skeleton-line skeleton-time"></div>
+          </div>
+          <div class="skeleton-line skeleton-body"></div>
+        </div>
+      </div>
 
-      <p *ngIf="isLoading" class="list-message" role="status">Loading your notifications…</p>
       <div *ngIf="loadError" class="list-error" role="alert">
         <p>{{ loadError }}</p>
         <button type="button" (click)="loadNotifications()">Try again</button>
       </div>
-      <p *ngIf="!isLoading && !loadError && !notifications.length" class="empty-state">
-        You haven’t received any event updates yet.
-      </p>
+
+      <div *ngIf="!isLoading && !loadError && !notifications.length" class="empty-state">
+        <div class="empty-icon-wrap">
+          <ion-icon name="notifications-outline" aria-hidden="true"></ion-icon>
+        </div>
+        <h3>No notifications yet</h3>
+        <p>You’re all caught up! Session reminders and event announcements will appear here.</p>
+      </div>
 
       <div class="notification-list" *ngIf="!isLoading && !loadError && notifications.length">
         <article
           class="notification-card"
           *ngFor="let notification of notifications"
           [class.unread]="!notification.opened"
+          (click)="openNotification(notification)"
+          role="button"
+          tabindex="0"
+          [attr.aria-label]="notification.title"
         >
-          <div class="notification-icon">
-            <ion-icon name="notifications-outline" aria-hidden="true"></ion-icon>
-          </div>
-          <div class="notification-copy">
-            <div class="notification-meta">
-              <span>EVENT UPDATE</span>
-              <span *ngIf="!notification.opened" class="unread-label">NEW</span>
-              <time *ngIf="notification.createdAt" [attr.datetime]="notification.createdAt">
-                {{ notification.createdAt | date: 'dd/MM/yyyy' }}
+          <div class="notification-card-main">
+            <div class="notification-card-header">
+              <div class="notification-title-wrap">
+                <span *ngIf="!notification.opened" class="unread-dot" aria-label="New notification"></span>
+                <h2 class="notification-title">{{ notification.title }}</h2>
+              </div>
+              <time *ngIf="notification.createdAt" class="notification-time" [attr.datetime]="notification.createdAt">
+                {{ notification.createdAt | date: 'dd MMM · h:mm a' }}
               </time>
             </div>
-            <h2>{{ notification.title }}</h2>
-            <p>{{ notification.body }}</p>
-            <button type="button" class="notification-open" (click)="openNotification(notification)">
-              View update
-              <ion-icon name="open-outline" aria-hidden="true"></ion-icon>
-            </button>
+            <p class="notification-body" *ngIf="notification.body">{{ notification.body }}</p>
           </div>
         </article>
       </div>
+
       <button
         *ngIf="!isLoading && !loadError && notifications.length"
         type="button"
         class="refresh-button"
         (click)="loadNotifications()"
       >
-        Refresh updates
+        <ion-icon name="refresh-outline" aria-hidden="true"></ion-icon>
+        Refresh notifications
       </button>
     </section>
   </main>
