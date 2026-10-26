@@ -123,6 +123,7 @@ export class AgendaPage implements OnInit, OnDestroy {
   private lastAutoSelectedDate = '';
   private hasAutoSelectedAgendaDay = false;
   private readonly userToggledGroupState = new Map<string, boolean>();
+  private requestedAgendaDay: string | null = null;
 
   constructor(
     private firestore: Firestore,
@@ -147,6 +148,14 @@ export class AgendaPage implements OnInit, OnDestroy {
 
   ngOnInit() {
     console.log('[DEBUG] Initializing AgendaPage...');
+    this.route.queryParamMap
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((params) => {
+        const dayNumber = params.get('dayNumber');
+        this.requestedAgendaDay =
+          dayNumber && /^[1-9]\d*$/.test(dayNumber) ? dayNumber : null;
+        this.applyRequestedAgendaDay();
+      });
     void this.auth.authStateReady().then(() => {
       this.previewSubscription = this.adminPreview.selectedUser$.subscribe((previewUser) => {
         void this.initializeAgenda(previewUser?.email ?? this.auth.currentUser?.email ?? undefined);
@@ -280,6 +289,7 @@ export class AgendaPage implements OnInit, OnDestroy {
                   day.date !== null
               );
             this.updateAgendaDayForCurrentDate();
+            this.applyRequestedAgendaDay();
             this.keepSelectedDayAvailable();
             this.sessions = [];
             dayDocuments.forEach((dayDocument) => {
@@ -326,6 +336,7 @@ export class AgendaPage implements OnInit, OnDestroy {
             .map((session) => String(session.day ?? ''))
             .filter((day) => day !== '')
         )].sort((a, b) => Number(a) - Number(b));
+        this.applyRequestedAgendaDay();
         this.keepSelectedDayAvailable();
         console.log('[DEBUG] Total shared sessions loaded:', this.sessions.length);
         this.applyFilters();
@@ -561,6 +572,18 @@ export class AgendaPage implements OnInit, OnDestroy {
     if (this.availableDays.length && !this.availableDays.includes(this.selectedDay)) {
       this.selectedDay = this.availableDays[0];
     }
+  }
+
+  private applyRequestedAgendaDay(): void {
+    if (
+      !this.requestedAgendaDay ||
+      !this.availableDays.includes(this.requestedAgendaDay) ||
+      this.selectedDay === this.requestedAgendaDay
+    ) {
+      return;
+    }
+    this.selectedDay = this.requestedAgendaDay;
+    this.applyFilters();
   }
 
   private updateAgendaDayForCurrentDate(): void {

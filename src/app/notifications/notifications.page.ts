@@ -69,9 +69,13 @@ export class NotificationsPage implements OnInit {
       console.error('[NotificationsPage] Failed to record notification open:', error);
     }
 
-    await this.router.navigateByUrl(
-      `/tabs/home?notificationCampaign=${encodeURIComponent(notification.id)}`
-    );
+    const fallbackLink =
+      `/tabs/home?notificationCampaign=${encodeURIComponent(notification.id)}`;
+    const link =
+      notification.link?.startsWith('/') && !notification.link.startsWith('//')
+        ? notification.link
+        : fallbackLink;
+    await this.router.navigateByUrl(link);
   }
 
   private async refreshPermissionState(): Promise<void> {

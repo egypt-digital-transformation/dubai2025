@@ -5,12 +5,15 @@ import {
   requireAuthenticatedUser,
 } from "../shared/admin-auth.js";
 import {
+  emailDocumentId,
   matchesNotificationTarget,
   SEGMENT_FIELDS,
 } from "../shared/notification-utils.js";
 import {
   getTargetRecipients,
+  recordInAppNotification,
   sendPushToRecipients,
+  updateInAppNotificationPushSummary,
 } from "../shared/push-delivery.js";
 
 const ACTIVITY_COLLECTION = "interactiveActivities";
@@ -82,31 +85,69 @@ export const createInteractiveActivity = onCall(
 
     let notificationSummary = {
       pushReadyCount: 0,
+      inAppCount: 0,
       acceptedCount: 0,
       failedCount: 0,
       deliveryError: false,
     };
     try {
-      const { recipients } = await getTargetRecipients(target);
+      const { recipients, users } = await getTargetRecipients(target);
+      const campaignId = emailDocumentId(`interactive-activity:${activityRef.id}`);
+      const notificationTitle =
+        `${kind === "quiz" ? "New quiz" : "New poll"}: ${title.trim()}`;
+      const link = `/activities?notificationCampaign=${campaignId}`;
+      await recordInAppNotification({
+        id: campaignId,
+        title: notificationTitle,
+        body: "Open the app to participate.",
+        targetLabel: "Interactive activity",
+        emails: users.map((user) => {
+          const data = user.data();
+          return data.emailAddress || data.email || user.id;
+        }),
+        link,
+        metadata: {
+          isInteractiveActivity: true,
+          activityId: activityRef.id,
+        },
+      });
       notificationSummary.pushReadyCount = new Set(
         recipients.map((recipient) => recipient.id)
       ).size;
-      const results = await sendPushToRecipients(recipients, {
-        title: `${kind === "quiz" ? "New quiz" : "New poll"}: ${title.trim()}`,
-        body: "Open the app to participate.",
-        data: {
-          activityId: activityRef.id,
-          kind,
-          url: "/activities",
-        },
-        link: "/activities",
-      });
+      notificationSummary.inAppCount = users.length;
+      let results = [];
+      let pushDeliveryFailed = false;
+      if (recipients.length) {
+        try {
+          results = await sendPushToRecipients(recipients, {
+            title: notificationTitle,
+            body: "Open the app to participate.",
+            data: {
+              activityId: activityRef.id,
+              campaignId,
+              kind,
+              url: link,
+            },
+            link,
+          });
+        } catch (error) {
+          pushDeliveryFailed = true;
+          console.error(
+            `[InteractiveActivities] Push delivery failed for activity ${activityRef.id}; inbox notifications were saved:`,
+            error
+          );
+        }
+      }
+      await updateInAppNotificationPushSummary(campaignId, recipients, results);
       notificationSummary = {
         pushReadyCount: new Set(
           recipients.map((recipient) => recipient.id)
         ).size,
+        inAppCount: users.length,
         acceptedCount: results.filter((result) => result.success).length,
-        failedCount: results.filter((result) => !result.success).length,
+        failedCount: pushDeliveryFailed
+          ? recipients.length
+          : results.filter((result) => !result.success).length,
         deliveryError: false,
       };
       await activityRef.set(
@@ -115,7 +156,7 @@ export const createInteractiveActivity = onCall(
       );
     } catch (error) {
       console.error(
-        `[InteractiveActivities] Failed to notify attendees about ${kind} ${activityRef.id}:`,
+        `[InteractiveActivities] Failed to save attendee notifications for ${kind} ${activityRef.id}:`,
         error
       );
       notificationSummary.deliveryError = true;

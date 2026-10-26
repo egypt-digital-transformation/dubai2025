@@ -327,12 +327,12 @@ body {
   --ion-color-step-150: var(--border-color) !important;
   --ion-color-step-200: var(--border-color) !important;
   --ion-color-step-250: var(--border-color) !important;
-  --ion-color-step-300: var(--bright-gray) !important;
-  --ion-color-step-350: var(--bright-gray) !important;
-  --ion-color-step-400: var(--bright-gray) !important;
-  --ion-color-step-450: var(--bright-gray) !important;
-  --ion-color-step-500: var(--bright-gray) !important;
-  --ion-color-step-550: var(--bright-gray) !important;
+  --ion-color-step-300: var(--holcim-gray-03) !important;
+  --ion-color-step-350: var(--holcim-gray-03) !important;
+  --ion-color-step-400: var(--holcim-gray-03) !important;
+  --ion-color-step-450: var(--holcim-gray-03) !important;
+  --ion-color-step-500: var(--holcim-gray-03) !important;
+  --ion-color-step-550: var(--holcim-gray-03) !important;
   --ion-color-step-600: var(--dark-gray) !important;
   --ion-color-step-650: var(--dark-gray) !important;
   --ion-color-step-700: var(--dark-gray) !important;
@@ -362,6 +362,32 @@ ion-loading,
 ion-toast {
   --background: var(--app-surface) !important;
   --ion-background-color: var(--app-surface) !important;
+}
+
+ion-toast.fcm-foreground-toast {
+  --background: var(--holcim-premium-blue) !important;
+  --color: var(--white) !important;
+  --button-color: var(--holcim-bright-green) !important;
+  --border-radius: 14px;
+  --box-shadow: 0 10px 28px rgba(var(--black-rgb), 0.28);
+}
+
+ion-toast.fcm-foreground-toast::part(container) {
+  border-left: 5px solid var(--holcim-bright-green);
+}
+
+ion-toast.fcm-foreground-toast::part(header),
+ion-toast.fcm-foreground-toast::part(message) {
+  color: var(--white);
+  opacity: 1;
+}
+
+ion-toast.fcm-foreground-toast::part(header) {
+  font-weight: 700;
+}
+
+ion-toast.fcm-foreground-toast::part(button) {
+  font-weight: 700;
 }
 
 // Override any dark mode media queries

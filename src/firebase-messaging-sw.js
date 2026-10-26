@@ -37,19 +37,33 @@ messaging.onBackgroundMessage((payload) => {
 // Handle notification click event
 self.addEventListener('notificationclick', (event) => {
   console.log('[firebase-messaging-sw.js] Notification clicked:', event.notification);
+  event.stopImmediatePropagation();
   event.notification.close();
 
-  const targetUrl = event.notification.data?.url || event.notification.data?.link || '/';
+  const fcmMessage = event.notification.data?.FCM_MSG;
+  const messageData = fcmMessage?.data?.data || fcmMessage?.data || {};
+  const targetUrl =
+    event.notification.data?.url ||
+    event.notification.data?.link ||
+    messageData.url ||
+    messageData.link ||
+    fcmMessage?.fcmOptions?.link ||
+    '/';
+  const destination = new URL(targetUrl, self.location.origin);
+  if (destination.origin !== self.location.origin) {
+    console.error('[firebase-messaging-sw.js] Ignoring notification URL outside this app origin:', targetUrl);
+    return;
+  }
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
       for (const client of windowClients) {
-        if (client.url.includes(self.location.origin) && 'focus' in client) {
-          return client.navigate(targetUrl).then(() => client.focus());
+        if (new URL(client.url).origin === self.location.origin && 'focus' in client) {
+          return client.navigate(destination.href).then(() => client.focus());
         }
       }
       if (clients.openWindow) {
-        return clients.openWindow(targetUrl);
+        return clients.openWindow(destination.href);
       }
     })
   );

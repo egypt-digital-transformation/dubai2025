@@ -67,7 +67,7 @@
   padding: 0 16px;
 
   &:hover {
-    background: rgba(var(--bright-gray-rgb), 0.08);
+    background: rgba(var(--holcim-gray-03-rgb), 0.08);
     color: var(--dark-gray);
   }
 
@@ -97,7 +97,7 @@
   &[disabled] {
     opacity: 0.5;
     cursor: not-allowed;
-    background: var(--bright-gray);
+    background: var(--holcim-gray-03);
     box-shadow: none;
     transform: none;
   }

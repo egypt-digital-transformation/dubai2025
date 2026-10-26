@@ -58,6 +58,7 @@ export const getAdminDashboard = onCall(
         targetLabel: campaign.targetLabel,
         createdAt: timestampToIso(campaign.createdAt),
         targetCount: campaign.targetCount || 0,
+        inAppCount: campaign.inAppCount || campaign.targetCount || 0,
         pushReadyCount: campaign.pushReadyCount || 0,
         acceptedCount: campaign.acceptedCount || 0,
         failedCount: campaign.failedCount || 0,

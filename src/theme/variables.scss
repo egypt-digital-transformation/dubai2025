@@ -54,8 +54,8 @@
   /* Backwards compatibility aliases for grayscale */
   --dark-gray: var(--holcim-gray-04);
   --dark-gray-rgb: var(--holcim-gray-04-rgb);
-  --bright-gray: var(--holcim-gray-03);
-  --bright-gray-rgb: var(--holcim-gray-03-rgb);
+  --bright-gray: var(--app-text-muted);
+  --bright-gray-rgb: 74, 85, 104;
 
   /* Functional alert colors */
   --holcim-green: #009a44;

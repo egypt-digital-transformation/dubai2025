@@ -14,6 +14,7 @@ import {
 } from "../shared/notification-utils.js";
 import {
   getTargetRecipients,
+  recordInAppNotification,
   sendPushToRecipients,
 } from "../shared/push-delivery.js";
 
@@ -56,13 +57,14 @@ function validateNotification(request) {
   return { title, body, target };
 }
 
-function getTargetLabel(target, recipients) {
+function getTargetLabel(target, users) {
   if (target.kind === "all") {
     return "All attendees";
   }
   if (target.kind === "user") {
-    return recipients.find((recipient) => recipient.id === target.userId)?.email ||
-      "One attendee";
+    const user = users.find((document) => document.id === target.userId);
+    const data = user?.data() || {};
+    return data.emailAddress || data.email || user?.id || "One attendee";
   }
   if (target.kind === "users") {
     return `${target.userIds.length} selected users`;
@@ -71,21 +73,23 @@ function getTargetLabel(target, recipients) {
 }
 
 async function createCampaign(title, body, target, scheduledAt = null) {
-  const { targetCount, recipients } = await getTargetRecipients(target);
-  if (!recipients.length) {
+  const { targetCount, recipients, users } = await getTargetRecipients(target);
+  if (!targetCount) {
     throw new HttpsError(
       "failed-precondition",
-      "No attendees in this audience have registered for push notifications."
+      "No attendees match this notification audience."
     );
   }
 
   const campaignRef = db.collection(CAMPAIGN_COLLECTION).doc();
+  const targetLabel = getTargetLabel(target, users);
   await campaignRef.set({
     title,
     body,
     target,
-    targetLabel: getTargetLabel(target, recipients),
+    targetLabel,
     targetCount,
+    inAppCount: targetCount,
     pushReadyCount: new Set(recipients.map((recipient) => recipient.id)).size,
     acceptedCount: 0,
     failedCount: 0,
@@ -94,22 +98,44 @@ async function createCampaign(title, body, target, scheduledAt = null) {
     scheduledAt,
     createdAt: FieldValue.serverTimestamp(),
   });
-  return { campaignRef, targetCount, recipients };
+  return { campaignRef, targetCount, recipients, users, targetLabel };
 }
 
-async function deliverCampaign(campaignRef, campaign, recipients) {
+async function deliverCampaign(campaignRef, campaign, recipients, users) {
   let acceptedCount = 0;
   let failedCount = 0;
+  const link = `/tabs/home?notificationCampaign=${campaignRef.id}`;
+  const inAppCount = users.length;
   try {
-    const results = await sendPushToRecipients(recipients, {
+    await recordInAppNotification({
+      id: campaignRef.id,
       title: campaign.title,
       body: campaign.body,
-      data: {
-        campaignId: campaignRef.id,
-        url: `/tabs/home?notificationCampaign=${campaignRef.id}`,
-      },
-      link: `/tabs/home?notificationCampaign=${campaignRef.id}`,
+      targetLabel: campaign.targetLabel,
+      emails: users.map((user) => {
+        const data = user.data();
+        return data.emailAddress || data.email || user.id;
+      }),
+      link,
+      metadata: { status: "sending" },
     });
+  } catch (error) {
+    await campaignRef.set(
+      { status: "failed", failureReason: "Could not save in-app notifications." },
+      { merge: true }
+    );
+    throw error;
+  }
+
+  try {
+    const results = recipients.length
+      ? await sendPushToRecipients(recipients, {
+          title: campaign.title,
+          body: campaign.body,
+          data: { campaignId: campaignRef.id, url: link },
+          link,
+        })
+      : [];
     acceptedCount = results.filter((result) => result.success).length;
     failedCount = results.length - acceptedCount;
     await Promise.all(
@@ -126,33 +152,46 @@ async function deliverCampaign(campaignRef, campaign, recipients) {
             deviceHash: tokenFingerprint(recipient.token),
             status: success ? "accepted" : "failed",
             errorCode,
-            openedAt: null,
             title: campaign.title,
             body: campaign.body,
+            link,
             receivedAt: FieldValue.serverTimestamp(),
           })
       )
     );
   } catch (error) {
+    failedCount = recipients.length - acceptedCount;
+    const status = acceptedCount > 0 ? "partial" : "in_app";
     await campaignRef.set(
       {
         acceptedCount,
-        failedCount: recipients.length - acceptedCount,
-        status: "failed",
+        failedCount,
+        status,
       },
       { merge: true }
     );
     console.error("[AdminNotifications] Failed to send campaign:", error);
-    throw error;
+    return {
+      acceptedCount,
+      failedCount,
+      inAppCount,
+      status,
+    };
   }
 
   const status =
-    failedCount === 0 ? "complete" : acceptedCount === 0 ? "failed" : "partial";
+    failedCount === 0
+      ? recipients.length === 0
+        ? "in_app"
+        : "complete"
+      : acceptedCount === 0
+        ? "in_app"
+        : "partial";
   await campaignRef.set(
     { acceptedCount, failedCount, status },
     { merge: true }
   );
-  return { acceptedCount, failedCount, status };
+  return { acceptedCount, failedCount, inAppCount, status };
 }
 
 export const sendTargetedNotification = onCall(
@@ -160,7 +199,8 @@ export const sendTargetedNotification = onCall(
   async (request) => {
     await requireAdminUser(request);
     const { title, body, target } = validateNotification(request);
-    const { campaignRef, targetCount, recipients } = await createCampaign(
+    const { campaignRef, targetCount, recipients, users, targetLabel } =
+      await createCampaign(
       title,
       body,
       target
@@ -169,8 +209,9 @@ export const sendTargetedNotification = onCall(
     try {
       const result = await deliverCampaign(
         campaignRef,
-        { title, body },
-        recipients
+        { title, body, targetLabel },
+        recipients,
+        users
       );
       return {
         campaignId: campaignRef.id,
@@ -214,6 +255,7 @@ export const scheduleTargetedNotification = onCall(
       campaignId: campaignRef.id,
       targetCount,
       pushReadyCount: new Set(recipients.map((recipient) => recipient.id)).size,
+      inAppCount: targetCount,
       status: "scheduled",
       scheduledAt: scheduledAt.toDate().toISOString(),
     };
@@ -253,18 +295,18 @@ export const dispatchScheduledNotifications = onSchedule(
 
       const campaign = campaignDocument.data();
       try {
-        const { targetCount, recipients } = await getTargetRecipients(
+        const { targetCount, recipients, users } = await getTargetRecipients(
           campaign.target
         );
-        if (!recipients.length) {
+        if (!targetCount) {
           await campaignRef.set(
             {
-              targetCount,
+              targetCount: 0,
               pushReadyCount: 0,
               acceptedCount: 0,
               failedCount: 0,
               status: "failed",
-              failureReason: "No audience members have push notifications enabled.",
+              failureReason: "No attendees match this notification audience.",
             },
             { merge: true }
           );
@@ -279,7 +321,7 @@ export const dispatchScheduledNotifications = onSchedule(
           },
           { merge: true }
         );
-        await deliverCampaign(campaignRef, campaign, recipients);
+        await deliverCampaign(campaignRef, campaign, recipients, users);
       } catch (error) {
         console.error(
           `[AdminNotifications] Failed to deliver scheduled campaign ${campaignRef.id}:`,
@@ -319,14 +361,14 @@ export const recordNotificationOpen = onCall(
       if (!campaignSnapshot.exists || !deliveries.length) {
         return { recorded: false };
       }
-      const unopenedDelivery = deliveries.find(
-        (delivery) => !delivery.data().openedAt
-      );
-      if (!unopenedDelivery) {
+      if (deliveries.some((delivery) => delivery.data().openedAt)) {
         return { recorded: true, alreadyRecorded: true };
       }
 
-      transaction.update(unopenedDelivery.ref, {
+      const inboxDelivery =
+        deliveries.find((delivery) => delivery.data().deviceHash === "in-app") ||
+        deliveries[0];
+      transaction.update(inboxDelivery.ref, {
         openedAt: FieldValue.serverTimestamp(),
       });
       transaction.update(campaignRef, { openedCount: FieldValue.increment(1) });
@@ -359,6 +401,7 @@ export const listUserNotifications = onCall(
         opened: Boolean(data.openedAt) || existing?.opened === true,
         title: existing?.title || data.title || null,
         body: existing?.body || data.body || null,
+        link: existing?.link || data.link || null,
         createdAt:
           existing?.createdAt ||
           data.receivedAt?.toDate?.().toISOString() ||
@@ -373,6 +416,7 @@ export const listUserNotifications = onCall(
             id,
             title: delivery.title,
             body: delivery.body,
+            link: delivery.link,
             createdAt: delivery.createdAt,
             opened: delivery.opened,
           };
@@ -388,6 +432,7 @@ export const listUserNotifications = onCall(
           id,
           title: campaign.title,
           body: campaign.body,
+          link: delivery.link,
           createdAt: campaign.createdAt?.toDate?.().toISOString() ?? null,
           opened: delivery.opened,
         };

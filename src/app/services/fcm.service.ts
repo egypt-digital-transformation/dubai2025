@@ -90,7 +90,6 @@ function isRecoverableSubscriptionError(error: unknown): boolean {
 async function clearStaleBrowserPushSubscriptions(
   swRegistration?: ServiceWorkerRegistration
 ): Promise<void> {
-  // 1. Unsubscribe from the passed service worker registration
   try {
     const sub = await swRegistration?.pushManager?.getSubscription();
     if (sub) {
@@ -100,26 +99,6 @@ async function clearStaleBrowserPushSubscriptions(
     console.warn('[FCM] Failed to unsubscribe push subscription:', err);
   }
 
-  // 2. Unsubscribe push subscriptions across all browser service worker registrations
-  try {
-    if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
-      const allRegistrations = await navigator.serviceWorker.getRegistrations();
-      for (const reg of allRegistrations) {
-        try {
-          const sub = await reg.pushManager?.getSubscription();
-          if (sub) {
-            await sub.unsubscribe();
-          }
-        } catch (subErr) {
-          console.warn('[FCM] Failed to unsubscribe SW push subscription:', subErr);
-        }
-      }
-    }
-  } catch (err) {
-    console.warn('[FCM] Failed to query SW registrations:', err);
-  }
-
-  // 3. Clear IndexedDB token tables without blocking on deleteDatabase
   try {
     if (typeof window !== 'undefined' && window.indexedDB) {
       const databasesToClear = ['firebase-messaging-database', 'fcm_token_details_db'];
@@ -167,7 +146,6 @@ async function clearStaleBrowserPushSubscriptions(
     console.warn('[FCM] Failed to delete FCM IndexedDB databases:', err);
   }
 
-  // 4. Reset device ID in localStorage to force a fresh identity on backend
   try {
     if (typeof window !== 'undefined' && window.localStorage) {
       window.localStorage.removeItem('fcmPushDeviceId');
@@ -359,32 +337,29 @@ export class FcmService {
       registrationStage = 'registering FCM token with the server';
       let registration = await this.saveTokenToFirestore(currentToken);
       if (registration.refreshRequired) {
-        console.warn('[FCM] Server marked this device token invalid; requesting a replacement.');
-        const rejectedToken = currentToken;
+        console.warn('[FCM] Server marked this device token invalid; refreshing its push subscription.');
         registrationStage = 'replacing invalid FCM token';
-        try {
-          await deleteToken(this.messagingInstance);
-        } catch (delErr: unknown) {
-          console.warn('[FCM] Could not delete the invalid token through Firebase; clearing local push storage:', {
-            code: getMessagingErrorCode(delErr),
-          });
-        }
-        await clearStaleBrowserPushSubscriptions(swRegistration);
-        this.messagingInstance = null;
-        this.messagingInstance = getMessaging();
-        currentToken = await getToken(this.messagingInstance, tokenOptions);
-        if (currentToken === rejectedToken) {
-          console.warn('[FCM] Firebase returned the rejected token after cleanup; retrying once.');
+        for (let attempt = 1; attempt <= 2 && registration.refreshRequired; attempt++) {
+          try {
+            await deleteToken(this.messagingInstance);
+          } catch (delErr: unknown) {
+            console.warn('[FCM] Could not delete the invalid token through Firebase; clearing its local push subscription:', {
+              code: getMessagingErrorCode(delErr),
+            });
+          }
           await clearStaleBrowserPushSubscriptions(swRegistration);
           this.messagingInstance = null;
           this.messagingInstance = getMessaging();
           currentToken = await getToken(this.messagingInstance, tokenOptions);
+          if (!currentToken) {
+            throw new Error('Firebase did not provide a replacement push token.');
+          }
+          registrationStage = 'registering replacement FCM token with the server';
+          registration = await this.saveTokenToFirestore(currentToken);
+          if (registration.refreshRequired && attempt < 2) {
+            console.warn('[FCM] Replacement token was also rejected; rebuilding the push subscription once more.');
+          }
         }
-        if (!currentToken) {
-          throw new Error('Firebase did not provide a replacement push token.');
-        }
-        registrationStage = 'registering replacement FCM token with the server';
-        registration = await this.saveTokenToFirestore(currentToken);
       }
       if (!registration.registered) {
         throw new Error('The push token was not registered successfully.');

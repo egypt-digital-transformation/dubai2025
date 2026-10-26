@@ -22,7 +22,8 @@ import {
   cloudUploadOutline,
 } from 'ionicons/icons';
 import { interval } from 'rxjs';
-import { Router } from '@angular/router';
+import { NavigationEnd, Router } from '@angular/router';
+import { filter, Subscription } from 'rxjs';
 import {
   AdminAttendee,
   AdminCampaign,
@@ -152,6 +153,7 @@ export class AdminPage implements OnInit, OnDestroy {
   isSavingResourceType = false;
 
   private refreshTimer?: ReturnType<typeof setInterval>;
+  private navigationSubscription?: Subscription;
   private hasLoadedFlightDetails = false;
   private hasLoadedSafetyInductionStatus = false;
   private flightDetailsLoad?: Promise<void>;
@@ -227,6 +229,10 @@ export class AdminPage implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    this.selectSectionFromUrl();
+    this.navigationSubscription = this.router.events
+      .pipe(filter((event) => event instanceof NavigationEnd))
+      .subscribe(() => this.selectSectionFromUrl());
     void this.registerFormControls().catch((error: unknown) => {
       console.error('[AdminPage] Failed to register admin form controls:', error);
       this.formControlsError = 'Admin forms could not be loaded. Reload the page and try again.';
@@ -299,6 +305,14 @@ export class AdminPage implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     if (this.refreshTimer) {
       clearInterval(this.refreshTimer);
+    }
+    this.navigationSubscription?.unsubscribe();
+  }
+
+  private selectSectionFromUrl(): void {
+    const section = this.router.parseUrl(this.router.url).queryParams['section'];
+    if (section === 'requests') {
+      this.selectSection('requests');
     }
   }
 
@@ -1108,11 +1122,6 @@ export class AdminPage implements OnInit, OnDestroy {
       this.errorMessage = 'Enter a title and message, then choose a valid audience.';
       return;
     }
-    if (!this.pushReadyRecipientCount) {
-      this.errorMessage = 'No selected attendees have enabled push notifications.';
-      return;
-    }
-
     let scheduledAt: string | null = null;
     if (this.updateMode === 'scheduled') {
       try {
@@ -1138,8 +1147,8 @@ export class AdminPage implements OnInit, OnDestroy {
     const confirmation = await this.alertController.create({
       header: scheduledAt ? 'Schedule push notification?' : 'Send push notification?',
       message: scheduledAt
-        ? `This will send the message to ${this.pushReadyRecipientCount} device(s) at ${scheduledDisplay} Egypt time.`
-        : `This will send the message to ${this.pushReadyRecipientCount} device(s).`,
+        ? `This will add the message to the selected attendees’ in-app inboxes and send push notifications to ${this.pushReadyRecipientCount} available device(s) at ${scheduledDisplay} Egypt time.`
+        : `This will add the message to the selected attendees’ in-app inboxes and send push notifications to ${this.pushReadyRecipientCount} available device(s).`,
       buttons: [
         { text: 'Cancel', role: 'cancel' },
         { text: scheduledAt ? 'Schedule' : 'Send now', role: 'confirm' },
@@ -1182,18 +1191,19 @@ export class AdminPage implements OnInit, OnDestroy {
     scheduledDisplay: string
   ): string {
     if (result.status === 'scheduled') {
-      return `Notification scheduled for ${scheduledDisplay} Egypt time; audience ${result.targetCount}, ${result.pushReadyCount} push-enabled.`;
+      return `Notification scheduled for ${scheduledDisplay} Egypt time; ${result.inAppCount ?? result.targetCount} attendees will have it in their in-app inbox, with ${result.pushReadyCount} push-enabled.`;
     }
     return (
-      `Notification ${result.status}: ${result.acceptedCount} accepted, ` +
+      `Notification saved to ${result.inAppCount ?? result.targetCount} in-app inbox(es); ` +
+      `push ${result.status}: ${result.acceptedCount} accepted, ` +
       `${result.failedCount} failed; audience ${result.targetCount}, ` +
       `${result.pushReadyCount} push-enabled.`
     );
   }
 
   openRate(campaign: AdminCampaign): number {
-    return campaign.acceptedCount
-      ? Math.round((campaign.openedCount / campaign.acceptedCount) * 100)
+    return campaign.inAppCount
+      ? Math.round((campaign.openedCount / campaign.inAppCount) * 100)
       : 0;
   }
 
@@ -1249,9 +1259,9 @@ export class AdminPage implements OnInit, OnDestroy {
       this.activitySelectedSegmentKey = '';
       this.activityNotice = `${this.activityKind === 'quiz' ? 'Quiz' : 'Poll'} published for attendees.`;
       if (result.notificationSummary?.deliveryError) {
-        this.activityNotice += ' Push notification delivery failed; attendees can still access it in the app.';
+        this.activityNotice += ' Inbox delivery also needs attention; attendees can still access it in the app.';
       } else if (result.notificationSummary?.pushReadyCount === 0) {
-        this.activityNotice += ' No attendees in this audience have enabled push notifications.';
+        this.activityNotice += ' The activity is saved in attendees’ in-app inboxes; no push tokens are available.';
       } else if (result.notificationSummary) {
         this.activityNotice +=
           ` Push notifications accepted: ${result.notificationSummary.acceptedCount}; ` +

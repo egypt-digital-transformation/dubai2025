@@ -195,6 +195,35 @@ describe('AdminPage', () => {
     );
   });
 
+  it('saves notifications for selected users even when no push token is available', async () => {
+    component.audienceKind = 'users';
+    component.selectedUserIds = ['delegate-a'];
+    component.notificationAudience = [
+      { ...dashboard.attendees[0], hasPushToken: false },
+    ];
+    component.notificationTitle = 'Important update';
+    component.notificationBody = 'Please read this update.';
+    adminService.sendNotification.mockResolvedValue({
+      campaignId: 'campaign-in-app',
+      targetCount: 1,
+      pushReadyCount: 0,
+      inAppCount: 1,
+      acceptedCount: 0,
+      failedCount: 0,
+      status: 'in_app',
+    });
+
+    await component.sendNotification();
+
+    expect(adminService.sendNotification).toHaveBeenCalledWith(
+      'Important update',
+      'Please read this update.',
+      { kind: 'users', userIds: ['delegate-a'] }
+    );
+    expect(component.errorMessage).toBe('');
+    expect(component.noticeMessage).toContain('1 in-app inbox');
+  });
+
   it('searches Firestore users and selects every visible result', () => {
     component.notificationUserSearch = 'delegate';
 
@@ -414,7 +443,8 @@ describe('AdminPage', () => {
 
     const page: HTMLElement = fixture.nativeElement;
     expect(page.textContent).toContain('Recent updates');
-    expect(page.textContent).toContain('Accepted” means Firebase accepted the send request');
+    expect(page.textContent).toContain('Push accepted means Firebase accepted the send request');
+    expect(page.textContent).toContain('In-app counts are recipients with a saved inbox entry');
     expect(page.textContent).toContain('Opens count unique recipients');
   });
 

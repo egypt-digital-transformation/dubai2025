@@ -4,9 +4,15 @@ import {
 } from "firebase-functions/v2/firestore";
 import { db, FCM_PROJECT_ID } from "../shared/firebase.js";
 import {
+  emailDocumentId,
+} from "../shared/notification-utils.js";
+import {
+  getActiveAdminEmails,
   getAdminRecipients,
   getPushRecipientsForUser,
+  recordInAppNotification,
   sendPushToRecipients,
+  updateInAppNotificationPushSummary,
 } from "../shared/push-delivery.js";
 
 export const notifyAdminsOfNewRequest = onDocumentCreated(
@@ -20,23 +26,57 @@ export const notifyAdminsOfNewRequest = onDocumentCreated(
       return;
     }
 
-    const admins = await getAdminRecipients();
-    if (!admins.length) {
+    const [admins, adminEmails] = await Promise.all([
+      getAdminRecipients(),
+      getActiveAdminEmails(),
+    ]);
+    if (!adminEmails.length) {
       console.warn(
-        `[RequestNotifications] No active admin has registered a push token for request ${event.params.requestId}.`
+        `[RequestNotifications] No active admin inbox is available for request ${event.params.requestId}.`
       );
       return;
     }
 
-    const results = await sendPushToRecipients(admins, {
-      title: "New attendee request",
-      body: `${request.type || "Help"} request from ${request.userName || "an attendee"}.`,
-      data: {
-        requestId: event.params.requestId,
-        url: "/admin",
-      },
-      link: "/admin",
+    const title = "New attendee request";
+    const body = `${request.type || "Help"} request from ${request.userName || "an attendee"}.`;
+    const campaignId = emailDocumentId(`request-created:${event.id}`);
+    const link = `/admin?section=requests&notificationCampaign=${campaignId}`;
+    await recordInAppNotification({
+      id: campaignId,
+      title,
+      body,
+      targetLabel: "Active administrators",
+      emails: adminEmails,
+      link,
+      metadata: { isRequestNotification: true },
     });
+    if (!admins.length) {
+      await updateInAppNotificationPushSummary(campaignId, admins, []);
+      console.warn(
+        `[RequestNotifications] Admin inboxes saved without push tokens for request ${event.params.requestId}.`
+      );
+      return;
+    }
+
+    let results = [];
+    try {
+      results = await sendPushToRecipients(admins, {
+        title,
+        body,
+        data: {
+          campaignId,
+          requestId: event.params.requestId,
+          url: link,
+        },
+        link,
+      });
+    } catch (error) {
+      console.error(
+        `[RequestNotifications] Push delivery failed for request ${event.params.requestId}; inbox notifications were saved:`,
+        error
+      );
+    }
+    await updateInAppNotificationPushSummary(campaignId, admins, results);
     const failures = results.filter((result) => !result.success);
     if (failures.length) {
       console.error(
@@ -95,25 +135,46 @@ export const notifyUserOfRequestUpdate = onDocumentUpdated(
 
     const userDocument = userSnapshot.docs[0];
     const recipients = getPushRecipientsForUser(userDocument);
+    const title = "Your request was updated";
+    const body = `An administrator updated your ${after.type || "help"} request. Status: ${after.status || "updated"}.`;
+    const campaignId = emailDocumentId(`request-updated:${event.id}`);
+    const link = `/tabs/requests?notificationCampaign=${campaignId}`;
+    await recordInAppNotification({
+      id: campaignId,
+      title,
+      body,
+      targetLabel: "Request update",
+      emails: [normalizedEmail],
+      link,
+      metadata: { isRequestNotification: true },
+    });
     if (!recipients.length) {
+      await updateInAppNotificationPushSummary(campaignId, recipients, []);
       console.warn(
-        `[RequestNotifications] Requester ${normalizedEmail} has no push token for project ${FCM_PROJECT_ID}.`
+        `[RequestNotifications] Request update saved to ${normalizedEmail}'s inbox; no push token for project ${FCM_PROJECT_ID}.`
       );
       return;
     }
 
-    const results = await sendPushToRecipients(
-      recipients,
-      {
-        title: "Your request was updated",
-        body: `An administrator updated your ${after.type || "help"} request. Status: ${after.status || "updated"}.`,
+    let results = [];
+    try {
+      results = await sendPushToRecipients(recipients, {
+        title,
+        body,
         data: {
+          campaignId,
           requestId: event.params.requestId,
-          url: "/tabs/requests",
+          url: link,
         },
-        link: "/tabs/requests",
-      }
-    );
+        link,
+      });
+    } catch (error) {
+      console.error(
+        `[RequestNotifications] Push delivery failed for requester ${normalizedEmail}; inbox notification was saved:`,
+        error
+      );
+    }
+    await updateInAppNotificationPushSummary(campaignId, recipients, results);
     const failure = results.find((result) => !result.success);
     if (failure) {
       console.error(

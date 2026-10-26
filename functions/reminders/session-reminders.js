@@ -2,11 +2,13 @@ import { randomUUID } from "node:crypto";
 import { getAuth } from "firebase-admin/auth";
 import { onRequest } from "firebase-functions/v2/https";
 import { onSchedule } from "firebase-functions/v2/scheduler";
-import { CAMPAIGN_COLLECTION, db, FieldValue, Timestamp } from "../shared/firebase.js";
+import { db, Timestamp } from "../shared/firebase.js";
 import { requireAdminIdentity } from "../shared/admin-auth.js";
 import {
   getPushRecipientsForUser,
+  recordInAppNotification,
   sendPushToRecipients,
+  updateInAppNotificationPushSummary,
 } from "../shared/push-delivery.js";
 import { emailDocumentId } from "../shared/notification-utils.js";
 import { getDueAgendaLabels } from "./session-reminder-utils.js";
@@ -72,7 +74,10 @@ async function claimReminder(dayRef, dueLabel) {
       reminderClaimId: claimId,
     };
     transaction.update(dayRef, { labels });
-    return claimId;
+    return {
+      claimId,
+      inAppSaved: label.reminderInAppSaved === true,
+    };
   });
 }
 
@@ -105,96 +110,140 @@ async function updateReminderLabel(dayRef, dueLabel, claimId, update) {
 }
 
 async function recordInAppReminder(userEmail, dueLabel, dayDoc) {
-  const normalizedEmail = (userEmail || "").trim().toLowerCase();
-  if (!normalizedEmail) return null;
+  const normalizedEmail =
+    typeof userEmail === "string" ? userEmail.trim().toLowerCase() : "";
+  if (!normalizedEmail) {
+    throw new Error("Cannot save a session reminder without the attendee email.");
+  }
 
   const title = "Session Starting Soon!";
   const body = `Your "${dueLabel.label}" is starting soon.`;
-
-  const campaignRef = db.collection(CAMPAIGN_COLLECTION || "notificationCampaigns").doc();
-  await campaignRef.set({
+  const campaignId = getReminderCampaignId(normalizedEmail, dayDoc, dueLabel);
+  const link = getAgendaReminderLink(dueLabel, campaignId);
+  await recordInAppNotification({
+    id: campaignId,
     title,
     body,
-    target: { kind: "user", email: normalizedEmail },
     targetLabel: `Session Reminder: ${dueLabel.label}`,
-    status: "sent",
-    createdAt: FieldValue.serverTimestamp(),
-    isSessionReminder: true,
-    dayNumber: dueLabel.dayNumber ?? null,
+    emails: [normalizedEmail],
+    link,
+    metadata: {
+      isSessionReminder: true,
+      dayNumber: dueLabel.dayNumber ?? null,
+    },
   });
-
-  const deliveryRef = campaignRef
-    .collection("deliveries")
-    .doc(emailDocumentId(`${normalizedEmail}:reminder-${dayDoc.id}-${dueLabel.index}`));
-
-  await deliveryRef.set({
-    emailHash: emailDocumentId(normalizedEmail),
-    deviceHash: "in-app",
-    status: "accepted",
-    errorCode: null,
-    openedAt: null,
-    title,
-    body,
-    receivedAt: FieldValue.serverTimestamp(),
-  });
-
-  return campaignRef.id;
+  return campaignId;
 }
 
-async function sendReminderForLabel(userLabel, recipients, dayDoc, dueLabel) {
-  const claimId = await claimReminder(dayDoc.ref, dueLabel);
-  if (!claimId) {
+function getReminderCampaignId(userEmail, dayDoc, dueLabel) {
+  return emailDocumentId(
+    `reminder:${userEmail.trim().toLowerCase()}:${dayDoc.id}:${dueLabel.index}`
+  );
+}
+
+function getAgendaReminderLink(dueLabel, campaignId) {
+  const query = new URLSearchParams({
+    notificationCampaign: campaignId,
+  });
+  if (Number.isInteger(dueLabel.dayNumber) && dueLabel.dayNumber > 0) {
+    query.set("dayNumber", String(dueLabel.dayNumber));
+  }
+  return `/tabs/agenda?${query.toString()}`;
+}
+
+async function sendReminderForLabel(
+  userLabel,
+  userEmail,
+  recipients,
+  dayDoc,
+  dueLabel
+) {
+  const claim = await claimReminder(dayDoc.ref, dueLabel);
+  if (!claim) {
     return false;
   }
 
+  const { claimId, inAppSaved } = claim;
   try {
-    const results = await sendPushToRecipients(recipients, {
-      title: "Session Starting Soon!",
-      body: `Your "${dueLabel.label}" is starting soon.`,
-      data: {
-        dayNumber: String(dueLabel.dayNumber ?? ""),
-        agendaLabel: dueLabel.label,
-      },
-      link: "/",
-    });
+    const campaignId = inAppSaved
+      ? getReminderCampaignId(userEmail, dayDoc, dueLabel)
+      : await recordInAppReminder(userEmail, dueLabel, dayDoc);
+    if (!inAppSaved) {
+      const saved = await updateReminderLabel(
+        dayDoc.ref,
+        dueLabel,
+        claimId,
+        { reminderInAppSaved: true }
+      );
+      if (!saved) {
+        throw new Error("Could not record the in-app agenda reminder.");
+      }
+    }
+    const link = getAgendaReminderLink(dueLabel, campaignId);
+    let results = [];
+    if (recipients.length) {
+      try {
+        results = await sendPushToRecipients(recipients, {
+          title: "Session Starting Soon!",
+          body: `Your "${dueLabel.label}" is starting soon.`,
+          data: {
+            campaignId,
+            dayNumber: String(dueLabel.dayNumber ?? ""),
+            agendaLabel: dueLabel.label,
+            url: link,
+          },
+          link,
+        });
+      } catch (error) {
+        console.error(
+          `[SessionReminders] Push delivery failed for ${userLabel}; reminder remains in the in-app inbox:`,
+          error
+        );
+        await updateInAppNotificationPushSummary(campaignId, recipients, []);
+        throw error;
+      }
+    }
+    await updateInAppNotificationPushSummary(campaignId, recipients, results);
     const successfulResults = results.filter((result) => result.success);
     if (successfulResults.length === 0) {
-      throw new Error(
-        `No session reminder delivery succeeded: ${results
-          .map((result) => result.errorCode || "unknown")
-          .join(", ")}`
+      console.warn(
+        `[SessionReminders] No push device accepted the reminder for ${userLabel}; it remains pending for retry.`,
+        results.map((result) => result.errorCode)
       );
+      const released = await updateReminderLabel(
+        dayDoc.ref,
+        dueLabel,
+        claimId,
+        {}
+      );
+      if (!released) {
+        throw new Error("Could not release the pending agenda reminder claim.");
+      }
+      return false;
     }
 
+    const messageIds = successfulResults
+      .map((result) => result.messageId)
+      .filter(Boolean);
+    const reminderUpdate = {
+      reminderSent: true,
+      reminderSentAt: Timestamp.now(),
+      fcmMessageIds: messageIds,
+    };
+    if (messageIds[0]) {
+      reminderUpdate.fcmMessageId = messageIds[0];
+    }
     const markedSent = await updateReminderLabel(
       dayDoc.ref,
       dueLabel,
       claimId,
-      {
-        reminderSent: true,
-        reminderSentAt: Timestamp.now(),
-        fcmMessageId: successfulResults[0].messageId,
-        fcmMessageIds: successfulResults
-          .map((result) => result.messageId)
-          .filter(Boolean),
-      }
+      reminderUpdate
     );
     if (!markedSent) {
       throw new Error("Could not mark the agenda label reminder as sent.");
     }
 
-    const userEmail = typeof userLabel === "string" && userLabel.includes("@") ? userLabel : null;
-    if (userEmail) {
-      try {
-        await recordInAppReminder(userEmail, dueLabel, dayDoc);
-      } catch (inAppErr) {
-        console.warn(`[SessionReminders] Could not record in-app delivery for ${userLabel}:`, inAppErr);
-      }
-    }
-
-    console.log(
-      `✅ Sent FCM reminder for "${dueLabel.label}" to ${userLabel}`
-    );
+    console.log(`Recorded session reminder for "${dueLabel.label}" for ${userLabel}`);
     return true;
   } catch (error) {
     await updateReminderLabel(dayDoc.ref, dueLabel, claimId, {});
@@ -213,11 +262,25 @@ async function findDueLabelsForUser(userDoc, window) {
   );
 }
 
-async function processDueLabels(userLabel, recipients, dueLabels, onError) {
+async function processDueLabels(
+  userLabel,
+  userEmail,
+  recipients,
+  dueLabels,
+  onError
+) {
   let notificationsSent = 0;
   for (const { dayDoc, dueLabel } of dueLabels) {
     try {
-      if (await sendReminderForLabel(userLabel, recipients, dayDoc, dueLabel)) {
+      if (
+        await sendReminderForLabel(
+          userLabel,
+          userEmail,
+          recipients,
+          dayDoc,
+          dueLabel
+        )
+      ) {
         notificationsSent++;
       }
     } catch (error) {
@@ -248,28 +311,33 @@ export const sendSessionReminders = onSchedule(
       for (const userDoc of usersSnapshot.docs) {
         const user = userDoc.data();
         const userLabel = getUserLabel(userDoc, user);
+        const userEmail = user.emailAddress || user.email || "";
         const recipients = getPushRecipientsForUser(userDoc);
-        if (!recipients.length) {
-          console.warn(
-            `Skipping session reminders for ${userLabel}: no valid FCM device token is registered.`
-          );
-          continue;
-        }
-
         const dueLabels = await findDueLabelsForUser(userDoc, window);
         if (!dueLabels.length) {
           continue;
+        }
+        if (!recipients.length) {
+          console.warn(
+            `No valid FCM device token for ${userLabel}; due reminders will be saved to the in-app inbox.`
+          );
         }
 
         console.log(
           `User ${userLabel} has ${dueLabels.length} agenda labels starting soon`
         );
-        await processDueLabels(userLabel, recipients, dueLabels, (error, dayDoc, dueLabel) => {
-          console.error(
-            `❌ Failed to send FCM reminder for label "${dueLabel?.label || ""}" in agenda ${dayDoc.id} to ${userLabel}:`,
-            error
-          );
-        });
+        await processDueLabels(
+          userLabel,
+          userEmail,
+          recipients,
+          dueLabels,
+          (error, dayDoc, dueLabel) => {
+            console.error(
+              `❌ Failed to record reminder for label "${dueLabel?.label || ""}" in agenda ${dayDoc.id} for ${userLabel}:`,
+              error
+            );
+          }
+        );
       }
 
       console.log("Finished processing all user reminders.");
@@ -326,6 +394,7 @@ export const sendSessionRemindersManual = onRequest(
       for (const userDoc of usersSnapshot.docs) {
         const user = userDoc.data();
         const userLabel = getUserLabel(userDoc, user);
+        const userEmail = user.emailAddress || user.email || "";
         const recipients = getPushRecipientsForUser(userDoc);
         const userResult = {
           hasFcmToken: recipients.length > 0,
@@ -334,16 +403,11 @@ export const sendSessionRemindersManual = onRequest(
           errors: [],
         };
 
-        if (!recipients.length) {
-          userResult.errors.push("No FCM device token found for this user");
-          results.push(userResult);
-          continue;
-        }
-
         const dueLabels = await findDueLabelsForUser(userDoc, window);
         userResult.labelsFound = dueLabels.length;
         userResult.notificationsSent = await processDueLabels(
           userLabel,
+          userEmail,
           recipients,
           dueLabels,
           (error, dayDoc, dueLabel) => {

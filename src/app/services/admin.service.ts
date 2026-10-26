@@ -91,6 +91,7 @@ export interface AdminCampaign {
   targetLabel: string;
   createdAt: string | null;
   targetCount: number;
+  inAppCount: number;
   pushReadyCount: number;
   acceptedCount: number;
   failedCount: number;
@@ -103,6 +104,7 @@ export interface NotificationSendResult {
   campaignId: string;
   targetCount: number;
   pushReadyCount: number;
+  inAppCount?: number;
   acceptedCount: number;
   failedCount: number;
   status: string;
@@ -115,6 +117,7 @@ export interface ReceivedNotification {
   body: string;
   createdAt: string | null;
   opened: boolean;
+  link?: string | null;
 }
 
 export interface AdminDashboard {
@@ -362,6 +365,7 @@ export class AdminService {
     id: string;
     notificationSummary?: {
       pushReadyCount: number;
+      inAppCount?: number;
       acceptedCount: number;
       failedCount: number;
       deliveryError: boolean;

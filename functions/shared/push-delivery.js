@@ -1,4 +1,5 @@
 import {
+  CAMPAIGN_COLLECTION,
   db,
   FCM_PROJECT_ID,
   FieldValue,
@@ -6,6 +7,7 @@ import {
   Timestamp,
 } from "./firebase.js";
 import {
+  emailDocumentId,
   matchesNotificationTarget,
   tokenFingerprint,
 } from "./notification-utils.js";
@@ -107,7 +109,99 @@ export async function getTargetRecipients(target) {
     recipientsFromDocument(attendeeDocument, "users")
   );
 
-  return { targetCount: targets.length, recipients };
+  return { targetCount: targets.length, recipients, users: targets };
+}
+
+export async function recordInAppNotification({
+  id,
+  title,
+  body,
+  targetLabel,
+  emails,
+  link,
+  metadata = {},
+}) {
+  const normalizedEmails = [
+    ...new Set(
+      emails
+        .filter((email) => typeof email === "string")
+        .map((email) => email.trim().toLowerCase())
+        .filter(Boolean)
+    ),
+  ];
+  if (!normalizedEmails.length) {
+    return null;
+  }
+
+  const campaignRef = id
+    ? db.collection(CAMPAIGN_COLLECTION).doc(id)
+    : db.collection(CAMPAIGN_COLLECTION).doc();
+  await campaignRef.set(
+    {
+      title,
+      body,
+      ...(targetLabel ? { targetLabel } : {}),
+      targetCount: normalizedEmails.length,
+      inAppCount: normalizedEmails.length,
+      pushReadyCount: 0,
+      acceptedCount: 0,
+      failedCount: 0,
+      status: "complete",
+      createdAt: FieldValue.serverTimestamp(),
+      ...metadata,
+    },
+    { merge: true }
+  );
+
+  for (let offset = 0; offset < normalizedEmails.length; offset += 500) {
+    const batch = db.batch();
+    for (const email of normalizedEmails.slice(offset, offset + 500)) {
+      const deliveryRef = campaignRef
+        .collection("deliveries")
+        .doc(`in-app-${emailDocumentId(email)}`);
+      batch.set(
+        deliveryRef,
+        {
+          emailHash: emailDocumentId(email),
+          deviceHash: "in-app",
+          status: "accepted",
+          errorCode: null,
+          title,
+          body,
+          link: link || null,
+          receivedAt: FieldValue.serverTimestamp(),
+        },
+        { merge: true }
+      );
+    }
+    await batch.commit();
+  }
+  return campaignRef.id;
+}
+
+export async function updateInAppNotificationPushSummary(
+  campaignId,
+  recipients,
+  results
+) {
+  const acceptedCount = results.filter((result) => result.success).length;
+  const failedCount =
+    results.length > 0 ? results.length - acceptedCount : recipients.length;
+  const status =
+    !recipients.length || acceptedCount === 0
+      ? "in_app"
+      : failedCount
+        ? "partial"
+        : "complete";
+  await db.collection(CAMPAIGN_COLLECTION).doc(campaignId).set(
+    {
+      pushReadyCount: new Set(recipients.map((recipient) => recipient.id)).size,
+      acceptedCount,
+      failedCount,
+      status,
+    },
+    { merge: true }
+  );
 }
 
 export async function sendPushToRecipients(recipients, { title, body, data = {}, link }) {
@@ -120,14 +214,15 @@ export async function sendPushToRecipients(recipients, { title, body, data = {},
         typeof value === "string" ? value : JSON.stringify(value),
       ])
     );
+    messageData.title = title;
+    messageData.body = body;
+    if (link && !messageData.url) {
+      messageData.url = link;
+    }
     const message = {
       tokens: batch.map((recipient) => recipient.token),
-      notification: { title, body },
       data: messageData,
     };
-    if (link) {
-      message.webpush = { fcmOptions: { link } };
-    }
     const response = await getMessaging().sendEachForMulticast(message);
     const batchResults = response.responses.map((result, recipientIndex) => {
       if (!result.success) {
@@ -174,4 +269,18 @@ export async function getAdminRecipients() {
   return adminsSnapshot.docs.flatMap((adminDocument) =>
     recipientsFromDocument(adminDocument, "admins")
   );
+}
+
+export async function getActiveAdminEmails() {
+  const adminsSnapshot = await db.collection("admins")
+    .where("active", "==", true)
+    .get();
+  return adminsSnapshot.docs
+    .map((adminDocument) => {
+      const data = adminDocument.data();
+      return String(data.emailAddress || data.email || adminDocument.id)
+        .trim()
+        .toLowerCase();
+    })
+    .filter(Boolean);
 }

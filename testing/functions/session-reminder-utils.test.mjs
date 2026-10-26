@@ -94,4 +94,22 @@ describe("getDueAgendaLabels", () => {
 
     assert.equal(labels.length, 0);
   });
+
+  it("keeps an in-app-saved reminder eligible for push retry until accepted", () => {
+    const labels = getDueAgendaLabels(
+      {
+        date: "2026-10-11",
+        dayNumber: 2,
+        labels: [{
+          label: "Welcome & Strategic Alignment",
+          startTime: "09:00",
+          reminderInAppSaved: true,
+        }],
+      },
+      new Date("2026-11-10T06:59:00.000Z"),
+      new Date("2026-11-10T07:01:00.000Z")
+    );
+
+    assert.equal(labels.length, 1);
+  });
 });

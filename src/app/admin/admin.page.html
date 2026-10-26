@@ -785,7 +785,8 @@
                 <th scope="col">Title</th>
                 <th scope="col">Audience</th>
                 <th scope="col">Status</th>
-                <th scope="col">Accepted</th>
+                <th scope="col">Push accepted</th>
+                <th scope="col">In-app</th>
                 <th scope="col">Failed</th>
                 <th scope="col">Opened</th>
                 <th scope="col">Open rate</th>
@@ -798,20 +799,21 @@
                 <td>{{ campaign.targetLabel }}</td>
                 <td>{{ campaign.status }}</td>
                 <td>{{ campaign.acceptedCount }}</td>
+                <td>{{ campaign.inAppCount }}</td>
                 <td>{{ campaign.failedCount }}</td>
                 <td>{{ campaign.openedCount }}</td>
                 <td>{{ openRate(campaign) }}%</td>
               </tr>
               <tr *ngIf="!data.campaigns.length">
-                <td colspan="8" class="empty-state">No push campaigns have been sent or scheduled.</td>
+                <td colspan="9" class="empty-state">No notifications have been sent or scheduled.</td>
               </tr>
             </tbody>
           </table>
         </div>
         <p class="metric-caption campaign-note">
-          Reporting guidance: “Accepted” means Firebase accepted the send request, not that every
-          device displayed it. Opens count unique recipients who return to the app through that
-          notification; compare opens with accepted sends rather than total attendee profiles.
+          Push accepted means Firebase accepted the send request, not that every device displayed it.
+          In-app counts are recipients with a saved inbox entry. Opens count unique recipients who
+          open the notification; open rate is measured against in-app inbox entries.
         </p>
       </section>
     </ng-container>

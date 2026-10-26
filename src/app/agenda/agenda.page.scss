@@ -1232,7 +1232,7 @@ $holcim-green: var(--app-accent);
   align-items: center;
   justify-content: space-between;
   padding: 1.25rem 1.5rem;
-  background: linear-gradient(135deg, var(--bright-gray) 0%, var(--holcim-violet) 100%);
+  background: linear-gradient(135deg, var(--holcim-gray-03) 0%, var(--holcim-violet) 100%);
   color: var(--white);
   border-bottom: 1px solid rgba(var(--white-rgb), 0.1);
   box-shadow: 0 2px 8px rgba(var(--black-rgb), 0.1);
@@ -1350,7 +1350,7 @@ $holcim-green: var(--app-accent);
     align-items: center;
     gap: 0.5rem;
     padding: 0.75rem 1.5rem;
-    background: linear-gradient(135deg, var(--bright-gray) 0%, var(--holcim-violet) 100%);
+    background: linear-gradient(135deg, var(--holcim-gray-03) 0%, var(--holcim-violet) 100%);
     color: var(--white);
     border: none;
     border-radius: 12px;
@@ -1358,7 +1358,7 @@ $holcim-green: var(--app-accent);
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
-    box-shadow: 0 4px 12px rgba(var(--bright-gray-rgb), 0.4);
+    box-shadow: 0 4px 12px rgba(var(--holcim-gray-03-rgb), 0.4);
 
     ion-icon {
       font-size: 1.25rem;
@@ -1366,7 +1366,7 @@ $holcim-green: var(--app-accent);
 
     &:hover {
       transform: translateY(-2px);
-      box-shadow: 0 6px 16px rgba(var(--bright-gray-rgb), 0.5);
+      box-shadow: 0 6px 16px rgba(var(--holcim-gray-03-rgb), 0.5);
     }
 
     &:active {
@@ -1385,8 +1385,8 @@ $holcim-green: var(--app-accent);
     background-color: transparent;
   }
   50% {
-    background-color: rgba(var(--bright-gray-rgb), 0.1);
-    box-shadow: 0 4px 20px rgba(var(--bright-gray-rgb), 0.2);
+    background-color: rgba(var(--holcim-gray-03-rgb), 0.1);
+    box-shadow: 0 4px 20px rgba(var(--holcim-gray-03-rgb), 0.2);
   }
 }
 
