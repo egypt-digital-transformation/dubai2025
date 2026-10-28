@@ -16,11 +16,7 @@ export const routes: Routes = [
         loadComponent: () =>
           import('../agenda/agenda.page').then((m) => m.AgendaPage),
       },
-      {
-        path: 'network',
-        loadComponent: () =>
-          import('../network/network.page').then((m) => m.NetworkPage),
-      },
+
       {
         path: 'resources',
         loadComponent: () =>
