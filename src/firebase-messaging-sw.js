@@ -26,8 +26,8 @@ messaging.onBackgroundMessage((payload) => {
   const title = payload.notification?.title || payload.data?.title || 'Ahlan Companion';
   const options = {
     body: payload.notification?.body || payload.data?.body || '',
-    icon: payload.notification?.icon || '/assets/icon/favicon.png',
-    badge: '/assets/icon/favicon.png',
+    icon: payload.notification?.icon || '/assets/app-icon-192.png',
+    badge: '/assets/app-icon-48.png',
     data: payload.data || {},
   };
 
