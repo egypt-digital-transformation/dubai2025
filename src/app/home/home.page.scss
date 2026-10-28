@@ -518,93 +518,143 @@ ion-content {
   margin-right: auto;
 }
 // ========================================
-// QUICK ACTIONS
+// QUICK ACTIONS (EVENT ESSENTIALS)
 // ========================================
+.essentials-section {
+  margin-bottom: 1.25rem;
+
+  .home-section-heading {
+    margin-bottom: 0.65rem;
+  }
+}
+
 .quick-actions {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 0.75rem;
-    min-height: 200px; /* Set actual height */
-
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
   margin-bottom: 1.25rem;
 
   .action-card {
     background: var(--white);
-    border-radius: 1rem;
-    padding: 1rem;
+    border-radius: 0.85rem;
+    padding: 0.65rem 0.35rem 0.55rem;
     text-align: center;
-    box-shadow: 0 4px 6px -1px rgba(var(--black-rgb), 0.1), 0 2px 4px -1px rgba(var(--black-rgb), 0.06);
-    border: 2px solid var(--background-color);
+    box-shadow: 0 2px 8px rgba(var(--holcim-dark-blue-rgb), 0.04);
+    border: 1px solid rgba(var(--holcim-dark-blue-rgb), 0.08);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    width: 100%;
+    min-height: 5.8rem;
+    box-sizing: border-box;
+
+    &:hover {
+      border-color: rgba(var(--holcim-bright-blue-rgb), 0.35);
+      box-shadow: 0 4px 14px rgba(var(--holcim-dark-blue-rgb), 0.08);
+      transform: translateY(-2px);
+    }
 
     &:active {
-      transform: scale(0.95);
-      box-shadow: 0 2px 4px -1px rgba(var(--black-rgb), 0.1);
+      transform: scale(0.96);
+      box-shadow: 0 1px 3px rgba(var(--holcim-dark-blue-rgb), 0.06);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--holcim-bright-blue);
+      outline-offset: 2px;
+    }
+
+    &[disabled] {
+      opacity: 0.6;
+      cursor: not-allowed;
+      pointer-events: none;
     }
 
     .action-content {
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
+      justify-content: flex-start;
       width: 100%;
-      min-height: 7.25rem;
       text-align: center;
     }
 
     .action-icon {
-      width: 2.5rem;
-      height: 2.5rem;
-      border-radius: 0.75rem;
+      width: 2.25rem;
+      height: 2.25rem;
+      border-radius: 0.65rem;
       display: flex;
       align-items: center;
       justify-content: center;
-      margin-bottom: 0.5rem;
+      margin-bottom: 0.45rem;
+      flex-shrink: 0;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
 
       &.qr {
-        background: linear-gradient(135deg, var(--holcim-bright-turquoise) 0%, var(--holcim-bright-turquoise) 100%);
+        background: linear-gradient(135deg, #00C389 0%, #009C6D 100%);
       }
 
       &.venue {
-        background: linear-gradient(135deg, var(--holcim-bright-green) 0%, var(--holcim-bright-green) 100%);
+        background: linear-gradient(135deg, #78BE20 0%, #5C9614 100%);
       }
 
       &.networking {
-        background: linear-gradient(135deg, var(--holcim-dark-blue) 0%, var(--holcim-dark-blue) 100%);
+        background: linear-gradient(135deg, var(--holcim-dark-blue) 0%, #172D54 100%);
       }
 
       &.moments {
-        background: linear-gradient(135deg, var(--holcim-bright-blue) 0%, var(--holcim-premium-blue) 100%);
+        background: linear-gradient(135deg, var(--holcim-bright-blue) 0%, #005FA5 100%);
+      }
+
+      &.polls {
+        background: linear-gradient(135deg, var(--holcim-fuchsia) 0%, var(--holcim-orange) 100%);
       }
 
       &.hse {
-        background: linear-gradient(135deg, var(--holcim-green) 0%, var(--holcim-green) 100%);
+        background: linear-gradient(135deg, #00965E 0%, #007046 100%);
       }
 
       &.hse img {
-        width: 1.5rem;
-        height: 1.5rem;
+        width: 1.25rem;
+        height: 1.25rem;
         object-fit: contain;
         filter: brightness(0) invert(1);
       }
 
       ion-icon {
-        font-size: 1.5rem;
+        font-size: 1.2rem;
         color: var(--white);
       }
     }
 
     .action-title {
-      font-size: 0.75rem;
-      font-weight: 600;
+      font-size: 0.72rem;
+      font-weight: 650;
       color: var(--holcim-dark-blue);
-      margin-bottom: 0.125rem;
+      line-height: 1.2;
+      letter-spacing: -0.01em;
+      text-align: center;
+      margin-bottom: 0.15rem;
+      min-height: 1.75rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
     }
 
     .action-desc {
-      font-size: 0.625rem;
+      font-size: 0.58rem;
+      line-height: 1.2;
       color: var(--bright-gray);
+      text-align: center;
+      min-height: 1.4rem;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      width: 100%;
     }
   }
 }
@@ -1978,71 +2028,6 @@ ion-modal::part(content) {
   padding: 1.25rem;
 }
 
-.essentials-section .home-section-heading {
-  margin-bottom: 0.75rem;
-}
-
-.quick-actions {
-  gap: 0.65rem;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  min-height: 0;
-
-  .action-card {
-    align-items: center;
-    background: var(--white);
-    border: 1px solid var(--border-color);
-    border-radius: 0.9rem;
-    box-shadow: 0 2px 8px rgba(var(--holcim-dark-blue-rgb), 0.035);
-    color: var(--holcim-dark-blue);
-    display: flex;
-    font: inherit;
-    justify-content: flex-start;
-    min-height: 7rem;
-    padding: 0.9rem;
-    text-align: left;
-    transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
-
-    &:hover {
-      border-color: var(--border-color);
-      box-shadow: 0 6px 16px rgba(var(--holcim-dark-blue-rgb), 0.08);
-      transform: translateY(-2px);
-    }
-
-    &:focus-visible {
-      outline: 3px solid rgba(var(--holcim-bright-blue-rgb), 0.45);
-      outline-offset: 2px;
-    }
-  }
-
-  .action-content {
-    align-items: flex-start;
-    min-width: 0;
-  }
-
-  .action-icon {
-    border-radius: 0.65rem;
-    height: 2.15rem;
-    margin-bottom: 0.6rem;
-    width: 2.15rem;
-
-    ion-icon {
-      font-size: 1.15rem;
-    }
-  }
-
-  .action-title {
-    color: var(--holcim-dark-blue);
-    font-size: 0.79rem;
-    line-height: 1.35;
-  }
-
-  .action-desc {
-    color: var(--bright-gray);
-    font-size: 0.68rem;
-    line-height: 1.4;
-    margin-top: 0.15rem;
-  }
-}
 
 .agenda-card.home-section {
   background: var(--white);
@@ -2120,7 +2105,8 @@ ion-modal::part(content) {
   }
 
   .quick-actions {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 0.75rem;
   }
 }
 

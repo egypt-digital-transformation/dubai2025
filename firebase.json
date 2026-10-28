@@ -12,7 +12,15 @@
     "ignore": [
       "firebase.json",
       "**/.*",
-      "**/node_modules/**"
+      "**/node_modules/**",
+      "**/*.py",
+      "**/*.sh",
+      "**/*.ps1",
+      "**/*.csv",
+      "**/*.xlsx",
+      "**/*.xls",
+      "**/*.map",
+      "**/*.md"
     ],
     "headers": [
       {

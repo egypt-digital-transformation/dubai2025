@@ -72,6 +72,14 @@
             </span>
           </button>
 
+          <button type="button" class="action-card" (click)="openPolls()">
+            <span class="action-content">
+              <span class="action-icon polls"><ion-icon name="stats-chart-outline"></ion-icon></span>
+              <span class="action-title">Polls &amp; Quizzes</span>
+              <span class="action-desc">Live engagement</span>
+            </span>
+          </button>
+
           <button *ngIf="isPlantVisitRequired" type="button" class="action-card" [disabled]="isPreviewingUser"
             (click)="openSafetyInductionModal()">
             <span class="action-content">

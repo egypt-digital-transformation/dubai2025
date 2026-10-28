@@ -39,6 +39,7 @@ import {
   trophy,
   calendarOutline,
   cameraOutline,
+  statsChartOutline,
   keyOutline, closeOutline, personOutline, briefcaseOutline, callOutline, mailOutline
 } from 'ionicons/icons';
 
@@ -163,7 +164,7 @@ export class HomePage implements OnInit, OnDestroy {
     private zone: NgZone,
     private readonly adminPreview: AdminPreviewService
   ) {
-    addIcons({ qrCodeOutline, mapOutline, bulbOutline, cameraOutline, chevronForward, locationOutline, hourglassOutline, calendarOutline, radioOutline, keyOutline, closeOutline, personOutline, briefcaseOutline, callOutline, mailOutline, timeOutline, checkmarkCircle, trophy, });
+    addIcons({ qrCodeOutline, mapOutline, bulbOutline, cameraOutline, statsChartOutline, chevronForward, locationOutline, hourglassOutline, calendarOutline, radioOutline, keyOutline, closeOutline, personOutline, briefcaseOutline, callOutline, mailOutline, timeOutline, checkmarkCircle, trophy, });
   }
 
   ngOnInit() {
@@ -852,6 +853,14 @@ export class HomePage implements OnInit, OnDestroy {
   openCapturedMoments() {
     if (this.capturedMomentsUrl) {
       window.open(this.capturedMomentsUrl, '_blank', 'noopener,noreferrer');
+    }
+  }
+
+  public pollsUrl = '';
+
+  openPolls() {
+    if (this.pollsUrl) {
+      window.open(this.pollsUrl, '_blank', 'noopener,noreferrer');
     }
   }
 
