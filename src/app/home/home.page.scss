@@ -574,6 +574,10 @@ ion-content {
         background: linear-gradient(135deg, var(--holcim-dark-blue) 0%, var(--holcim-dark-blue) 100%);
       }
 
+      &.moments {
+        background: linear-gradient(135deg, var(--holcim-bright-blue) 0%, var(--holcim-premium-blue) 100%);
+      }
+
       &.hse {
         background: linear-gradient(135deg, var(--holcim-green) 0%, var(--holcim-green) 100%);
       }
@@ -1757,7 +1761,7 @@ ion-modal::part(content) {
 .content-container {
   margin: 0 auto;
   max-width: 58rem;
-  padding: 1.25rem 1rem 2rem;
+  padding: 1rem 0.5rem 2rem;
 }
 
 .welcome-hero {
@@ -1770,7 +1774,7 @@ ion-modal::part(content) {
   isolation: isolate;
   margin-bottom: 1rem;
   overflow: hidden;
-  padding: clamp(1.35rem, 4vw, 2rem);
+  padding: clamp(1.2rem, 3.5vw, 1.75rem) clamp(0.85rem, 2.5vw, 1.25rem);
   position: relative;
 }
 
@@ -1792,7 +1796,17 @@ ion-modal::part(content) {
   position: relative;
 }
 
-.welcome-eyebrow,
+.welcome-eyebrow {
+  color: var(--border-color);
+  font-size: clamp(0.48rem, 2.3vw, 0.7rem);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1.4;
+  margin: 0 0 0.75rem;
+  text-transform: none;
+  white-space: nowrap;
+}
+
 .section-eyebrow {
   color: var(--border-color);
   font-size: 0.66rem;

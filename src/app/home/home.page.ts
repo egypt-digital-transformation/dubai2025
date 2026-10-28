@@ -38,7 +38,8 @@ import {
   checkmarkCircle,
   trophy,
   calendarOutline,
-  keyOutline,
+  cameraOutline,
+  keyOutline, closeOutline, personOutline, briefcaseOutline, callOutline, mailOutline
 } from 'ionicons/icons';
 
 import {
@@ -162,25 +163,12 @@ export class HomePage implements OnInit, OnDestroy {
     private zone: NgZone,
     private readonly adminPreview: AdminPreviewService
   ) {
-    addIcons({
-      timeOutline,
-      locationOutline,
-      hourglassOutline,
-      radioOutline,
-      chevronForward,
-      qrCodeOutline,
-      mapOutline,
-      bulbOutline,
-      checkmarkCircle,
-      trophy,
-      calendarOutline,
-      keyOutline,
-    });
+    addIcons({ qrCodeOutline, mapOutline, bulbOutline, cameraOutline, chevronForward, locationOutline, hourglassOutline, calendarOutline, radioOutline, keyOutline, closeOutline, personOutline, briefcaseOutline, callOutline, mailOutline, timeOutline, checkmarkCircle, trophy, });
   }
 
   ngOnInit() {
 
-this.showQR = false;
+    this.showQR = false;
 
     // sessions$ from data service but ensure it's sorted and convert timestamps lazily when needed.
     const sessionsSorted$ = combineLatest([
@@ -218,8 +206,8 @@ this.showQR = false;
       this.applyViewingProfile(this.auth.currentUser?.email ?? null, this.auth.currentUser?.uid ?? null);
     });
 
-    
-    
+
+
 
     // Combine sessions + now to compute currentDay and evaluate live/up-next sessions
     combineLatest([sessionsSorted$, now$])
@@ -859,15 +847,23 @@ this.showQR = false;
     this.router.navigate(['/tips']);
   }
 
-openQRCode() {
-  this.showQR = true;
-}
+  public capturedMomentsUrl = 'https://drive.google.com';
 
-async closeQRCode() {
-  this.showQR = false;
-  const modal = document.querySelector('ion-modal.qr-modal') as HTMLIonModalElement;
-  if (modal) await modal.dismiss();
-}
+  openCapturedMoments() {
+    if (this.capturedMomentsUrl) {
+      window.open(this.capturedMomentsUrl, '_blank', 'noopener,noreferrer');
+    }
+  }
+
+  openQRCode() {
+    this.showQR = true;
+  }
+
+  async closeQRCode() {
+    this.showQR = false;
+    const modal = document.querySelector('ion-modal.qr-modal') as HTMLIonModalElement;
+    if (modal) await modal.dismiss();
+  }
 
   navigateToVenue() {
     this.router.navigate(['/venue']);

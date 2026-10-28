@@ -14,7 +14,6 @@
   font-family: var(--ion-font-family);
   position: relative;
   z-index: 10;
-  padding-top: max(env(safe-area-inset-top), 0px);
 
   &::after {
     content: '';
@@ -174,8 +173,31 @@ ion-tab-bar {
   --color: var(--app-text-subtle);
   --color-selected: var(--app-text);
   font-family: var(--ion-font-family);
-  height: 4.35rem;
-  padding: 0.3rem 0.25rem calc(0.35rem + max(env(safe-area-inset-bottom), 0px));
+  height: 3.85rem;
+  padding: 0.25rem 0.25rem 0.2rem;
+}
+
+.fixed-app-footer {
+  background: var(--app-surface);
+  border-top: 1px solid var(--app-border);
+  color: var(--app-text-muted);
+  font-family: var(--ion-font-family);
+  font-size: 0.6rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  line-height: 1.2;
+  padding: 0.3rem 0.5rem calc(0.35rem + max(env(safe-area-inset-bottom), 0px));
+  text-align: center;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 10;
+
+  p {
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 }
 
 ion-tab-button {

@@ -4,10 +4,10 @@
       <section class="welcome-hero" aria-labelledby="welcome-title">
         <img src="assets/skyline.webp" alt="" class="welcome-skyline" />
         <div class="welcome-copy">
-          <p class="welcome-eyebrow">YOUR AMEA EXPERIENCE</p>
+          <p class="welcome-eyebrow">Your digital companion for the AMEA Management Meeting 2026!</p>
           <h1 id="welcome-title">{{ welcomeGreeting }}, {{ firstName || displayName || 'there' }}.</h1>
           <p class="welcome-description">
-            Everything you need. One memorable journey.
+            Stay updated with real-time schedules, venue guides, and notifications—guiding you through every moment of the event and Cairo.
           </p>
           <div class="welcome-meta">
             <span class="welcome-day">{{ eventDayLabel }}</span>
@@ -36,7 +36,7 @@
         <div class="home-section-heading">
           <div>
             <p class="section-eyebrow">HERE WHEN YOU NEED THEM</p>
-            <h2 id="essentials-heading">Your event essentials</h2>
+            <h2 id="essentials-heading">Your Event Essentials</h2>
           </div>
         </div>
         <div class="quick-actions">
@@ -59,12 +59,21 @@
           <button type="button" class="action-card" (click)="openTips()">
             <span class="action-content">
               <span class="action-icon networking"><ion-icon name="bulb-outline"></ion-icon></span>
-              <span class="action-title">Tips</span>
+              <span class="action-title">Insider Guide</span>
               <span class="action-desc">Local recommendations</span>
             </span>
           </button>
 
-          <button *ngIf="isPlantVisitRequired" type="button" class="action-card" [disabled]="isPreviewingUser" (click)="openSafetyInductionModal()">
+          <button type="button" class="action-card" (click)="openCapturedMoments()">
+            <span class="action-content">
+              <span class="action-icon moments"><ion-icon name="camera-outline"></ion-icon></span>
+              <span class="action-title">Captured Moments</span>
+              <span class="action-desc">Photos &amp; memories</span>
+            </span>
+          </button>
+
+          <button *ngIf="isPlantVisitRequired" type="button" class="action-card" [disabled]="isPreviewingUser"
+            (click)="openSafetyInductionModal()">
             <span class="action-content">
               <span class="action-icon hse">
                 <img src="assets/safety.png" alt="" aria-hidden="true" />
@@ -79,12 +88,12 @@
       </section>
 
       <div class="home-section-heading">
-          <div>
-            <p class="section-eyebrow">MAKE THE MOST OF TODAY</p>
-            <h2 id="next-session-heading">Your next chapter</h2>
-          </div>
-          <span class="day-chip" *ngIf="currentDay > 0">DAY {{ currentDay }}</span>
-          <span class="day-chip" *ngIf="currentDay === 0">COMING SOON</span>
+        <div>
+          <p class="section-eyebrow">MAKE THE MOST OF TODAY</p>
+          <h2 id="next-session-heading">Your next chapter</h2>
+        </div>
+        <span class="day-chip" *ngIf="currentDay > 0">DAY {{ currentDay }}</span>
+        <span class="day-chip" *ngIf="currentDay === 0">COMING SOON</span>
       </div>
 
       <!-- Skeleton Loader -->
@@ -109,179 +118,146 @@
       <!-- ================= ACTUAL CONTENT ================= -->
       <ng-template #loadedContent>
         <section class="home-section next-section" aria-labelledby="next-session-heading">
-        <!-- Primary or Upcoming Session -->
-        <ng-container *ngIf="primarySession; else noSession">
-          <div
-            class="session-card"
-            [ngClass]="{
+          <!-- Primary or Upcoming Session -->
+          <ng-container *ngIf="primarySession; else noSession">
+            <div class="session-card" [ngClass]="{
               'live-card': isLive(primarySession),
               'next-card': !isLive(primarySession)
-            }"
-            (click)="goToAgendaSession(primarySession)"
-            role="button"
-            tabindex="0"
-          >
-            <div class="card-content">
-              <div class="session-header">
-                <div class="time-countdown-pill" [class.live]="isLive(primarySession)">
-                  <ion-icon [name]="isLive(primarySession) ? 'radio-outline' : 'hourglass-outline'"></ion-icon>
-                  <span>{{ getTimeUntil(primarySession) }}</span>
+            }" (click)="goToAgendaSession(primarySession)" role="button" tabindex="0">
+              <div class="card-content">
+                <div class="session-header">
+                  <div class="time-countdown-pill" [class.live]="isLive(primarySession)">
+                    <ion-icon [name]="isLive(primarySession) ? 'radio-outline' : 'hourglass-outline'"></ion-icon>
+                    <span>{{ getTimeUntil(primarySession) }}</span>
+                  </div>
+                  <ion-icon name="chevron-forward" class="card-chevron" aria-hidden="true"></ion-icon>
                 </div>
-                <ion-icon name="chevron-forward" class="card-chevron" aria-hidden="true"></ion-icon>
-              </div>
 
-              <h3 class="session-title">{{ primarySession.title }}</h3>
+                <h3 class="session-title">{{ primarySession.title }}</h3>
 
-              <div
-                class="session-meta-row"
-                *ngIf="primarySession.location && primarySession.location.trim().length > 0"
-              >
-                <div class="meta-pill location-pill">
-                  <ion-icon name="location-outline"></ion-icon>
-                  <span>{{ primarySession.location }}</span>
+                <div class="session-meta-row"
+                  *ngIf="primarySession.location && primarySession.location.trim().length > 0">
+                  <div class="meta-pill location-pill">
+                    <ion-icon name="location-outline"></ion-icon>
+                    <span>{{ primarySession.location }}</span>
+                  </div>
                 </div>
-              </div>
 
-              <div class="speaker-info" *ngIf="shouldDisplaySpeaker(primarySession)">
-                <div
-                  class="avatar"
-                  *ngIf="
+                <div class="speaker-info" *ngIf="shouldDisplaySpeaker(primarySession)">
+                  <div class="avatar" *ngIf="
                     primarySession.speaker &&
                     (!primarySession.speaker.photoURL ||
                       primarySession.speaker.photoURL === 'null')
-                  "
-                >
-                  {{ primarySession.speaker.name[0] }}{{ primarySession.speaker.name.split(' ')[1]?.[0] || '' }}
-                </div>
+                  ">
+                    {{ primarySession.speaker.name[0] }}{{ primarySession.speaker.name.split(' ')[1]?.[0] || '' }}
+                  </div>
 
-                <img
-                  *ngIf="
+                  <img *ngIf="
                     primarySession.speaker?.photoURL &&
                     primarySession.speaker?.photoURL !== 'null'
-                  "
-                  [src]="primarySession.speaker?.photoURL"
-                  alt="{{ primarySession.speaker?.name }}"
-                  class="avatar-img"
-                />
+                  " [src]="primarySession.speaker?.photoURL" alt="{{ primarySession.speaker?.name }}"
+                    class="avatar-img" />
 
-                <div class="speaker-details">
-                  <div class="speaker-name">
-                    {{ primarySession.speaker?.name }}
-                  </div>
-                  <div class="speaker-role" *ngIf="primarySession.speaker?.title">
-                    {{ primarySession.speaker?.title }}
+                  <div class="speaker-details">
+                    <div class="speaker-name">
+                      {{ primarySession.speaker?.name }}
+                    </div>
+                    <div class="speaker-role" *ngIf="primarySession.speaker?.title">
+                      {{ primarySession.speaker?.title }}
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          <!-- Secondary Upcoming Session -->
-          <div
-            class="session-card next-card secondary-card"
-            *ngIf="isLive(primarySession) && secondarySession"
-            (click)="goToAgendaSession(secondarySession)"
-            role="button"
-            tabindex="0"
-          >
-            <div class="card-content">
-              <div class="session-header">
-                <div class="time-countdown-pill">
-                  <ion-icon name="hourglass-outline"></ion-icon>
-                  <span>{{ getTimeUntil(secondarySession) }}</span>
+            <!-- Secondary Upcoming Session -->
+            <div class="session-card next-card secondary-card" *ngIf="isLive(primarySession) && secondarySession"
+              (click)="goToAgendaSession(secondarySession)" role="button" tabindex="0">
+              <div class="card-content">
+                <div class="session-header">
+                  <div class="time-countdown-pill">
+                    <ion-icon name="hourglass-outline"></ion-icon>
+                    <span>{{ getTimeUntil(secondarySession) }}</span>
+                  </div>
+                  <ion-icon name="chevron-forward" class="card-chevron" aria-hidden="true"></ion-icon>
                 </div>
-                <ion-icon name="chevron-forward" class="card-chevron" aria-hidden="true"></ion-icon>
-              </div>
 
-              <h3 class="session-title">{{ secondarySession.title }}</h3>
+                <h3 class="session-title">{{ secondarySession.title }}</h3>
 
-              <div
-                class="session-meta-row"
-                *ngIf="secondarySession.location && secondarySession.location.trim().length > 0"
-              >
-                <div class="meta-pill location-pill">
-                  <ion-icon name="location-outline"></ion-icon>
-                  <span>{{ secondarySession.location }}</span>
+                <div class="session-meta-row"
+                  *ngIf="secondarySession.location && secondarySession.location.trim().length > 0">
+                  <div class="meta-pill location-pill">
+                    <ion-icon name="location-outline"></ion-icon>
+                    <span>{{ secondarySession.location }}</span>
+                  </div>
                 </div>
-              </div>
 
-              <div class="speaker-info" *ngIf="shouldDisplaySpeaker(secondarySession)">
-                <div
-                  class="avatar"
-                  *ngIf="
+                <div class="speaker-info" *ngIf="shouldDisplaySpeaker(secondarySession)">
+                  <div class="avatar" *ngIf="
                     secondarySession.speaker &&
                     (!secondarySession.speaker.photoURL ||
                       secondarySession.speaker.photoURL === 'null')
-                  "
-                >
-                  {{ secondarySession.speaker.name[0] }}{{ secondarySession.speaker.name.split(' ')[1]?.[0] || '' }}
-                </div>
+                  ">
+                    {{ secondarySession.speaker.name[0] }}{{ secondarySession.speaker.name.split(' ')[1]?.[0] || '' }}
+                  </div>
 
-                <img
-                  *ngIf="
+                  <img *ngIf="
                     secondarySession.speaker?.photoURL &&
                     secondarySession.speaker?.photoURL !== 'null'
-                  "
-                  [src]="secondarySession.speaker?.photoURL"
-                  alt="{{ secondarySession.speaker?.name }}"
-                  class="avatar-img"
-                />
+                  " [src]="secondarySession.speaker?.photoURL" alt="{{ secondarySession.speaker?.name }}"
+                    class="avatar-img" />
 
-                <div class="speaker-details">
-                  <div class="speaker-name">
-                    {{ secondarySession.speaker?.name }}
-                  </div>
-                  <div class="speaker-role" *ngIf="secondarySession.speaker?.title">
-                    {{ secondarySession.speaker?.title }}
+                  <div class="speaker-details">
+                    <div class="speaker-name">
+                      {{ secondarySession.speaker?.name }}
+                    </div>
+                    <div class="speaker-role" *ngIf="secondarySession.speaker?.title">
+                      {{ secondarySession.speaker?.title }}
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
-        </ng-container>
+          </ng-container>
 
-        <!-- No Session -->
-<ng-template #noSession>
-  <div class="session-card no-session" [ngClass]="messageType">
-    <div class="card-content">
-      <div class="no-session-icon">
-        <ion-icon
-          *ngIf="messageType === 'before'"
-          name="hourglass-outline"
-        ></ion-icon>
-        <ion-icon
-          [name]="messageType === 'today' ? 'checkmark-circle' : 'trophy'"
-          *ngIf="messageType === 'today' || messageType === 'over'"
-        ></ion-icon>
-      </div>
+          <!-- No Session -->
+          <ng-template #noSession>
+            <div class="session-card no-session" [ngClass]="messageType">
+              <div class="card-content">
+                <div class="no-session-icon">
+                  <ion-icon *ngIf="messageType === 'before'" name="hourglass-outline"></ion-icon>
+                  <ion-icon [name]="messageType === 'today' ? 'checkmark-circle' : 'trophy'"
+                    *ngIf="messageType === 'today' || messageType === 'over'"></ion-icon>
+                </div>
 
-      <h3 class="session-title" *ngIf="messageType === 'before'">
-        AMEA 2026 Starts Soon
-      </h3>
-<p class="session-text" *ngIf="messageType === 'before'">
-  You’re a bit early! The event kicks off on {{ eventStartDate | date:'MMMM d' }}. Stay tuned for an amazing experience.
-</p>
+                <h3 class="session-title" *ngIf="messageType === 'before'">
+                  AMEA 2026 Starts Soon
+                </h3>
+                <p class="session-text" *ngIf="messageType === 'before'">
+                  You’re a bit early! The event kicks off on {{ eventStartDate | date:'MMMM d' }}. Stay tuned for an
+                  amazing experience.
+                </p>
 
-      <h3 class="session-title" *ngIf="messageType === 'today'">
-        All Caught Up for Today
-      </h3>
-      <h3 class="session-title" *ngIf="messageType === 'over'">
-        AMEA 2026 Complete
-      </h3>
+                <h3 class="session-title" *ngIf="messageType === 'today'">
+                  All Caught Up for Today
+                </h3>
+                <h3 class="session-title" *ngIf="messageType === 'over'">
+                  AMEA 2026 Complete
+                </h3>
 
-      <p class="session-text" *ngIf="messageType === 'today'">
-        Enjoy some downtime and we’ll see you tomorrow!
-      </p>
-      <p class="session-text" *ngIf="messageType === 'over'">
-        Thank you for being part of our AMEA 2026 strategy. Safe travels home!
-      </p>
+                <p class="session-text" *ngIf="messageType === 'today'">
+                  Enjoy some downtime and we’ll see you tomorrow!
+                </p>
+                <p class="session-text" *ngIf="messageType === 'over'">
+                  Thank you for being part of our AMEA 2026 strategy. Safe travels home!
+                </p>
 
-      <div class="no-session-decoration"></div>
-    </div>
-  </div>
-</ng-template>
+                <div class="no-session-decoration"></div>
+              </div>
+            </div>
+          </ng-template>
 
-      </section>
+        </section>
 
         <!-- My Agenda -->
         <section class="agenda-card home-section">
@@ -296,11 +272,7 @@
 
             <div class="agenda-sessions" *ngIf="todaySessions$ | async as todaySessions">
               <ng-container *ngIf="todaySessions.length; else noSessions">
-                <div
-                  class="agenda-item"
-                  *ngFor="let session of todaySessions"
-                  (click)="goToAgendaSession(session)"
-                >
+                <div class="agenda-item" *ngFor="let session of todaySessions" (click)="goToAgendaSession(session)">
                   <div class="time-block">
                     <div class="time-label">
                       {{ session.startTime.toDate() | date:'shortTime' }}
@@ -329,129 +301,115 @@
           </div>
         </section>
 
-<!-- Hotel Wi-Fi Details -->
-<div class="hotel-card subtle-highlight">
-  <div class="card-content">
-    <div class="card-header">
-      <div class="card-title-with-icon">
-        <h3 class="card-title">Hotel Wi-Fi Details</h3>
-      </div>
-    </div>
-    <div class="wifi-details">
-      <p>
-        <ion-icon name="radio-outline"></ion-icon>
-        <strong>Network:</strong> HolcimGuest
-      </p>
-      <p>
-        <ion-icon name="key-outline"></ion-icon>
-        <strong>Password:</strong> Welcome2026!
-      </p>
-    </div>
-  </div>
-</div>
+        <!-- Hotel Wi-Fi Details -->
+        <div class="hotel-card subtle-highlight">
+          <div class="card-content">
+            <div class="card-header">
+              <div class="card-title-with-icon">
+                <h3 class="card-title">Hotel Wi-Fi Details</h3>
+              </div>
+            </div>
+            <div class="wifi-details">
+              <p>
+                <ion-icon name="radio-outline"></ion-icon>
+                <strong>Network:</strong> HolcimGuest
+              </p>
+              <p>
+                <ion-icon name="key-outline"></ion-icon>
+                <strong>Password:</strong> Welcome2026!
+              </p>
+            </div>
+          </div>
+        </div>
       </ng-template>
     </div>
-
-
   </div>
 
 
-<!-- ================= QR MODAL ================= -->
-<ion-modal
-  [isOpen]="showQR"
-  (didDismiss)="closeQRCode()"
-  [backdropDismiss]="true"
-  class="qr-modal"
->
-  <ng-template>
-    <div class="qr-modal-content">
-      <div class="qr-header">
-        <h1 class="qr-title">Digital Business Card</h1>
-        <button class="close-btn" (click)="closeQRCode()">
-          <ion-icon name="close-outline"></ion-icon>
-        </button>
-      </div>
+  <!-- ================= QR MODAL ================= -->
+  <ion-modal [isOpen]="showQR" (didDismiss)="closeQRCode()" [backdropDismiss]="true" class="qr-modal">
+    <ng-template>
+      <div class="qr-modal-content">
+        <div class="qr-header">
+          <h1 class="qr-title">Digital Business Card</h1>
+          <button class="close-btn" (click)="closeQRCode()">
+            <ion-icon name="close-outline"></ion-icon>
+          </button>
+        </div>
 
-      <div class="qr-card-modal">
-        <div class="qr-card-content">
-          <div class="qr-display">
-            <div class="qr-frame">
-              <img
-                *ngIf="profileQrCode; else qrLoading"
-                [src]="profileQrCode"
-                [alt]="'Contact QR code for ' + (profileName || 'attendee')"
-                class="qr-image"
-              />
-              <ng-template #qrLoading>
-                <span class="qr-loading">Preparing contact QR…</span>
-              </ng-template>
-            </div>
-            <p class="qr-instruction">Scan to save my contact details</p>
-            <label class="qr-sharing-control">
-              <input
-                type="checkbox"
-                [checked]="shareContactCard"
-                [disabled]="isContactSharingDisabled"
-                (change)="setContactCardSharing($event)"
-              />
-              <span>
-                <strong>Share my contact card with attendees</strong>
-                <small>{{ isSavingContactSharing ? 'Saving preference…' : 'Your details will appear in the colleague directory.' }}</small>
-              </span>
-            </label>
-            <p class="qr-sharing-error" *ngIf="contactSharingError" role="alert">
-              {{ contactSharingError }}
-            </p>
-            <p class="qr-sharing-preview" *ngIf="isPreviewingUser">
-              Sharing preferences are read-only while previewing another attendee.
-            </p>
-          </div>
-
-          <div class="user-info">
-            <div class="info-row info-row-primary">
-              <div class="info-icon">
-                <ion-icon name="person-outline"></ion-icon>
+        <div class="qr-card-modal">
+          <div class="qr-card-content">
+            <div class="qr-display">
+              <div class="qr-frame">
+                <img *ngIf="profileQrCode; else qrLoading" [src]="profileQrCode"
+                  [alt]="'Contact QR code for ' + (profileName || 'attendee')" class="qr-image" />
+                <ng-template #qrLoading>
+                  <span class="qr-loading">Preparing contact QR…</span>
+                </ng-template>
               </div>
-              <div class="info-text">
-                <div class="info-label">Name</div>
-                <div class="info-value">{{ profileName || firstName || displayName || 'Attendee' }}</div>
-              </div>
+              <p class="qr-instruction">Scan to save my contact details</p>
+              <label class="qr-sharing-control">
+                <input type="checkbox" [checked]="shareContactCard" [disabled]="isContactSharingDisabled"
+                  (change)="setContactCardSharing($event)" />
+                <span>
+                  <strong>Share my contact card with attendees</strong>
+                  <small>{{ isSavingContactSharing ? 'Saving preference…' : 'Your details will appear in the colleague
+                    directory.' }}</small>
+                </span>
+              </label>
+              <p class="qr-sharing-error" *ngIf="contactSharingError" role="alert">
+                {{ contactSharingError }}
+              </p>
+              <p class="qr-sharing-preview" *ngIf="isPreviewingUser">
+                Sharing preferences are read-only while previewing another attendee.
+              </p>
             </div>
 
-            <div class="info-row">
-              <div class="info-icon">
-                <ion-icon name="briefcase-outline"></ion-icon>
+            <div class="user-info">
+              <div class="info-row info-row-primary">
+                <div class="info-icon">
+                  <ion-icon name="person-outline"></ion-icon>
+                </div>
+                <div class="info-text">
+                  <div class="info-label">Name</div>
+                  <div class="info-value">{{ profileName || firstName || displayName || 'Attendee' }}</div>
+                </div>
               </div>
-              <div class="info-text">
-                <div class="info-label">Position</div>
-                <div class="info-value">{{ profilePosition || '—' }}</div>
-              </div>
-            </div>
 
-            <div class="info-row">
-              <div class="info-icon">
-                <ion-icon name="call-outline"></ion-icon>
+              <div class="info-row">
+                <div class="info-icon">
+                  <ion-icon name="briefcase-outline"></ion-icon>
+                </div>
+                <div class="info-text">
+                  <div class="info-label">Position</div>
+                  <div class="info-value">{{ profilePosition || '—' }}</div>
+                </div>
               </div>
-              <div class="info-text">
-                <div class="info-label">Mobile</div>
-                <div class="info-value">{{ profileMobile || '—' }}</div>
-              </div>
-            </div>
 
-            <div class="info-row">
-              <div class="info-icon">
-                <ion-icon name="mail-outline"></ion-icon>
+              <div class="info-row">
+                <div class="info-icon">
+                  <ion-icon name="call-outline"></ion-icon>
+                </div>
+                <div class="info-text">
+                  <div class="info-label">Mobile</div>
+                  <div class="info-value">{{ profileMobile || '—' }}</div>
+                </div>
               </div>
-              <div class="info-text">
-                <div class="info-label">Email</div>
-                <div class="info-value">{{ profileEmail || '—' }}</div>
+
+              <div class="info-row">
+                <div class="info-icon">
+                  <ion-icon name="mail-outline"></ion-icon>
+                </div>
+                <div class="info-text">
+                  <div class="info-label">Email</div>
+                  <div class="info-value">{{ profileEmail || '—' }}</div>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
-  </ng-template>
-</ion-modal>
+    </ng-template>
+  </ion-modal>
 
 </ion-content>
