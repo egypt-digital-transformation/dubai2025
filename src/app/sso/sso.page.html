@@ -1,27 +1,31 @@
 <ion-content class="sso-content">
   <div class="sso-container" [class.hidden]="isLoading">
     <div class="background-overlay"></div>
-    
-    <div class="login-section">
-      <div class="logo-container">
-    <img src="assets\eventBanner.png" alt="EventLogo" class="splash-logo" />
+
+    <div class="login-wrapper">
+      <div class="login-section">
+        <div class="logo-container">
+          <img src="assets\eventBanner.png" alt="EventLogo" class="splash-logo" />
+        </div>
+
+        <h1>
+          <span class="title-main">AMEA Management Meeting</span>
+          <span class="title-sub">Cairo 2026</span>
+        </h1>
+        <p class="subtitle">Sign in to access your personalized experience.</p>
       </div>
-      
-      <h1>AMEA Regional Meeting 2026</h1>
-      <p class="subtitle">Sign in to access your personalized experience</p>
-      
-      <ion-button 
-        expand="block" 
-        class="google-btn"
-        (click)="signInWithGoogle()"
-        [disabled]="isLoading"
-      >
-    <img src="assets\google.png" alt="google" class="google" />
+
+      <ion-button id="google-signin-btn" expand="block" class="google-btn" (click)="signInWithGoogle()"
+        [disabled]="isLoading">
+        <img src="assets\google.png" alt="google" class="google" />
         Continue with Google
       </ion-button>
-
- 
     </div>
+
+    <footer class="sso-footer">
+      <!-- <p>© 2026 Holcim Egypt. Developed by the Holcim Egypt Digital Team.</p> -->
+      <p>Powered by Holcim Egypt Digital Team</p>
+    </footer>
 
     <!-- Decorative elements -->
     <div class="decorative-circle circle-1"></div>
@@ -32,21 +36,25 @@
   <div class="loading-overlay" *ngIf="isLoading">
     <div class="loading-content">
       <div class="logo-container-loading">
-    <img src="assets\eventBannerWhite.png" alt="EventLogo" class="splash-logo" />
+        <img src="assets\eventBannerWhite.png" alt="EventLogo" class="splash-logo" />
       </div>
-      
+
       <!-- <div class="spinner-container">
         <ion-spinner name="crescent" color="light"></ion-spinner>
       </div> -->
-      
+
       <h2 class="loading-title">{{ loadingMessage }}</h2>
       <p class="loading-subtitle">Preparing your dashboard...</p>
-      
+
       <div class="loading-dots">
         <span></span>
         <span></span>
         <span></span>
       </div>
     </div>
+
+    <footer class="sso-footer">
+      <p>Powered by Holcim Egypt Digital Team</p>
+    </footer>
   </div>
 </ion-content>

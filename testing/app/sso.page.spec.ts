@@ -13,4 +13,11 @@ describe('SsoPage', () => {
   it('should create', () => {
     expect(component).toBeTruthy();
   });
+
+  it('should show the team credit in the welcome screen footer', () => {
+    fixture.detectChanges();
+
+    const footer = fixture.nativeElement.querySelector('.sso-footer');
+    expect(footer?.textContent).toContain('Powered by Holcim Egypt Digital Team');
+  });
 });
