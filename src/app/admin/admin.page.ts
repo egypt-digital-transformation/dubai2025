@@ -45,8 +45,8 @@ import countryData from '../../../node_modules/flag-icons/country.json';
 import { greetingForNationality, NationalityGreeting } from '../shared/nationality-greetings';
 import { egyptDateTimeToIso, formatEgyptDateTime } from './notification-schedule-time';
 
-type SegmentField = 'participantsGroup' | 'plantVisit';
-type AudienceKind = 'all' | 'users' | 'group' | 'plantVisitors';
+type SegmentField = 'participantsGroup' | 'plantVisit' | 'group' | 'rebrandingEvent';
+type AudienceKind = 'all' | 'users' | 'group' | 'groupNumber' | 'plantVisitors' | 'nonPlantVisitors' | 'rebrandingEvent';
 type AudienceContext = 'update' | 'activity';
 
 interface AudienceSegment {
@@ -87,6 +87,13 @@ export class AdminPage implements OnInit, OnDestroy {
   selectedUserIds: string[] = [];
   notificationUserSearch = '';
   selectedSegmentKey = '';
+  selectedAudienceKinds: AudienceKind[] = ['all'];
+  selectedSegmentKeys: string[] = [];
+  selectedGroupNumberKeys: string[] = ['group:group 1'];
+  selectedRebrandingValues: Array<'true' | 'false'> = ['true'];
+  selectedPlantVisitValues: Array<'true' | 'false'> = ['true'];
+  selectedGroupNumberKey = 'group:group 1';
+  selectedRebrandingValue: 'true' | 'false' = 'true';
   notificationTitle = '';
   notificationBody = '';
   scheduledDateTime = '';
@@ -100,6 +107,13 @@ export class AdminPage implements OnInit, OnDestroy {
   activitySelectedUserIds: string[] = [];
   activityUserSearch = '';
   activitySelectedSegmentKey = '';
+  activitySelectedAudienceKinds: AudienceKind[] = ['all'];
+  activitySelectedSegmentKeys: string[] = [];
+  activitySelectedGroupNumberKeys: string[] = ['group:group 1'];
+  activitySelectedRebrandingValues: Array<'true' | 'false'> = ['true'];
+  activitySelectedPlantVisitValues: Array<'true' | 'false'> = ['true'];
+  activitySelectedGroupNumberKey = 'group:group 1';
+  activitySelectedRebrandingValue: 'true' | 'false' = 'true';
   isCreatingActivity = false;
   activityNotice = '';
   activityError = '';
@@ -363,6 +377,14 @@ export class AdminPage implements OnInit, OnDestroy {
     this.attendeeDetailsError = '';
     this.flightDetailsLoad = this.adminService
       .loadFlightDetailsForAttendees(this.dashboard.attendees)
+      .then((attendees) =>
+        this.adminService
+          .loadAccommodationDetailsForAttendees(attendees)
+          .catch((error: unknown) => {
+            console.warn('[AdminPage] Failed to load accommodation details:', error);
+            return attendees;
+          })
+      )
       .then((attendees) => {
         if (this.dashboard) {
           this.dashboard = { ...this.dashboard, attendees };
@@ -860,6 +882,10 @@ export class AdminPage implements OnInit, OnDestroy {
   }
 
   get selectedRecipientCount(): number | null {
+    return this.getAudienceRecipientCount(this.audienceKind, 'update');
+  }
+
+  private unusedLegacySelectedRecipientCount(): number | null {
     const attendees = this.notificationAudience;
     if (!attendees) {
       return null;
@@ -886,6 +912,30 @@ export class AdminPage implements OnInit, OnDestroy {
   }
 
   get notificationSegments(): AudienceSegment[] {
+    return this.segments.filter((segment) => segment.field === 'participantsGroup');
+  }
+
+  get groupNumberSegments(): AudienceSegment[] {
+    return this.segments.filter((segment) => segment.field === 'group');
+  }
+
+  countRebrandingUsers(attending: boolean, pushReadyOnly = false): number {
+    return this.attendees.filter(
+      (attendee) =>
+        Boolean(attendee.rebrandingEvent) === attending &&
+        (!pushReadyOnly || attendee.hasPushToken)
+    ).length;
+  }
+
+  countPlantVisitUsers(visiting: boolean, pushReadyOnly = false): number {
+    return this.attendees.filter(
+      (attendee) =>
+        Boolean(attendee.plantVisit) === visiting &&
+        (!pushReadyOnly || attendee.hasPushToken)
+    ).length;
+  }
+
+  private unusedNotificationSegments(): AudienceSegment[] {
     return this.segments.filter((segment) => segment.field === 'participantsGroup');
   }
 
@@ -987,6 +1037,260 @@ export class AdminPage implements OnInit, OnDestroy {
     if (!this.notificationAudience) {
       return null;
     }
+    const matched = this.getAudienceRecipients(audienceKind, context);
+    if (!matched) {
+      return null;
+    }
+    return pushReadyOnly
+      ? matched.filter((attendee) => attendee.hasPushToken).length
+      : matched.length;
+  }
+
+  private getAudienceRecipients(
+    audienceKind: AudienceKind,
+    context: AudienceContext
+  ): AdminAttendee[] | null {
+    if (!this.notificationAudience) {
+      return null;
+    }
+    const kinds = this.getSelectedAudienceKinds(context);
+    if (!kinds.length) {
+      return [];
+    }
+    if (kinds.includes('all')) {
+      return this.attendees;
+    }
+    const matchedMap = new Map<string, AdminAttendee>();
+    for (const kind of kinds) {
+      const list = this.getRecipientsForSingleKind(kind, context);
+      if (list === null) {
+        return null;
+      }
+      for (const attendee of list) {
+        matchedMap.set(attendee.id, attendee);
+      }
+    }
+    return [...matchedMap.values()];
+  }
+
+  private getRecipientsForSingleKind(
+    audienceKind: AudienceKind,
+    context: AudienceContext
+  ): AdminAttendee[] | null {
+    if (audienceKind === 'all') {
+      return this.attendees;
+    }
+    if (audienceKind === 'users') {
+      const selected = this.getAudienceSelectedUserIds(context);
+      return selected.length
+        ? this.attendees.filter((attendee) => selected.includes(attendee.id))
+        : null;
+    }
+    if (audienceKind === 'group') {
+      const selectedKeys =
+        context === 'activity'
+          ? this.activitySelectedSegmentKeys
+          : this.selectedSegmentKeys;
+      const groups = this.notificationSegments.filter((segment) =>
+        selectedKeys.includes(segment.key)
+      );
+      return groups.length
+        ? this.attendees.filter((attendee) =>
+            groups.some((group) => this.matchesSegment(attendee, group))
+          )
+        : null;
+    }
+    if (audienceKind === 'groupNumber') {
+      const selectedKeys =
+        context === 'activity'
+          ? this.activitySelectedGroupNumberKeys
+          : this.selectedGroupNumberKeys;
+      const groups = this.groupNumberSegments.filter((segment) =>
+        selectedKeys.includes(segment.key)
+      );
+      return groups.length
+        ? this.attendees.filter((attendee) =>
+            groups.some((group) => this.matchesSegment(attendee, group))
+          )
+        : null;
+    }
+    if (audienceKind === 'plantVisitors') {
+      const selectedVals =
+        context === 'activity'
+          ? this.activitySelectedPlantVisitValues
+          : this.selectedPlantVisitValues;
+      if (!selectedVals.length) {
+        return null;
+      }
+      return this.attendees.filter((attendee) =>
+        selectedVals.includes(attendee.plantVisit ? 'true' : 'false')
+      );
+    }
+    if (audienceKind === 'nonPlantVisitors') {
+      return this.attendees.filter((attendee) => !attendee.plantVisit);
+    }
+    if (audienceKind === 'rebrandingEvent') {
+      const selectedVals =
+        context === 'activity'
+          ? this.activitySelectedRebrandingValues
+          : this.selectedRebrandingValues;
+      if (!selectedVals.length) {
+        return null;
+      }
+      return this.attendees.filter((attendee) =>
+        selectedVals.includes(attendee.rebrandingEvent ? 'true' : 'false')
+      );
+    }
+    return this.attendees;
+  }
+
+  getSelectedAudienceKinds(context: AudienceContext): AudienceKind[] {
+    return context === 'activity'
+      ? this.activitySelectedAudienceKinds
+      : this.selectedAudienceKinds;
+  }
+
+  isAudienceKindSelected(kind: AudienceKind, context: AudienceContext): boolean {
+    return this.getSelectedAudienceKinds(context).includes(kind);
+  }
+
+  onAudienceKindChange(kind: AudienceKind, event: Event, context: AudienceContext): void {
+    const checked = (event.target as HTMLInputElement | null)?.checked ?? false;
+    let current = [...this.getSelectedAudienceKinds(context)];
+    if (kind === 'all') {
+      current = checked ? ['all'] : [];
+    } else if (checked) {
+      current = [...current.filter((item) => item !== 'all' && item !== kind), kind];
+      if (kind === 'group') {
+        const firstKey = this.notificationSegments[0]?.key;
+        if (firstKey) {
+          if (context === 'activity' && !this.activitySelectedSegmentKeys.length) {
+            this.activitySelectedSegmentKeys = [firstKey];
+          } else if (context === 'update' && !this.selectedSegmentKeys.length) {
+            this.selectedSegmentKeys = [firstKey];
+          }
+        }
+      }
+    } else {
+      current = current.filter((item) => item !== kind);
+    }
+    if (!current.length) {
+      current = ['all'];
+    }
+    if (context === 'activity') {
+      this.activitySelectedAudienceKinds = current;
+      this.activityAudienceKind = current[0];
+    } else {
+      this.selectedAudienceKinds = current;
+      this.audienceKind = current[0];
+    }
+  }
+
+  isSegmentSelected(key: string, context: AudienceContext): boolean {
+    const keys = context === 'activity' ? this.activitySelectedSegmentKeys : this.selectedSegmentKeys;
+    return keys.includes(key);
+  }
+
+  onSegmentChange(key: string, event: Event, context: AudienceContext): void {
+    const checked = (event.target as HTMLInputElement | null)?.checked ?? false;
+    const current = context === 'activity' ? this.activitySelectedSegmentKeys : this.selectedSegmentKeys;
+    const next = checked ? [...new Set([...current, key])] : current.filter((k) => k !== key);
+    if (context === 'activity') {
+      this.activitySelectedSegmentKeys = next;
+    } else {
+      this.selectedSegmentKeys = next;
+    }
+  }
+
+  selectAllSegments(context: AudienceContext): void {
+    const allKeys = this.notificationSegments.map((s) => s.key);
+    if (context === 'activity') {
+      this.activitySelectedSegmentKeys = allKeys;
+    } else {
+      this.selectedSegmentKeys = allKeys;
+    }
+  }
+
+  clearSelectedSegments(context: AudienceContext): void {
+    if (context === 'activity') {
+      this.activitySelectedSegmentKeys = [];
+    } else {
+      this.selectedSegmentKeys = [];
+    }
+  }
+
+  isGroupNumberSelected(key: string, context: AudienceContext): boolean {
+    const keys =
+      context === 'activity' ? this.activitySelectedGroupNumberKeys : this.selectedGroupNumberKeys;
+    return keys.includes(key);
+  }
+
+  onGroupNumberChange(key: string, event: Event, context: AudienceContext): void {
+    const checked = (event.target as HTMLInputElement | null)?.checked ?? false;
+    const current =
+      context === 'activity' ? this.activitySelectedGroupNumberKeys : this.selectedGroupNumberKeys;
+    const next = checked ? [...new Set([...current, key])] : current.filter((k) => k !== key);
+    if (context === 'activity') {
+      this.activitySelectedGroupNumberKeys = next;
+    } else {
+      this.selectedGroupNumberKeys = next;
+    }
+  }
+
+  selectAllGroupNumbers(context: AudienceContext): void {
+    const allKeys = this.groupNumberSegments.map((s) => s.key);
+    if (context === 'activity') {
+      this.activitySelectedGroupNumberKeys = allKeys;
+    } else {
+      this.selectedGroupNumberKeys = allKeys;
+    }
+  }
+
+  clearSelectedGroupNumbers(context: AudienceContext): void {
+    if (context === 'activity') {
+      this.activitySelectedGroupNumberKeys = [];
+    } else {
+      this.selectedGroupNumberKeys = [];
+    }
+  }
+
+  isRebrandingValueSelected(val: 'true' | 'false', context: AudienceContext): boolean {
+    const vals =
+      context === 'activity' ? this.activitySelectedRebrandingValues : this.selectedRebrandingValues;
+    return vals.includes(val);
+  }
+
+  isPlantVisitValueSelected(val: 'true' | 'false', context: AudienceContext): boolean {
+    const vals =
+      context === 'activity' ? this.activitySelectedPlantVisitValues : this.selectedPlantVisitValues;
+    return vals.includes(val);
+  }
+
+  onPlantVisitValueChange(val: 'true' | 'false', event: Event, context: AudienceContext): void {
+    const checked = (event.target as HTMLInputElement | null)?.checked ?? false;
+    const current =
+      context === 'activity' ? this.activitySelectedPlantVisitValues : this.selectedPlantVisitValues;
+    const next = checked ? [...new Set([...current, val])] : current.filter((v) => v !== val);
+    if (context === 'activity') {
+      this.activitySelectedPlantVisitValues = next;
+    } else {
+      this.selectedPlantVisitValues = next;
+    }
+  }
+
+  onRebrandingValueChange(val: 'true' | 'false', event: Event, context: AudienceContext): void {
+    const checked = (event.target as HTMLInputElement | null)?.checked ?? false;
+    const current =
+      context === 'activity' ? this.activitySelectedRebrandingValues : this.selectedRebrandingValues;
+    const next = checked ? [...new Set([...current, val])] : current.filter((v) => v !== val);
+    if (context === 'activity') {
+      this.activitySelectedRebrandingValues = next;
+    } else {
+      this.selectedRebrandingValues = next;
+    }
+  }
+
+  private unusedAudienceRecipientCount(audienceKind: AudienceKind, context: AudienceContext, pushReadyOnly = false): number | null {
     let recipients = this.attendees;
     if (audienceKind === 'users') {
       const selected = this.getAudienceSelectedUserIds(context);
@@ -1062,6 +1366,10 @@ export class AdminPage implements OnInit, OnDestroy {
     return (this.dashboard?.attendees ?? []).filter((attendee) => attendee.flightDetails);
   }
 
+  get attendeesWithAccommodation(): AdminAttendee[] {
+    return (this.dashboard?.attendees ?? []).filter((attendee) => attendee.accommodationDetails);
+  }
+
   exportAttendees(): void {
     const headers = ['Name', 'Email', 'ID', 'Logged in', 'Active', 'Installed', 'Push ready'];
     const rows = this.filteredAttendees.map((attendee) => [
@@ -1081,6 +1389,10 @@ export class AdminPage implements OnInit, OnDestroy {
   }
 
   get pushReadyRecipientCount(): number | null {
+    return this.getAudienceRecipientCount(this.audienceKind, 'update', true);
+  }
+
+  private unusedLegacyPushReadyRecipientCount(): number | null {
     const attendees = this.notificationAudience;
     if (!attendees) {
       return null;
@@ -1222,7 +1534,7 @@ export class AdminPage implements OnInit, OnDestroy {
   }
 
   async createInteractiveActivity(): Promise<void> {
-    const title = this.activityTitle.trim();
+    const title = this.activityTitle.trim() || this.activityQuestion.trim().slice(0, 120);
     const question = this.activityQuestion.trim();
     const options = this.activityOptions.map((option) => option.trim());
     const target = this.getActivityTarget();
@@ -1233,7 +1545,7 @@ export class AdminPage implements OnInit, OnDestroy {
       !target ||
       !this.notificationAudience
     ) {
-      this.activityError = 'Enter a title, question, at least two options, and a valid audience.';
+      this.activityError = 'Enter a question, at least two options, and a valid audience.';
       return;
     }
 
@@ -1315,6 +1627,23 @@ export class AdminPage implements OnInit, OnDestroy {
     context: AudienceContext,
     segmentKey: string
   ): NotificationTarget | null {
+    const activeKinds = this.getSelectedAudienceKinds(context);
+    if (activeKinds.includes('all')) {
+      return { kind: 'all' };
+    }
+    const matched = this.getAudienceRecipients(audienceKind, context);
+    if (!matched || !matched.length) {
+      return null;
+    }
+    const userIds = [...new Set(matched.map((attendee) => attendee.id))];
+    return userIds.length ? { kind: 'users', userIds } : null;
+  }
+
+  private unusedOldGetAudienceTarget(
+    audienceKind: AudienceKind,
+    context: AudienceContext,
+    segmentKey: string
+  ): NotificationTarget | null {
     if (audienceKind === 'all') {
       return { kind: 'all' };
     }
@@ -1322,7 +1651,23 @@ export class AdminPage implements OnInit, OnDestroy {
       const userIds = [...new Set(this.getAudienceSelectedUserIds(context))];
       return userIds.length ? { kind: 'users', userIds } : null;
     }
+    const kinds = this.getSelectedAudienceKinds(context);
+    if (kinds.includes('all')) {
+      return { kind: 'all' };
+    }
+    const matched = this.getAudienceRecipients(audienceKind, context);
+    if (!matched || !matched.length) {
+      return null;
+    }
+    const userIds = [...new Set(matched.map((attendee) => attendee.id))];
+    return userIds.length ? { kind: 'users', userIds } : null;
+  }
+
+  private unusedAudienceTarget(audienceKind: AudienceKind, context: AudienceContext, segmentKey: string): NotificationTarget | null {
     if (audienceKind === 'plantVisitors') {
+      return { kind: 'segment', field: 'plantVisit', value: 'true' };
+    }
+    if (false) {
       return { kind: 'segment', field: 'plantVisit', value: 'true' };
     }
     const group = this.notificationSegments.find((segment) => segment.key === segmentKey);
@@ -1356,6 +1701,36 @@ export class AdminPage implements OnInit, OnDestroy {
         });
       }
     }
+    const groupNumbers = new Set<string>([
+      'group 1',
+      'group 2',
+      'group 3',
+      'group 4',
+      'group 5',
+      'group 6',
+      ...attendees
+        .map((attendee) => this.normalizeGroupNumber(attendee.group ?? ''))
+        .filter(Boolean),
+    ]);
+    for (const groupVal of groupNumbers) {
+      const displayLabel = groupVal.replace(/^group\s+/i, 'Group ');
+      segments.push({
+        key: `group:${groupVal}`,
+        field: 'group',
+        value: groupVal,
+        label: displayLabel,
+      });
+    }
+    return segments.sort((a, b) => a.label.localeCompare(b.label, undefined, { numeric: true }));
+  }
+
+  private normalizeGroupNumber(raw: string): string {
+    const trimmed = raw.trim().toLowerCase().replace(/\s+/g, ' ');
+    if (!trimmed) return '';
+    return /^[1-6]$/.test(trimmed) ? `group ${trimmed}` : trimmed;
+  }
+
+  private unusedSortSegments(segments: AudienceSegment[]): AudienceSegment[] {
     return segments.sort((a, b) => a.label.localeCompare(b.label));
   }
 
@@ -1365,7 +1740,9 @@ export class AdminPage implements OnInit, OnDestroy {
   ): boolean {
     const values: Record<SegmentField, string> = {
       participantsGroup: attendee.participantsGroup,
-      plantVisit: attendee.plantVisit ? 'true' : '',
+      plantVisit: attendee.plantVisit ? 'true' : 'false',
+      group: this.normalizeGroupNumber(attendee.group ?? ''),
+      rebrandingEvent: attendee.rebrandingEvent ? 'true' : 'false',
     };
     return values[segment.field] === segment.value;
   }

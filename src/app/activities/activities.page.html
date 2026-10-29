@@ -3,30 +3,37 @@
     <ion-refresher-content pullingText="Pull to refresh" refreshingSpinner="crescent"></ion-refresher-content>
   </ion-refresher>
 
-  <main class="activities-page">
-    <header class="activities-header">
-      <div class="header-content">
-        <ion-button fill="clear" (click)="returnToApp()" aria-label="Back to app" class="back-button">
-          <ion-icon slot="start" name="arrow-back-outline"></ion-icon>
-          Back to app
-        </ion-button>
-        <p class="eyebrow">AHLAN COMPANION</p>
-        <h1>Quizzes &amp; Polls</h1>
-        <p class="subtitle">Share your answer with the event team.</p>
-      </div>
-    </header>
+  <!-- Header with Holcim Navy gradient and Cairo skyline (matching Insider Guide) -->
+  <header class="header-gradient">
+    <div class="header-nav">
+      <button type="button" class="back-pill-btn" (click)="returnToApp()" aria-label="Back to home">
+        <ion-icon name="arrow-back-outline"></ion-icon>
+        <span>Back</span>
+      </button>
+      <span class="header-badge">AHLAN &bull; CAIRO 2026</span>
+    </div>
 
-    <ion-note *ngIf="errorMessage" color="danger" class="activity-message">
-      {{ errorMessage }}
-    </ion-note>
+    <div class="header-text-block">
+      <h1 class="header-title">Quizzes &amp; Polls</h1>
+      <p class="header-subtitle">Share your perspective and test your knowledge with the event team.</p>
+    </div>
 
-    <!-- Loading State with Spinner -->
+    <img src="assets/skyline.webp" alt="" class="header-overlay" />
+  </header>
+
+  <main class="activities-shell">
+    <div *ngIf="errorMessage" class="feedback-banner error" role="alert">
+      <ion-icon name="alert-circle-outline" aria-hidden="true"></ion-icon>
+      <span>{{ errorMessage }}</span>
+    </div>
+
+    <!-- Loading State -->
     <div *ngIf="isLoading" class="loading-state" role="status">
       <ion-spinner name="crescent" color="primary"></ion-spinner>
       <p>Loading the latest polls &amp; quizzes…</p>
     </div>
 
-    <!-- Empty State: Friendly stay tuned message -->
+    <!-- Empty State -->
     <div *ngIf="!isLoading && !errorMessage && !activities.length" class="empty-activities-card">
       <div class="empty-icon-box">
         <ion-icon name="sparkles-outline"></ion-icon>
@@ -35,60 +42,93 @@
       <p>New interactive polls and quizzes will appear here during the event. Stay tuned for live engagement!</p>
     </div>
 
-    <section class="activity-card" *ngFor="let activity of activities" [class.is-submitted]="activity.submitted">
+    <!-- Activity Cards -->
+    <section
+      class="activity-card"
+      *ngFor="let activity of activities"
+      [class.is-submitted]="activity.submitted"
+      [attr.data-kind]="activity.kind"
+    >
       <div class="activity-card-header">
         <span class="kind-tag" [ngClass]="activity.kind">
-          {{ activity.kind === 'quiz' ? 'QUIZ' : 'POLL' }}
+          <ion-icon
+            [name]="activity.kind === 'quiz' ? 'help-circle-outline' : 'stats-chart-outline'"
+            aria-hidden="true"
+          ></ion-icon>
+          <span>{{ activity.kind === 'quiz' ? 'QUIZ' : 'POLL' }}</span>
         </span>
         <span class="status-tag" [ngClass]="activity.submitted ? 'completed' : 'active'">
-          <ion-icon [name]="activity.submitted ? 'checkmark-circle' : 'radio-button-on'"></ion-icon>
-          {{ activity.submitted ? 'Responded' : 'Active' }}
+          <span class="status-dot" *ngIf="!activity.submitted" aria-hidden="true"></span>
+          <ion-icon *ngIf="activity.submitted" name="checkmark-circle" aria-hidden="true"></ion-icon>
+          <span>{{ activity.submitted ? 'Responded' : 'Active' }}</span>
         </span>
       </div>
 
-      <h2 class="activity-title">{{ activity.title }}</h2>
-      <p class="activity-question">{{ activity.question }}</p>
+      <h2 class="activity-title">{{ activity.question || activity.title }}</h2>
 
       <ng-container *ngIf="activity.submitted; else responseForm">
         <div class="submitted-confirmation">
-          <ion-icon name="checkmark-circle-outline"></ion-icon>
+          <ion-icon name="checkmark-circle-outline" aria-hidden="true"></ion-icon>
           <span>You have already participated in this {{ activity.kind }}. Thank you!</span>
         </div>
       </ng-container>
+
       <ng-template #responseForm>
         <form (ngSubmit)="submit(activity)" class="activity-form">
-          <ion-radio-group
-            [(ngModel)]="selectedOptions[activity.id]"
-            [name]="'answer-' + activity.id"
-          >
-            <div class="options-list">
-              <ion-item *ngFor="let option of activity.options; let i = index" lines="none" class="option-item">
-                <ion-radio [value]="i" labelPlacement="end">{{ option }}</ion-radio>
-              </ion-item>
-            </div>
-          </ion-radio-group>
-          <ion-button
+          <div class="options-list" role="radiogroup" [attr.aria-label]="activity.question || activity.title">
+            <button
+              type="button"
+              class="option-card"
+              *ngFor="let option of activity.options; let i = index"
+              [class.selected]="selectedOptions[activity.id] === i"
+              [attr.aria-checked]="selectedOptions[activity.id] === i"
+              role="radio"
+              (click)="selectOption(activity.id, i)"
+            >
+              <span class="option-letter" aria-hidden="true">{{ optionLetter(i) }}</span>
+              <span class="option-text">{{ option }}</span>
+              <span class="option-indicator" aria-hidden="true">
+                <ion-icon
+                  *ngIf="selectedOptions[activity.id] === i"
+                  name="checkmark-circle"
+                ></ion-icon>
+              </span>
+            </button>
+          </div>
+
+          <button
             type="submit"
-            class="submit-answer"
-            [disabled]="submittingActivityId === activity.id"
+            class="submit-answer-btn"
+            [disabled]="submittingActivityId === activity.id || selectedOptions[activity.id] === undefined || selectedOptions[activity.id] === null"
           >
             <ion-spinner
               *ngIf="submittingActivityId === activity.id"
               name="crescent"
             ></ion-spinner>
             <ng-container *ngIf="submittingActivityId !== activity.id">
-              Submit answer
+              <span>Submit answer</span>
+              <ion-icon name="send-outline" aria-hidden="true"></ion-icon>
             </ng-container>
-          </ion-button>
+          </button>
         </form>
       </ng-template>
-      <ion-note
+
+      <div
         *ngIf="feedback[activity.id]"
-        [color]="activity.submitted ? 'success' : 'danger'"
-        class="activity-message"
+        class="feedback-banner"
+        [ngClass]="activity.submitted ? 'success' : 'error'"
+        role="status"
       >
-        {{ feedback[activity.id] }}
-      </ion-note>
+        <ion-icon
+          [name]="activity.submitted ? 'checkmark-circle-outline' : 'alert-circle-outline'"
+          aria-hidden="true"
+        ></ion-icon>
+        <span>{{ feedback[activity.id] }}</span>
+      </div>
     </section>
   </main>
 </ion-content>
+
+<footer class="fixed-app-footer">
+  <p>Hand Crafted with love by Holcim Egypt Digital Team 💙</p>
+</footer>

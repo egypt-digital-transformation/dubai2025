@@ -862,7 +862,7 @@ export class HomePage implements OnInit, OnDestroy {
     this.router.navigate(['/tips']);
   }
 
-  public capturedMomentsUrl = 'https://drive.google.com';
+  public capturedMomentsUrl = 'https://drive.google.com/drive/u/1/folders/1-n217fVmI2j8NxJq1JejKcnMIYdJFzFZ';
 
   openCapturedMoments() {
     if (this.capturedMomentsUrl) {

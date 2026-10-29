@@ -52,6 +52,16 @@ service cloud.firestore {
           );
       }
 
+      match /accommodation/{accommodationId} {
+        allow read: if isAdmin()
+          || (signedIn() && userId.lower() == request.auth.token.email.lower())
+          || (
+            exists(/databases/$(database)/documents/users/$(userId))
+            && isOwnUser(get(/databases/$(database)/documents/users/$(userId)).data)
+          );
+        allow write: if isAdmin();
+      }
+
       match /flightDetails/{flightId} {
         allow read: if isAdmin()
           || (
@@ -63,6 +73,10 @@ service cloud.firestore {
     }
 
     match /{path=**}/flightDetails/{flightId} {
+      allow read: if isAdmin();
+    }
+
+    match /{path=**}/accommodation/{accommodationId} {
       allow read: if isAdmin();
     }
 

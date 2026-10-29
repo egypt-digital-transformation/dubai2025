@@ -637,6 +637,60 @@
           <legend>Choose notification audience</legend>
           <label class="audience-mode-option">
             <input
+              type="checkbox"
+              [checked]="isAudienceKindSelected('all', 'update')"
+              (change)="onAudienceKindChange('all', $event, 'update')"
+              [disabled]="!notificationAudience"
+            />
+            <span>All users</span>
+          </label>
+          <label class="audience-mode-option">
+            <input
+              type="checkbox"
+              [checked]="isAudienceKindSelected('users', 'update')"
+              (change)="onAudienceKindChange('users', $event, 'update')"
+              [disabled]="!notificationAudience"
+            />
+            <span>Select users</span>
+          </label>
+          <label class="audience-mode-option">
+            <input
+              type="checkbox"
+              [checked]="isAudienceKindSelected('group', 'update')"
+              (change)="onAudienceKindChange('group', $event, 'update')"
+              [disabled]="!notificationAudience"
+            />
+            <span>Participants group</span>
+          </label>
+          <label class="audience-mode-option">
+            <input
+              type="checkbox"
+              [checked]="isAudienceKindSelected('plantVisitors', 'update')"
+              (change)="onAudienceKindChange('plantVisitors', $event, 'update')"
+              [disabled]="!notificationAudience"
+            />
+            <span>Plant visitors</span>
+          </label>
+          <label class="audience-mode-option">
+            <input
+              type="checkbox"
+              [checked]="isAudienceKindSelected('rebrandingEvent', 'update')"
+              (change)="onAudienceKindChange('rebrandingEvent', $event, 'update')"
+              [disabled]="!notificationAudience"
+            />
+            <span>Rebranding event</span>
+          </label>
+          <label class="audience-mode-option">
+            <input
+              type="checkbox"
+              [checked]="isAudienceKindSelected('groupNumber', 'update')"
+              (change)="onAudienceKindChange('groupNumber', $event, 'update')"
+              [disabled]="!notificationAudience"
+            />
+            <span>Groups number</span>
+          </label>
+          <label class="audience-mode-option" *ngIf="false">
+            <input
               type="radio"
               name="updateAudience"
               value="all"
@@ -645,7 +699,7 @@
             />
             <span>All users</span>
           </label>
-          <label class="audience-mode-option">
+          <label class="audience-mode-option" *ngIf="false">
             <input
               type="radio"
               name="updateAudience"
@@ -655,7 +709,7 @@
             />
             <span>Select users</span>
           </label>
-          <label class="audience-mode-option">
+          <label class="audience-mode-option" *ngIf="false">
             <input
               type="radio"
               name="updateAudience"
@@ -665,7 +719,7 @@
             />
             <span>Participants group</span>
           </label>
-          <label class="audience-mode-option">
+          <label class="audience-mode-option" *ngIf="false">
             <input
               type="radio"
               name="updateAudience"
@@ -677,7 +731,7 @@
           </label>
         </fieldset>
 
-        <section *ngIf="audienceKind === 'users'" class="audience-picker">
+        <section *ngIf="isAudienceKindSelected('users', 'update')" class="audience-picker">
           <div class="audience-picker-heading">
             <div>
               <strong>Choose attendees</strong>
@@ -722,7 +776,7 @@
             </p>
           </div>
         </section>
-        <section *ngIf="audienceKind === 'group'" class="audience-picker">
+        <section *ngIf="false" class="audience-picker">
           <div class="audience-picker-heading">
             <div>
               <strong>Choose a participants group</strong>
@@ -747,7 +801,130 @@
             </p>
           </div>
         </section>
-        <ion-note *ngIf="audienceKind === 'plantVisitors'" color="medium" class="campaign-note">
+        <section *ngIf="isAudienceKindSelected('group', 'update')" class="audience-picker">
+          <div class="audience-picker-heading">
+            <div>
+              <strong>Choose participants groups</strong>
+              <span>Select one or more groups from Firestore user profiles.</span>
+            </div>
+            <span class="count-pill">{{ selectedSegmentKeys.length }} selected</span>
+          </div>
+          <div class="audience-picker-actions">
+            <button type="button" (click)="selectAllSegments('update')">Select all</button>
+            <button type="button" (click)="clearSelectedSegments('update')" [disabled]="!selectedSegmentKeys.length">
+              Clear selection
+            </button>
+          </div>
+          <div class="audience-options-list group-options" role="group" aria-label="Participants groups">
+            <label class="audience-option" *ngFor="let segment of notificationSegments">
+              <input
+                type="checkbox"
+                [checked]="isSegmentSelected(segment.key, 'update')"
+                (change)="onSegmentChange(segment.key, $event, 'update')"
+              />
+              <span class="audience-option-copy">
+                <strong>{{ segment.label }}</strong>
+                <span>{{ countUsersInGroup(segment) }} users · {{ countPushReadyUsersInGroup(segment) }} push ready</span>
+              </span>
+            </label>
+            <p *ngIf="!notificationSegments.length" class="audience-empty">
+              No participants groups were found in Firestore.
+            </p>
+          </div>
+        </section>
+        <section *ngIf="isAudienceKindSelected('plantVisitors', 'update')" class="audience-picker">
+          <div class="audience-picker-heading">
+            <div>
+              <strong>Plant visit attendance</strong>
+              <span>Filter by <code>plantVisit</code> in Firestore user profiles.</span>
+            </div>
+          </div>
+          <div class="audience-options-list group-options" role="group" aria-label="Plant visit">
+            <label class="audience-option">
+              <input
+                type="checkbox"
+                [checked]="isPlantVisitValueSelected('true', 'update')"
+                (change)="onPlantVisitValueChange('true', $event, 'update')"
+              />
+              <span class="audience-option-copy">
+                <strong>Plant visitors (true)</strong>
+                <span>{{ countPlantVisitUsers(true) }} users · {{ countPlantVisitUsers(true, true) }} push ready</span>
+              </span>
+            </label>
+            <label class="audience-option">
+              <input
+                type="checkbox"
+                [checked]="isPlantVisitValueSelected('false', 'update')"
+                (change)="onPlantVisitValueChange('false', $event, 'update')"
+              />
+              <span class="audience-option-copy">
+                <strong>Non-plant visitors (false)</strong>
+                <span>{{ countPlantVisitUsers(false) }} users · {{ countPlantVisitUsers(false, true) }} push ready</span>
+              </span>
+            </label>
+          </div>
+        </section>
+        <section *ngIf="isAudienceKindSelected('rebrandingEvent', 'update')" class="audience-picker">
+          <div class="audience-picker-heading">
+            <div>
+              <strong>Rebranding event attendance</strong>
+              <span>Filter by <code>rebrandingEvent</code> in Firestore user profiles.</span>
+            </div>
+          </div>
+          <div class="audience-options-list group-options" role="group" aria-label="Rebranding event">
+            <label class="audience-option">
+              <input
+                type="checkbox"
+                [checked]="isRebrandingValueSelected('true', 'update')"
+                (change)="onRebrandingValueChange('true', $event, 'update')"
+              />
+              <span class="audience-option-copy">
+                <strong>Rebranding event (true)</strong>
+                <span>{{ countRebrandingUsers(true) }} users · {{ countRebrandingUsers(true, true) }} push ready</span>
+              </span>
+            </label>
+            <label class="audience-option">
+              <input
+                type="checkbox"
+                [checked]="isRebrandingValueSelected('false', 'update')"
+                (change)="onRebrandingValueChange('false', $event, 'update')"
+              />
+              <span class="audience-option-copy">
+                <strong>Non-rebranding event (false)</strong>
+                <span>{{ countRebrandingUsers(false) }} users · {{ countRebrandingUsers(false, true) }} push ready</span>
+              </span>
+            </label>
+          </div>
+        </section>
+        <section *ngIf="isAudienceKindSelected('groupNumber', 'update')" class="audience-picker">
+          <div class="audience-picker-heading">
+            <div>
+              <strong>Choose group numbers</strong>
+              <span>Select one or more groups (1 to 6) from Firestore user profiles.</span>
+            </div>
+            <span class="count-pill">{{ selectedGroupNumberKeys.length }} selected</span>
+          </div>
+          <div class="audience-picker-actions">
+            <button type="button" (click)="selectAllGroupNumbers('update')">Select all</button>
+            <button type="button" (click)="clearSelectedGroupNumbers('update')" [disabled]="!selectedGroupNumberKeys.length">
+              Clear selection
+            </button>
+          </div>
+          <div class="audience-options-list group-options" role="group" aria-label="Group numbers">
+            <label class="audience-option" *ngFor="let segment of groupNumberSegments">
+              <input
+                type="checkbox"
+                [checked]="isGroupNumberSelected(segment.key, 'update')"
+                (change)="onGroupNumberChange(segment.key, $event, 'update')"
+              />
+              <span class="audience-option-copy">
+                <strong>{{ segment.label }}</strong>
+                <span>{{ countUsersInGroup(segment) }} users · {{ countPushReadyUsersInGroup(segment) }} push ready</span>
+              </span>
+            </label>
+          </div>
+        </section>
+        <ion-note *ngIf="false" color="medium" class="campaign-note">
           Includes Firestore users with <code>plantVisit</code> set to <code>true</code>.
         </ion-note>
 
@@ -907,6 +1084,48 @@
       </section>
     </ng-container>
 
+    <ng-container *ngIf="selectedSection === 'flights'">
+      <section class="panel-card" *ngIf="!isLoading && (!isLoadingAttendeeDetails || attendeesWithAccommodation.length)">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">ACCOMMODATION DATA</p>
+            <h2>Users accommodation details</h2>
+            <p class="subtitle">Values from each user's <code>accommodation/details</code> document.</p>
+          </div>
+          <span class="metric-caption">{{ attendeesWithAccommodation.length }} users</span>
+        </div>
+        <div class="table-scroll">
+          <table class="flight-details-table">
+            <thead>
+              <tr>
+                <th scope="col">email</th>
+                <th scope="col">hotel</th>
+                <th scope="col">roomNumber</th>
+                <th scope="col">floor</th>
+                <th scope="col">checkIn</th>
+                <th scope="col">checkOut</th>
+                <th scope="col">updatedAt</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let attendee of attendeesWithAccommodation">
+                <td>{{ attendee.email }}</td>
+                <td>{{ attendee.accommodationDetails?.hotel }}</td>
+                <td>{{ attendee.accommodationDetails?.roomNumber }}</td>
+                <td>{{ attendee.accommodationDetails?.floor }}</td>
+                <td>{{ attendee.accommodationDetails?.checkIn }}</td>
+                <td>{{ attendee.accommodationDetails?.checkOut }}</td>
+                <td>{{ attendee.accommodationDetails?.updatedAt }}</td>
+              </tr>
+              <tr *ngIf="!isLoadingAttendeeDetails && !attendeeDetailsError && !attendeesWithAccommodation.length">
+                <td colspan="7" class="empty-state">No accommodation details have been submitted.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </ng-container>
+
     <ng-container *ngIf="selectedSection === 'requests'">
       <!-- Requests Loading State -->
       <section *ngIf="isLoadingRequests && !requests.length" class="panel-card admin-tab-loading" role="status" aria-live="polite">
@@ -1034,7 +1253,7 @@
           fill="outline"
           maxlength="120"
           [(ngModel)]="activityTitle"
-          name="activityTitle"
+          *ngIf="false" name="activityTitle"
           required
         ></ion-input>
         <ion-textarea
@@ -1092,6 +1311,60 @@
           <legend>Choose quiz or poll audience</legend>
           <label class="audience-mode-option">
             <input
+              type="checkbox"
+              [checked]="isAudienceKindSelected('all', 'activity')"
+              (change)="onAudienceKindChange('all', $event, 'activity')"
+              [disabled]="!notificationAudience"
+            />
+            <span>All users</span>
+          </label>
+          <label class="audience-mode-option">
+            <input
+              type="checkbox"
+              [checked]="isAudienceKindSelected('users', 'activity')"
+              (change)="onAudienceKindChange('users', $event, 'activity')"
+              [disabled]="!notificationAudience"
+            />
+            <span>Select users</span>
+          </label>
+          <label class="audience-mode-option">
+            <input
+              type="checkbox"
+              [checked]="isAudienceKindSelected('group', 'activity')"
+              (change)="onAudienceKindChange('group', $event, 'activity')"
+              [disabled]="!notificationAudience"
+            />
+            <span>Participants group</span>
+          </label>
+          <label class="audience-mode-option">
+            <input
+              type="checkbox"
+              [checked]="isAudienceKindSelected('plantVisitors', 'activity')"
+              (change)="onAudienceKindChange('plantVisitors', $event, 'activity')"
+              [disabled]="!notificationAudience"
+            />
+            <span>Plant visitors</span>
+          </label>
+          <label class="audience-mode-option">
+            <input
+              type="checkbox"
+              [checked]="isAudienceKindSelected('rebrandingEvent', 'activity')"
+              (change)="onAudienceKindChange('rebrandingEvent', $event, 'activity')"
+              [disabled]="!notificationAudience"
+            />
+            <span>Rebranding event</span>
+          </label>
+          <label class="audience-mode-option">
+            <input
+              type="checkbox"
+              [checked]="isAudienceKindSelected('groupNumber', 'activity')"
+              (change)="onAudienceKindChange('groupNumber', $event, 'activity')"
+              [disabled]="!notificationAudience"
+            />
+            <span>Groups number</span>
+          </label>
+          <label class="audience-mode-option" *ngIf="false">
+            <input
               type="radio"
               name="activityAudience"
               value="all"
@@ -1100,7 +1373,7 @@
             />
             <span>All users</span>
           </label>
-          <label class="audience-mode-option">
+          <label class="audience-mode-option" *ngIf="false">
             <input
               type="radio"
               name="activityAudience"
@@ -1110,7 +1383,7 @@
             />
             <span>Select users</span>
           </label>
-          <label class="audience-mode-option">
+          <label class="audience-mode-option" *ngIf="false">
             <input
               type="radio"
               name="activityAudience"
@@ -1120,7 +1393,7 @@
             />
             <span>Participants group</span>
           </label>
-          <label class="audience-mode-option">
+          <label class="audience-mode-option" *ngIf="false">
             <input
               type="radio"
               name="activityAudience"
@@ -1132,7 +1405,7 @@
           </label>
         </fieldset>
 
-        <section *ngIf="activityAudienceKind === 'users'" class="audience-picker">
+        <section *ngIf="isAudienceKindSelected('users', 'activity')" class="audience-picker">
           <div class="audience-picker-heading">
             <div>
               <strong>Choose attendees</strong>
@@ -1184,7 +1457,7 @@
           </div>
         </section>
 
-        <section *ngIf="activityAudienceKind === 'group'" class="audience-picker">
+        <section *ngIf="false" class="audience-picker">
           <div class="audience-picker-heading">
             <div>
               <strong>Choose a participants group</strong>
@@ -1209,7 +1482,130 @@
             </p>
           </div>
         </section>
-        <ion-note *ngIf="activityAudienceKind === 'plantVisitors'" color="medium" class="campaign-note">
+        <section *ngIf="isAudienceKindSelected('group', 'activity')" class="audience-picker">
+          <div class="audience-picker-heading">
+            <div>
+              <strong>Choose participants groups</strong>
+              <span>Select one or more groups from Firestore user profiles.</span>
+            </div>
+            <span class="count-pill">{{ activitySelectedSegmentKeys.length }} selected</span>
+          </div>
+          <div class="audience-picker-actions">
+            <button type="button" (click)="selectAllSegments('activity')">Select all</button>
+            <button type="button" (click)="clearSelectedSegments('activity')" [disabled]="!activitySelectedSegmentKeys.length">
+              Clear selection
+            </button>
+          </div>
+          <div class="audience-options-list group-options" role="group" aria-label="Quiz and poll participants groups">
+            <label class="audience-option" *ngFor="let segment of notificationSegments">
+              <input
+                type="checkbox"
+                [checked]="isSegmentSelected(segment.key, 'activity')"
+                (change)="onSegmentChange(segment.key, $event, 'activity')"
+              />
+              <span class="audience-option-copy">
+                <strong>{{ segment.label }}</strong>
+                <span>{{ countUsersInGroup(segment) }} users · {{ countPushReadyUsersInGroup(segment) }} push ready</span>
+              </span>
+            </label>
+            <p *ngIf="!notificationSegments.length" class="audience-empty">
+              No participants groups were found in Firestore.
+            </p>
+          </div>
+        </section>
+        <section *ngIf="isAudienceKindSelected('plantVisitors', 'activity')" class="audience-picker">
+          <div class="audience-picker-heading">
+            <div>
+              <strong>Plant visit attendance</strong>
+              <span>Filter by <code>plantVisit</code> in Firestore user profiles.</span>
+            </div>
+          </div>
+          <div class="audience-options-list group-options" role="group" aria-label="Quiz and poll plant visit">
+            <label class="audience-option">
+              <input
+                type="checkbox"
+                [checked]="isPlantVisitValueSelected('true', 'activity')"
+                (change)="onPlantVisitValueChange('true', $event, 'activity')"
+              />
+              <span class="audience-option-copy">
+                <strong>Plant visitors (true)</strong>
+                <span>{{ countPlantVisitUsers(true) }} users · {{ countPlantVisitUsers(true, true) }} push ready</span>
+              </span>
+            </label>
+            <label class="audience-option">
+              <input
+                type="checkbox"
+                [checked]="isPlantVisitValueSelected('false', 'activity')"
+                (change)="onPlantVisitValueChange('false', $event, 'activity')"
+              />
+              <span class="audience-option-copy">
+                <strong>Non-plant visitors (false)</strong>
+                <span>{{ countPlantVisitUsers(false) }} users · {{ countPlantVisitUsers(false, true) }} push ready</span>
+              </span>
+            </label>
+          </div>
+        </section>
+        <section *ngIf="isAudienceKindSelected('rebrandingEvent', 'activity')" class="audience-picker">
+          <div class="audience-picker-heading">
+            <div>
+              <strong>Rebranding event attendance</strong>
+              <span>Filter by <code>rebrandingEvent</code> in Firestore user profiles.</span>
+            </div>
+          </div>
+          <div class="audience-options-list group-options" role="group" aria-label="Quiz and poll rebranding event">
+            <label class="audience-option">
+              <input
+                type="checkbox"
+                [checked]="isRebrandingValueSelected('true', 'activity')"
+                (change)="onRebrandingValueChange('true', $event, 'activity')"
+              />
+              <span class="audience-option-copy">
+                <strong>Rebranding event (true)</strong>
+                <span>{{ countRebrandingUsers(true) }} users · {{ countRebrandingUsers(true, true) }} push ready</span>
+              </span>
+            </label>
+            <label class="audience-option">
+              <input
+                type="checkbox"
+                [checked]="isRebrandingValueSelected('false', 'activity')"
+                (change)="onRebrandingValueChange('false', $event, 'activity')"
+              />
+              <span class="audience-option-copy">
+                <strong>Non-rebranding event (false)</strong>
+                <span>{{ countRebrandingUsers(false) }} users · {{ countRebrandingUsers(false, true) }} push ready</span>
+              </span>
+            </label>
+          </div>
+        </section>
+        <section *ngIf="isAudienceKindSelected('groupNumber', 'activity')" class="audience-picker">
+          <div class="audience-picker-heading">
+            <div>
+              <strong>Choose group numbers</strong>
+              <span>Select one or more groups (1 to 6) from Firestore user profiles.</span>
+            </div>
+            <span class="count-pill">{{ activitySelectedGroupNumberKeys.length }} selected</span>
+          </div>
+          <div class="audience-picker-actions">
+            <button type="button" (click)="selectAllGroupNumbers('activity')">Select all</button>
+            <button type="button" (click)="clearSelectedGroupNumbers('activity')" [disabled]="!activitySelectedGroupNumberKeys.length">
+              Clear selection
+            </button>
+          </div>
+          <div class="audience-options-list group-options" role="group" aria-label="Quiz and poll group numbers">
+            <label class="audience-option" *ngFor="let segment of groupNumberSegments">
+              <input
+                type="checkbox"
+                [checked]="isGroupNumberSelected(segment.key, 'activity')"
+                (change)="onGroupNumberChange(segment.key, $event, 'activity')"
+              />
+              <span class="audience-option-copy">
+                <strong>{{ segment.label }}</strong>
+                <span>{{ countUsersInGroup(segment) }} users · {{ countPushReadyUsersInGroup(segment) }} push ready</span>
+              </span>
+            </label>
+          </div>
+        </section>
+        <ion-note *ngIf="false" color="medium" class="campaign-note">
           Includes Firestore users with <code>plantVisit</code> set to <code>true</code>.
         </ion-note>
 
@@ -1229,7 +1625,7 @@
           </div>
           <ion-button
             type="submit"
-            [disabled]="!notificationAudience || !!notificationAudienceError || isCreatingActivity || !activityTitle.trim() || !activityQuestion.trim() || selectedActivityRecipientCount === 0 || (activityAudienceKind === 'users' && !activitySelectedUserIds.length) || (activityAudienceKind === 'group' && !activitySelectedSegmentKey)"
+            [disabled]="!notificationAudience || !!notificationAudienceError || isCreatingActivity || !activityQuestion.trim() || !selectedActivityRecipientCount"
           >
             <ion-spinner *ngIf="isCreatingActivity" name="crescent"></ion-spinner>
             <ng-container *ngIf="!isCreatingActivity">
@@ -1275,8 +1671,8 @@
             <p class="eyebrow">
               {{ activity.kind | uppercase }} · {{ activity.responseCount }} responses
             </p>
-            <h3>{{ activity.title }}</h3>
-            <p>{{ activity.question }}</p>
+            <h3>{{ activity.question || activity.title }}</h3>
+
           </div>
           <div class="activity-actions">
             <span

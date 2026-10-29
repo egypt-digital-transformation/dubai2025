@@ -17,6 +17,10 @@ import {
   checkmarkCircle,
   radioButtonOn,
   checkmarkCircleOutline,
+  helpCircleOutline,
+  statsChartOutline,
+  sendOutline,
+  alertCircleOutline,
 } from 'ionicons/icons';
 
 @Component({
@@ -45,6 +49,10 @@ export class ActivitiesPage implements OnInit {
       checkmarkCircle,
       radioButtonOn,
       checkmarkCircleOutline,
+      helpCircleOutline,
+      statsChartOutline,
+      sendOutline,
+      alertCircleOutline,
     });
   }
 
@@ -54,6 +62,20 @@ export class ActivitiesPage implements OnInit {
 
   ionViewWillEnter(): void {
     void this.loadActivities();
+  }
+
+  selectOption(activityId: string, optionIndex: number): void {
+    if (this.submittingActivityId === activityId) {
+      return;
+    }
+    this.selectedOptions[activityId] = optionIndex;
+    if (this.feedback[activityId] === 'Choose an answer before submitting.') {
+      this.feedback[activityId] = '';
+    }
+  }
+
+  optionLetter(index: number): string {
+    return String.fromCharCode(65 + index);
   }
 
   async doRefresh(event: any): Promise<void> {

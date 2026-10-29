@@ -3,6 +3,9 @@ import { createHash } from "node:crypto";
 export const SEGMENT_FIELDS = new Set([
   "participantsGroup",
   "plantVisit",
+  "group",
+  "rebrandingEvent",
+  "plantVisit",
 ]);
 
 export function emailDocumentId(email) {
@@ -32,7 +35,17 @@ export function matchesNotificationTarget(userDocument, target) {
   const [parent, child] = target.field.split(".");
   const data = userDocument.data();
   const value = child ? data[parent]?.[child] : data[parent];
-  if (parent === "plantVisit") {
+  if (parent === "plantVisit" || parent === "rebrandingEvent") {
+    return (value === true ? "true" : "false") === target.value;
+  }
+  if (parent === "group") {
+    const normalizeGroup = (v) => {
+      const s = String(v ?? "").trim().toLowerCase().replace(/\s+/g, " ");
+      return /^[1-6]$/.test(s) ? `group ${s}` : s;
+    };
+    return normalizeGroup(value) === normalizeGroup(target.value);
+  }
+  if (false) {
     return value === true && target.value === "true";
   }
   return String(value ?? "") === target.value;

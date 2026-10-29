@@ -1,0 +1,495 @@
+:host {
+  display: block;
+}
+
+.journey-page {
+  --background: var(--background-color);
+}
+
+.journey-shell {
+  max-width: 38rem;
+  margin: 0 auto;
+  padding: 1rem 1rem 5.5rem;
+  color: var(--holcim-premium-blue);
+}
+
+/* =========================================
+   HERO BANNER (Compact & Refined)
+   ========================================= */
+.journey-hero {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse at 88% 12%, rgba(var(--holcim-bright-blue-rgb), 0.22), transparent 45%),
+    linear-gradient(135deg, var(--holcim-premium-blue) 0%, #031027 65%, var(--holcim-dark-blue) 100%);
+  border-radius: 1.15rem;
+  color: var(--white);
+  padding: 1.35rem 1.35rem 1.3rem;
+  margin-bottom: 1.4rem;
+  box-shadow: 0 8px 24px -6px rgba(var(--holcim-premium-blue-rgb), 0.18);
+}
+
+.hero-accent-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--holcim-gradient-to-right);
+}
+
+.hero-eyebrow {
+  color: var(--holcim-bright-blue);
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin: 0 0 0.35rem;
+}
+
+.journey-hero h1 {
+  color: var(--white);
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1.15;
+  margin: 0 0 0.35rem;
+}
+
+.hero-subtitle {
+  color: rgba(var(--white-rgb), 0.78);
+  font-size: 0.85rem;
+  line-height: 1.45;
+  margin: 0;
+}
+
+/* =========================================
+   SECTIONS & HEADINGS
+   ========================================= */
+.journey-section {
+  margin-bottom: 1.4rem;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.65rem;
+  padding: 0 0.15rem;
+}
+
+.section-eyebrow {
+  color: var(--app-text-muted);
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin: 0 0 0.2rem;
+}
+
+.section-header h2 {
+  color: var(--holcim-dark-blue);
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.section-icon-badge {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.6rem;
+  background: rgba(var(--holcim-bright-blue-rgb), 0.1);
+  color: var(--holcim-medium-blue);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+
+  ion-icon {
+    font-size: 1.05rem;
+  }
+
+  &.stay-badge {
+    background: rgba(var(--holcim-bright-green-rgb), 0.14);
+    color: var(--holcim-green);
+  }
+}
+
+/* =========================================
+   BOARDING PASS / FLIGHT CARD
+   ========================================= */
+.boarding-card {
+  background: var(--white);
+  border: 1px solid rgba(var(--holcim-dark-blue-rgb), 0.08);
+  border-radius: 1.1rem;
+  box-shadow: 0 4px 18px -4px rgba(var(--holcim-dark-blue-rgb), 0.06);
+  overflow: hidden;
+}
+
+.flight-leg {
+  padding: 1.1rem 1.15rem;
+}
+
+.leg-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.85rem;
+}
+
+.leg-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.leg-icon {
+  width: 2.15rem;
+  height: 2.15rem;
+  border-radius: 0.6rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+
+  ion-icon {
+    font-size: 1.05rem;
+  }
+
+  &.inbound-icon {
+    background: rgba(var(--holcim-bright-blue-rgb), 0.1);
+    color: var(--holcim-medium-blue);
+
+    ion-icon {
+      transform: rotate(45deg);
+    }
+  }
+
+  &.outbound-icon {
+    background: rgba(var(--holcim-dark-blue-rgb), 0.06);
+    color: var(--holcim-dark-blue);
+
+    ion-icon {
+      transform: rotate(-45deg);
+    }
+  }
+}
+
+.leg-titles {
+  display: flex;
+  flex-direction: column;
+}
+
+.leg-direction {
+  color: var(--app-text-muted);
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  line-height: 1.2;
+}
+
+.leg-titles h3 {
+  color: var(--holcim-dark-blue);
+  font-size: 0.98rem;
+  font-weight: 700;
+  margin: 0.1rem 0 0;
+  line-height: 1.2;
+}
+
+.flight-pill {
+  background: rgba(var(--holcim-dark-blue-rgb), 0.05);
+  border: 1px solid rgba(var(--holcim-dark-blue-rgb), 0.1);
+  border-radius: 999px;
+  color: var(--holcim-dark-blue);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  padding: 0.3rem 0.68rem;
+  white-space: nowrap;
+}
+
+.airport-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  background: var(--background-color);
+  border-radius: 0.65rem;
+  padding: 0.6rem 0.75rem;
+  margin-bottom: 0.75rem;
+
+  ion-icon {
+    color: var(--holcim-medium-blue);
+    font-size: 1rem;
+    margin-top: 0.1rem;
+    flex-shrink: 0;
+  }
+
+  strong {
+    display: block;
+    color: var(--holcim-dark-blue);
+    font-size: 0.84rem;
+    font-weight: 650;
+    line-height: 1.3;
+  }
+
+  small {
+    display: block;
+    color: var(--app-text-muted);
+    font-size: 0.7rem;
+    margin-top: 0.1rem;
+  }
+}
+
+.meta-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+
+.meta-item {
+  background: var(--background-color);
+  border-radius: 0.65rem;
+  padding: 0.6rem 0.75rem;
+}
+
+.meta-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: var(--app-text-muted);
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 0.22rem;
+
+  ion-icon {
+    font-size: 0.78rem;
+    color: var(--holcim-medium-blue);
+  }
+}
+
+.meta-value {
+  display: block;
+  color: var(--holcim-dark-blue);
+  font-size: 0.86rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+/* Perforated boarding pass divider */
+.ticket-divider {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 1.25rem;
+  overflow: hidden;
+}
+
+.dashed-line {
+  width: 100%;
+  border-top: 1.5px dashed var(--holcim-gray-02);
+  margin: 0 0.75rem;
+}
+
+.notch {
+  position: absolute;
+  width: 1rem;
+  height: 1rem;
+  border-radius: 50%;
+  background: var(--background-color);
+  border: 1px solid rgba(var(--holcim-dark-blue-rgb), 0.08);
+}
+
+.notch-left {
+  left: -0.55rem;
+}
+
+.notch-right {
+  right: -0.55rem;
+}
+
+/* =========================================
+   ACCOMMODATION / STAY CARD
+   ========================================= */
+.stay-card {
+  background: var(--white);
+  border: 1px solid rgba(var(--holcim-dark-blue-rgb), 0.08);
+  border-radius: 1.1rem;
+  padding: 1.15rem;
+  box-shadow: 0 4px 18px -4px rgba(var(--holcim-dark-blue-rgb), 0.06);
+}
+
+.stay-header {
+  margin-bottom: 0.9rem;
+}
+
+.hotel-badge-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: var(--holcim-green);
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 0.25rem;
+
+  ion-icon {
+    font-size: 0.85rem;
+  }
+}
+
+.hotel-name {
+  color: var(--holcim-dark-blue);
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  line-height: 1.3;
+  margin: 0;
+}
+
+.room-highlights {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
+  margin-bottom: 0.75rem;
+}
+
+.highlight-tile {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  background: linear-gradient(135deg, rgba(var(--holcim-bright-blue-rgb), 0.06), rgba(var(--holcim-bright-green-rgb), 0.06));
+  border: 1px solid rgba(var(--holcim-dark-blue-rgb), 0.07);
+  border-radius: 0.75rem;
+  padding: 0.65rem 0.75rem;
+}
+
+.tile-icon {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.55rem;
+  background: var(--white);
+  color: var(--holcim-dark-blue);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(var(--holcim-dark-blue-rgb), 0.06);
+
+  ion-icon {
+    font-size: 1rem;
+  }
+}
+
+.tile-copy {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.tile-label {
+  color: var(--app-text-muted);
+  font-size: 0.56rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.tile-value {
+  color: var(--holcim-dark-blue);
+  font-size: 0.98rem;
+  font-weight: 700;
+  line-height: 1.25;
+  margin-top: 0.08rem;
+}
+
+.stay-dates-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+
+.stay-date-box {
+  background: var(--background-color);
+  border-radius: 0.65rem;
+  padding: 0.65rem 0.75rem;
+}
+
+.stay-date-primary {
+  display: block;
+  color: var(--holcim-dark-blue);
+  font-size: 0.86rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.stay-time-sub {
+  display: block;
+  color: var(--app-text-muted);
+  font-size: 0.74rem;
+  font-weight: 500;
+  margin-top: 0.12rem;
+}
+
+/* Pending Stay Card */
+.stay-pending-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: var(--white);
+  border: 1px solid rgba(var(--holcim-dark-blue-rgb), 0.08);
+  border-radius: 1rem;
+  padding: 1rem 1.1rem;
+  box-shadow: 0 2px 10px -2px rgba(var(--holcim-dark-blue-rgb), 0.04);
+}
+
+.pending-icon {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 0.65rem;
+  background: var(--background-color);
+  color: var(--holcim-medium-blue);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+
+  ion-icon {
+    font-size: 1.1rem;
+  }
+}
+
+.pending-copy {
+  flex: 1;
+  min-width: 0;
+
+  strong {
+    display: block;
+    color: var(--holcim-dark-blue);
+    font-size: 0.88rem;
+    font-weight: 650;
+  }
+
+  small {
+    display: block;
+    color: var(--app-text-muted);
+    font-size: 0.75rem;
+    margin-top: 0.15rem;
+  }
+}
+
+.pending-pill {
+  background: var(--background-color);
+  border-radius: 999px;
+  color: var(--app-text-muted);
+  font-size: 0.7rem;
+  font-weight: 650;
+  padding: 0.28rem 0.6rem;
+}
+

@@ -48,10 +48,22 @@ export interface AdminAttendee {
   active: boolean;
   installed: boolean;
   plantVisit: boolean;
+  group?: string;
+  rebrandingEvent?: boolean;
   authenticatedEmail?: string;
   safetyInductionCompleted?: boolean;
   safetyInductionStatus?: string;
   flightDetails?: FlightDetails;
+  accommodationDetails?: AccommodationDetails;
+}
+
+export interface AccommodationDetails {
+  hotel: string;
+  roomNumber: string;
+  floor: string;
+  checkIn: string;
+  checkOut: string;
+  updatedAt?: string;
 }
 
 export interface FlightLeg {
@@ -174,7 +186,7 @@ export type NotificationTarget =
   | { kind: 'users'; userIds: string[] }
   | {
       kind: 'segment';
-      field: 'participantsGroup' | 'plantVisit';
+      field: 'participantsGroup' | 'plantVisit' | 'group' | 'rebrandingEvent';
       value: string;
     };
 
@@ -314,12 +326,18 @@ export class AdminService {
             asText(data['emailAddress']).trim() ||
             asText(data['email']).trim() ||
             userDocument.id,
-          name: asText(data['displayName'] ?? data['name']),
+          name:
+            asText(data['displayName'] ?? data['name']).trim() ||
+            [asText(data['firstName']).trim(), asText(data['lastName']).trim()]
+              .filter(Boolean)
+              .join(' '),
           firstName: asText(data['firstName']),
           nationality: asText(data['nationality']),
           participantsGroup: asText(data['participantsGroup']),
           hasPushToken: hasRegisteredPushToken(data),
           plantVisit: data['plantVisit'] === true,
+          group: asText(data['group']).trim(),
+          rebrandingEvent: data['rebrandingEvent'] === true,
           loggedIn: false,
           active: false,
           installed: false,
@@ -440,6 +458,29 @@ export class AdminService {
     });
   }
 
+  async loadAccommodationDetailsForAttendees(
+    attendees: AdminAttendee[]
+  ): Promise<AdminAttendee[]> {
+    const snapshot = await getDocs(collectionGroup(this.firestore, 'accommodation'));
+    const detailsByUserId = new Map<string, AccommodationDetails>();
+    for (const accommodationDocument of snapshot.docs) {
+      if (accommodationDocument.id !== 'details') {
+        continue;
+      }
+      const userId = accommodationDocument.ref.parent.parent?.id;
+      const details = this.toAccommodationDetails(
+        accommodationDocument.data() as Record<string, unknown>
+      );
+      if (userId && details) {
+        detailsByUserId.set(userId, details);
+      }
+    }
+    return attendees.map((attendee) => {
+      const accommodationDetails = detailsByUserId.get(attendee.id);
+      return accommodationDetails ? { ...attendee, accommodationDetails } : attendee;
+    });
+  }
+
   async loadSafetyInductionStatus(
     attendees: AdminAttendee[]
   ): Promise<AdminAttendee[]> {
@@ -549,6 +590,43 @@ export class AdminService {
 
     if (!userDocument) return null;
     return this.loadFlightDetailsForUserId(userDocument.id);
+  }
+
+  async loadAccommodationDetails(email: string): Promise<AccommodationDetails | null> {
+    const userId = await this.findUserDocumentId(email);
+    if (!userId) return null;
+    return this.loadAccommodationDetailsForUserId(userId);
+  }
+
+  private async findUserDocumentId(email: string): Promise<string | null> {
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail) return null;
+
+    let userDocument: QueryDocumentSnapshot<DocumentData> | undefined;
+    if (await this.isAdmin()) {
+      const usersSnapshot = await this.loadUsersSnapshot();
+      userDocument = usersSnapshot.docs.find((candidate) => {
+        const data = candidate.data() as { emailAddress?: unknown; email?: unknown };
+        return String(data.emailAddress ?? data.email ?? candidate.id)
+          .trim()
+          .toLowerCase() === normalizedEmail;
+      });
+    } else {
+      const users = collection(this.firestore, 'users');
+      let userSnapshot = await getDocs(query(users, where('emailAddress', '==', normalizedEmail)));
+      if (userSnapshot.empty) {
+        userSnapshot = await getDocs(query(users, where('email', '==', normalizedEmail)));
+      }
+      if (userSnapshot.empty && email.trim() !== normalizedEmail) {
+        userSnapshot = await getDocs(query(users, where('emailAddress', '==', email.trim())));
+      }
+      if (userSnapshot.empty && email.trim() !== normalizedEmail) {
+        userSnapshot = await getDocs(query(users, where('email', '==', email.trim())));
+      }
+      userDocument = userSnapshot.docs[0];
+    }
+
+    return userDocument?.id ?? null;
   }
 
   async saveProject(project: ProjectInput): Promise<IconicProject> {
@@ -846,6 +924,57 @@ export class AdminService {
     return flightDocument.exists() ? this.toFlightDetails(flightDocument.data()) : null;
   }
 
+  private toAccommodationDetails(data: Record<string, unknown>): AccommodationDetails | null {
+    const asText = (value: unknown): string => {
+      if (value == null) return '';
+      if (typeof value === 'string') return value.trim();
+      if (typeof value === 'number') return String(value);
+      if (
+        typeof value === 'object' &&
+        'toDate' in value &&
+        typeof (value as { toDate?: unknown }).toDate === 'function'
+      ) {
+        const date = (value as { toDate: () => Date }).toDate();
+        return Number.isNaN(date.getTime()) ? '' : date.toISOString();
+      }
+      if (value instanceof Date) {
+        return Number.isNaN(value.getTime()) ? '' : value.toISOString();
+      }
+      return String(value).trim();
+    };
+
+    const hotel = asText(data['hotel']);
+    const roomNumber = asText(data['roomNumber']);
+    const floor = asText(data['floor']);
+    const checkIn = asText(data['checkIn']);
+    const checkOut = asText(data['checkOut']);
+    const updatedAt = asText(data['updatedAt']) || undefined;
+
+    if (!hotel && !roomNumber && !floor && !checkIn && !checkOut) {
+      return null;
+    }
+
+    return {
+      hotel,
+      roomNumber,
+      floor,
+      checkIn,
+      checkOut,
+      updatedAt,
+    };
+  }
+
+  private async loadAccommodationDetailsForUserId(
+    userId: string
+  ): Promise<AccommodationDetails | null> {
+    const accommodationDocument = await firebaseGetDoc(
+      firestoreDoc(this.firestore, 'users', userId, 'accommodation', 'details')
+    );
+    return accommodationDocument.exists()
+      ? this.toAccommodationDetails(accommodationDocument.data())
+      : null;
+  }
+
   private async loadMainProjectUsers(): Promise<AdminAttendee[]> {
     const snapshot = await this.loadUsersSnapshot();
     const attendees = snapshot.docs.map((userDocument) => {
@@ -871,6 +1000,8 @@ export class AdminService {
         active: false,
         installed: false,
         plantVisit: data['plantVisit'] === true,
+        group: asText(data['group']).trim(),
+        rebrandingEvent: data['rebrandingEvent'] === true,
       };
       return attendee;
     });

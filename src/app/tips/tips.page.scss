@@ -1,3 +1,28 @@
+.fixed-app-footer {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--app-surface, #ffffff);
+  border-top: 1px solid var(--app-border, #ececec);
+  color: var(--app-text-muted, #4a5568);
+  font-family: var(--ion-font-family, 'Holcim', sans-serif);
+  font-size: 0.6rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  line-height: 1.2;
+  padding: 0.3rem 0.5rem calc(0.35rem + max(env(safe-area-inset-bottom), 0px));
+  text-align: center;
+  z-index: 20;
+
+  p {
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
 .tips-content {
   --background: #f8fafc;
   background-color: #f8fafc;
@@ -113,7 +138,7 @@
 .tips-body {
   max-width: 860px;
   margin: 0 auto;
-  padding: 1.25rem 1rem 3.5rem;
+  padding: 1.25rem 1rem 5rem;
 }
 
 /* Category Filter Tabs */

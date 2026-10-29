@@ -1,92 +1,218 @@
-<ion-content class="module-page">
-  <main class="module-shell">
-    <header class="module-hero">
-      <p class="eyebrow">YOUR PERSONAL CONCIERGE</p>
+<ion-content class="journey-page">
+  <main class="journey-shell">
+    <header class="journey-hero">
+      <div class="hero-accent-bar" aria-hidden="true"></div>
+      <p class="hero-eyebrow">YOUR PERSONAL CONCIERGE</p>
       <h1>A seamless journey</h1>
-      <p>Your travel and stay, together in one place.</p>
+      <p class="hero-subtitle">Your flights and hotel reservation, together in one place.</p>
     </header>
 
-    <section *ngIf="flightDetails" class="module-card flight-details-card">
-      <div class="flight-card-heading">
+    <!-- ================= FLIGHT DETAILS ================= -->
+    <section *ngIf="flightDetails" class="journey-section" aria-labelledby="flights-heading">
+      <div class="section-header">
         <div>
-          <p class="flight-eyebrow">YOUR ITINERARY</p>
-          <h2>Flight details</h2>
+          <p class="section-eyebrow">YOUR ITINERARY</p>
+          <h2 id="flights-heading">Flight details</h2>
         </div>
-        <span class="flight-heading-mark" aria-hidden="true">✦</span>
+        <span class="section-icon-badge" aria-hidden="true">
+          <ion-icon name="airplane-outline"></ion-icon>
+        </span>
       </div>
 
-      <article class="flight-leg">
-        <div class="flight-leg-heading">
-          <div class="flight-leg-direction">
-            <span class="flight-direction-icon" aria-hidden="true">↘</span>
+      <div class="boarding-card">
+        <!-- Inbound Leg -->
+        <article class="flight-leg">
+          <div class="leg-top">
+            <div class="leg-badge inbound">
+              <span class="leg-icon inbound-icon" aria-hidden="true">
+                <ion-icon name="airplane-outline"></ion-icon>
+              </span>
+              <div class="leg-titles">
+                <span class="leg-direction">INBOUND</span>
+                <h3>Arrival</h3>
+              </div>
+            </div>
+            <span class="flight-pill" *ngIf="flightDetails.inbound.flightNo">
+              {{ flightDetails.inbound.flightNo }}
+            </span>
+          </div>
+
+          <div class="airport-row" *ngIf="hasAirport(flightDetails.inbound)">
+            <ion-icon name="location-outline" aria-hidden="true"></ion-icon>
             <div>
-              <span class="flight-eyebrow">INBOUND</span>
-              <h3>Arrival</h3>
+              <strong>{{ formatAirportRoute(flightDetails.inbound) }}</strong>
+              <small>Arrival airport</small>
             </div>
           </div>
-          <span class="flight-number">{{ flightDetails.inbound.flightNo || 'Flight details' }}</span>
-        </div>
-        <div class="flight-route">
-          <span class="route-marker" aria-hidden="true"></span>
-          <div>
-            <strong>{{ flightDetails.inbound.arrivalAirport || flightDetails.inbound.departureAirport || 'Airport to be confirmed' }}</strong>
-            <small>Arrival airport</small>
-          </div>
-        </div>
-        <div class="flight-schedule">
-          <div>
-            <span class="flight-eyebrow">DATE</span>
-            <strong>{{ flightDetails.inbound.arrivalDate || flightDetails.inbound.departureDate || 'To be confirmed' }}</strong>
-          </div>
-          <div>
-            <span class="flight-eyebrow">TIME</span>
-            <strong>{{ flightDetails.inbound.arrivalTime || flightDetails.inbound.departureTime || 'To be confirmed' }}</strong>
-          </div>
-        </div>
-      </article>
 
-      <div class="flight-journey-divider" aria-hidden="true"><span></span><i>✦</i><span></span></div>
-
-      <article class="flight-leg">
-        <div class="flight-leg-heading">
-          <div class="flight-leg-direction">
-            <span class="flight-direction-icon outbound" aria-hidden="true">↗</span>
-            <div>
-              <span class="flight-eyebrow">OUTBOUND</span>
-              <h3>Departure</h3>
+          <div class="meta-grid">
+            <div class="meta-item">
+              <span class="meta-label">
+                <ion-icon name="calendar-outline" aria-hidden="true"></ion-icon>
+                DATE
+              </span>
+              <strong class="meta-value">
+                {{ formatFlightDate(flightDetails.inbound.arrivalDate || flightDetails.inbound.departureDate) }}
+              </strong>
+            </div>
+            <div class="meta-item">
+              <span class="meta-label">
+                <ion-icon name="time-outline" aria-hidden="true"></ion-icon>
+                TIME
+              </span>
+              <strong class="meta-value">
+                {{ formatFlightTime(flightDetails.inbound.arrivalTime || flightDetails.inbound.departureTime) }}
+              </strong>
             </div>
           </div>
-          <span class="flight-number">{{ flightDetails.outbound.flightNo || 'Flight details' }}</span>
+        </article>
+
+        <!-- Perforated Ticket Divider -->
+        <div class="ticket-divider" aria-hidden="true">
+          <span class="notch notch-left"></span>
+          <span class="dashed-line"></span>
+          <span class="notch notch-right"></span>
         </div>
-        <div class="flight-route">
-          <span class="route-marker" aria-hidden="true"></span>
-          <div>
-            <strong>{{ flightDetails.outbound.arrivalAirport || flightDetails.outbound.departureAirport || 'Airport to be confirmed' }}</strong>
-            <small>Airport</small>
+
+        <!-- Outbound Leg -->
+        <article class="flight-leg">
+          <div class="leg-top">
+            <div class="leg-badge outbound">
+              <span class="leg-icon outbound-icon" aria-hidden="true">
+                <ion-icon name="airplane-outline"></ion-icon>
+              </span>
+              <div class="leg-titles">
+                <span class="leg-direction">OUTBOUND</span>
+                <h3>Departure</h3>
+              </div>
+            </div>
+            <span class="flight-pill" *ngIf="flightDetails.outbound.flightNo">
+              {{ flightDetails.outbound.flightNo }}
+            </span>
           </div>
-        </div>
-        <div class="flight-schedule">
-          <div>
-            <span class="flight-eyebrow">DATE</span>
-            <strong>{{ flightDetails.outbound.arrivalDate || flightDetails.outbound.departureDate || 'To be confirmed' }}</strong>
+
+          <div class="airport-row" *ngIf="hasAirport(flightDetails.outbound)">
+            <ion-icon name="location-outline" aria-hidden="true"></ion-icon>
+            <div>
+              <strong>{{ formatAirportRoute(flightDetails.outbound) }}</strong>
+              <small>Departure airport</small>
+            </div>
           </div>
-          <div>
-            <span class="flight-eyebrow">TIME</span>
-            <strong>{{ flightDetails.outbound.arrivalTime || flightDetails.outbound.departureTime || 'To be confirmed' }}</strong>
+
+          <div class="meta-grid">
+            <div class="meta-item">
+              <span class="meta-label">
+                <ion-icon name="calendar-outline" aria-hidden="true"></ion-icon>
+                DATE
+              </span>
+              <strong class="meta-value">
+                {{ formatFlightDate(flightDetails.outbound.departureDate || flightDetails.outbound.arrivalDate) }}
+              </strong>
+            </div>
+            <div class="meta-item">
+              <span class="meta-label">
+                <ion-icon name="time-outline" aria-hidden="true"></ion-icon>
+                TIME
+              </span>
+              <strong class="meta-value">
+                {{ formatFlightTime(flightDetails.outbound.departureTime || flightDetails.outbound.arrivalTime) }}
+              </strong>
+            </div>
           </div>
-        </div>
-      </article>
+        </article>
+      </div>
     </section>
 
-    <section class="module-card">
-      <h2>Your stay</h2>
-      <div class="module-row">
+    <!-- ================= ACCOMMODATION / YOUR STAY ================= -->
+    <section class="journey-section" aria-labelledby="stay-heading">
+      <div class="section-header">
         <div>
-          <strong>Meeting hotel · To be confirmed</strong>
-          <small>Room · Assigned at check-in</small>
+          <p class="section-eyebrow">ACCOMMODATION</p>
+          <h2 id="stay-heading">Your stay</h2>
         </div>
-        <span class="module-muted">Pending</span>
+        <span class="section-icon-badge stay-badge" aria-hidden="true">
+          <ion-icon name="bed-outline"></ion-icon>
+        </span>
       </div>
+
+      <ng-container *ngIf="accommodationDetails; else pendingStay">
+        <div class="stay-card">
+          <div class="stay-header">
+            <div class="hotel-identity">
+              <h3 class="hotel-name">
+                {{ accommodationDetails.hotel || 'Meeting hotel · To be confirmed' }}
+              </h3>
+            </div>
+          </div>
+
+          <div class="room-highlights">
+            <div class="highlight-tile">
+              <span class="tile-icon" aria-hidden="true">
+                <ion-icon name="key-outline"></ion-icon>
+              </span>
+              <div class="tile-copy">
+                <span class="tile-label">ROOM</span>
+                <strong class="tile-value">
+                  {{ accommodationDetails.roomNumber || 'At check-in' }}
+                </strong>
+              </div>
+            </div>
+
+            <div class="highlight-tile">
+              <span class="tile-icon" aria-hidden="true">
+                <ion-icon name="layers-outline"></ion-icon>
+              </span>
+              <div class="tile-copy">
+                <span class="tile-label">FLOOR</span>
+                <strong class="tile-value">
+                  {{ accommodationDetails.floor || '—' }}
+                </strong>
+              </div>
+            </div>
+          </div>
+
+          <div class="stay-dates-grid">
+            <div class="stay-date-box">
+              <span class="meta-label">
+                <ion-icon name="calendar-outline" aria-hidden="true"></ion-icon>
+                CHECK-IN
+              </span>
+              <strong class="stay-date-primary">
+                {{ formatStayDate(accommodationDetails.checkIn) }}
+              </strong>
+              <span class="stay-time-sub" *ngIf="formatStayTime(accommodationDetails.checkIn) as checkInTime">
+                {{ checkInTime }}
+              </span>
+            </div>
+
+            <div class="stay-date-box">
+              <span class="meta-label">
+                <ion-icon name="calendar-outline" aria-hidden="true"></ion-icon>
+                CHECK-OUT
+              </span>
+              <strong class="stay-date-primary">
+                {{ formatStayDate(accommodationDetails.checkOut) }}
+              </strong>
+              <span class="stay-time-sub" *ngIf="formatStayTime(accommodationDetails.checkOut) as checkOutTime">
+                {{ checkOutTime }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </ng-container>
+
+      <ng-template #pendingStay>
+        <div class="stay-pending-card">
+          <span class="pending-icon" aria-hidden="true">
+            <ion-icon name="business-outline"></ion-icon>
+          </span>
+          <div class="pending-copy">
+            <strong>Meeting hotel · To be confirmed</strong>
+            <small>Room · Assigned at check-in</small>
+          </div>
+          <span class="pending-pill">Pending</span>
+        </div>
+      </ng-template>
     </section>
   </main>
 </ion-content>
