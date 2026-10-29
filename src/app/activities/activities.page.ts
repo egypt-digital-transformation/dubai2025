@@ -8,6 +8,17 @@ import {
   InteractiveActivity,
 } from '../services/admin.service';
 
+import { ActivitiesService } from '../services/activities.service';
+
+import { addIcons } from 'ionicons';
+import {
+  arrowBackOutline,
+  sparklesOutline,
+  checkmarkCircle,
+  radioButtonOn,
+  checkmarkCircleOutline,
+} from 'ionicons/icons';
+
 @Component({
   selector: 'app-activities',
   standalone: true,
@@ -17,6 +28,7 @@ import {
 })
 export class ActivitiesPage implements OnInit {
   private readonly adminService = inject(AdminService);
+  private readonly activitiesService = inject(ActivitiesService);
   private readonly router = inject(Router);
 
   activities: InteractiveActivity[] = [];
@@ -26,19 +38,51 @@ export class ActivitiesPage implements OnInit {
   errorMessage = '';
   feedback: Record<string, string> = {};
 
+  constructor() {
+    addIcons({
+      arrowBackOutline,
+      sparklesOutline,
+      checkmarkCircle,
+      radioButtonOn,
+      checkmarkCircleOutline,
+    });
+  }
+
   ngOnInit(): void {
     void this.loadActivities();
+  }
+
+  ionViewWillEnter(): void {
+    void this.loadActivities();
+  }
+
+  async doRefresh(event: any): Promise<void> {
+    await this.loadActivities();
+    event?.target?.complete?.();
   }
 
   async loadActivities(): Promise<void> {
     this.isLoading = true;
     this.errorMessage = '';
     try {
-      const result = await this.adminService.listInteractiveActivities();
-      this.activities = result.activities;
-    } catch (error) {
+      const fetchPromise = this.activitiesService.getActivities();
+      const timeoutPromise = new Promise<InteractiveActivity[]>((_, reject) =>
+        setTimeout(
+          () => reject(new Error('Request timed out. Please check your connection.')),
+          12000
+        )
+      );
+
+      this.activities = await Promise.race([fetchPromise, timeoutPromise]);
+      // Mark all activities as seen since user is viewing the page
+      this.activitiesService.markActivitiesAsSeen(this.activities);
+    } catch (error: any) {
       console.error('[ActivitiesPage] Failed to load activities:', error);
-      this.errorMessage = 'Could not load quizzes and polls. Please try again.';
+      if (!this.activities.length) {
+        this.errorMessage = error?.message?.includes('delegate profile')
+          ? 'Delegate profile verification in progress. Please pull down to refresh.'
+          : 'Could not load quizzes and polls. Please pull down to refresh.';
+      }
     } finally {
       this.isLoading = false;
     }

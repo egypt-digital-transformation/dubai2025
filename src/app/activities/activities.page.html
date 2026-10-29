@@ -1,8 +1,12 @@
 <ion-content [fullscreen]="true" class="activities-content">
+  <ion-refresher slot="fixed" (ionRefresh)="doRefresh($event)">
+    <ion-refresher-content pullingText="Pull to refresh" refreshingSpinner="crescent"></ion-refresher-content>
+  </ion-refresher>
+
   <main class="activities-page">
     <header class="activities-header">
-      <div>
-        <ion-button fill="clear" (click)="returnToApp()" aria-label="Back to app">
+      <div class="header-content">
+        <ion-button fill="clear" (click)="returnToApp()" aria-label="Back to app" class="back-button">
           <ion-icon slot="start" name="arrow-back-outline"></ion-icon>
           Back to app
         </ion-button>
@@ -10,39 +14,58 @@
         <h1>Quizzes &amp; Polls</h1>
         <p class="subtitle">Share your answer with the event team.</p>
       </div>
-      <ion-button fill="outline" (click)="loadActivities()" [disabled]="isLoading">
-        <ion-icon slot="start" name="refresh-outline"></ion-icon>
-        Refresh
-      </ion-button>
     </header>
 
     <ion-note *ngIf="errorMessage" color="danger" class="activity-message">
       {{ errorMessage }}
     </ion-note>
-    <div *ngIf="isLoading" class="activity-state" role="status">
-      Loading activities…
-    </div>
-    <div *ngIf="!isLoading && !errorMessage && !activities.length" class="activity-state">
-      No quizzes or polls are available for you right now.
+
+    <!-- Loading State with Spinner -->
+    <div *ngIf="isLoading" class="loading-state" role="status">
+      <ion-spinner name="crescent" color="primary"></ion-spinner>
+      <p>Loading the latest polls &amp; quizzes…</p>
     </div>
 
-    <section class="activity-card" *ngFor="let activity of activities">
-      <p class="eyebrow">{{ activity.kind === 'quiz' ? 'QUIZ' : 'POLL' }}</p>
-      <h2>{{ activity.title }}</h2>
+    <!-- Empty State: Friendly stay tuned message -->
+    <div *ngIf="!isLoading && !errorMessage && !activities.length" class="empty-activities-card">
+      <div class="empty-icon-box">
+        <ion-icon name="sparkles-outline"></ion-icon>
+      </div>
+      <h3>Nothing yet — stay tuned!</h3>
+      <p>New interactive polls and quizzes will appear here during the event. Stay tuned for live engagement!</p>
+    </div>
+
+    <section class="activity-card" *ngFor="let activity of activities" [class.is-submitted]="activity.submitted">
+      <div class="activity-card-header">
+        <span class="kind-tag" [ngClass]="activity.kind">
+          {{ activity.kind === 'quiz' ? 'QUIZ' : 'POLL' }}
+        </span>
+        <span class="status-tag" [ngClass]="activity.submitted ? 'completed' : 'active'">
+          <ion-icon [name]="activity.submitted ? 'checkmark-circle' : 'radio-button-on'"></ion-icon>
+          {{ activity.submitted ? 'Responded' : 'Active' }}
+        </span>
+      </div>
+
+      <h2 class="activity-title">{{ activity.title }}</h2>
       <p class="activity-question">{{ activity.question }}</p>
 
       <ng-container *ngIf="activity.submitted; else responseForm">
-        <ion-note color="success">You have already responded.</ion-note>
+        <div class="submitted-confirmation">
+          <ion-icon name="checkmark-circle-outline"></ion-icon>
+          <span>You have already participated in this {{ activity.kind }}. Thank you!</span>
+        </div>
       </ng-container>
       <ng-template #responseForm>
-        <form (ngSubmit)="submit(activity)">
+        <form (ngSubmit)="submit(activity)" class="activity-form">
           <ion-radio-group
             [(ngModel)]="selectedOptions[activity.id]"
             [name]="'answer-' + activity.id"
           >
-            <ion-item *ngFor="let option of activity.options; let i = index">
-              <ion-radio [value]="i" labelPlacement="end">{{ option }}</ion-radio>
-            </ion-item>
+            <div class="options-list">
+              <ion-item *ngFor="let option of activity.options; let i = index" lines="none" class="option-item">
+                <ion-radio [value]="i" labelPlacement="end">{{ option }}</ion-radio>
+              </ion-item>
+            </div>
           </ion-radio-group>
           <ion-button
             type="submit"

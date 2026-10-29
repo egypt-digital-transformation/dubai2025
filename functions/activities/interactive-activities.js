@@ -166,31 +166,71 @@ export const createInteractiveActivity = onCall(
   }
 );
 
+async function findDelegateProfile(email, uid) {
+  const users = db.collection("users");
+  const normalizedEmail = (email || "").trim().toLowerCase();
+
+  const findByEmail = async (val) => {
+    if (!val) return [];
+    const [byEmail, byEmailAddress] = await Promise.all([
+      users.where("email", "==", val).get(),
+      users.where("emailAddress", "==", val).get(),
+    ]);
+    const docs = [...byEmail.docs, ...byEmailAddress.docs];
+    const unique = new Map();
+    for (const d of docs) {
+      unique.set(d.id, d);
+    }
+    return [...unique.values()];
+  };
+
+  let profiles = await findByEmail(normalizedEmail);
+  if (!profiles.length && email && email.trim() !== normalizedEmail) {
+    profiles = await findByEmail(email.trim());
+  }
+
+  if (!profiles.length) {
+    for (const docId of [email?.trim(), normalizedEmail, uid]) {
+      if (!docId) continue;
+      const snap = await users.doc(docId).get();
+      if (snap.exists) {
+        profiles.push(snap);
+        break;
+      }
+    }
+  }
+
+  return profiles[0] || null;
+}
+
+async function isUserAdmin(email) {
+  if (!email) return false;
+  const adminDoc = await db.collection("admins").doc(email.trim().toLowerCase()).get();
+  return adminDoc.exists && adminDoc.data()?.active === true;
+}
+
 export const listInteractiveActivities = onCall(
   { region: "europe-west1" },
   async (request) => {
     const user = requireAuthenticatedUser(request);
     const normalizedEmail = user.email.trim().toLowerCase();
-    const usersRef = db.collection("users");
-    let userSnapshot = await usersRef.where("email", "==", normalizedEmail).get();
-    if (userSnapshot.empty && normalizedEmail !== user.email) {
-      userSnapshot = await usersRef.where("email", "==", user.email).get();
-    }
-    if (userSnapshot.size !== 1) {
-      throw new HttpsError(
-        "failed-precondition",
-        "Your delegate profile could not be uniquely matched."
-      );
-    }
-    const profile = userSnapshot.docs[0];
+
+    const isAdmin = await isUserAdmin(normalizedEmail);
+    const profile = await findDelegateProfile(user.email, user.uid);
 
     const activitiesSnapshot = await db
       .collection(ACTIVITY_COLLECTION)
       .where("active", "==", true)
       .get();
-    const available = activitiesSnapshot.docs.filter((activity) =>
-      matchesNotificationTarget(profile, activity.data().target)
-    );
+
+    const available = activitiesSnapshot.docs.filter((activity) => {
+      if (isAdmin) return true;
+      const target = activity.data().target;
+      if (!target || target.kind === "all") return true;
+      if (!profile) return false;
+      return matchesNotificationTarget(profile, target);
+    });
+
     const activities = await Promise.all(
       available.map(async (activity) => {
         const response = await activity.ref
@@ -198,6 +238,13 @@ export const listInteractiveActivities = onCall(
           .doc(user.uid)
           .get();
         const data = activity.data();
+        let createdAt = null;
+        if (data.createdAt?.toDate) {
+          createdAt = data.createdAt.toDate().toISOString();
+        } else if (typeof data.createdAt === "string") {
+          createdAt = data.createdAt;
+        }
+
         return {
           id: activity.id,
           title: data.title,
@@ -205,9 +252,16 @@ export const listInteractiveActivities = onCall(
           options: data.options,
           kind: data.kind,
           submitted: response.exists,
+          createdAt,
         };
       })
     );
+
+    activities.sort((a, b) => {
+      const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return timeB - timeA;
+    });
 
     return { activities };
   }
@@ -240,22 +294,15 @@ export const submitInteractiveActivityResponse = onCall(
       }
 
       const normalizedEmail = user.email.trim().toLowerCase();
-      const usersRef = db.collection("users");
-      let profileSnapshot = await usersRef
-        .where("email", "==", normalizedEmail)
-        .limit(2)
-        .get();
-      if (profileSnapshot.empty && normalizedEmail !== user.email) {
-        profileSnapshot = await usersRef
-          .where("email", "==", user.email)
-          .limit(2)
-          .get();
-      }
-      if (
-        profileSnapshot.size !== 1 ||
-        !matchesNotificationTarget(profileSnapshot.docs[0], activity.target)
-      ) {
-        throw new HttpsError("permission-denied", "This activity is not assigned to you.");
+      const isAdmin = await isUserAdmin(normalizedEmail);
+      const profile = await findDelegateProfile(user.email, user.uid);
+
+      if (!isAdmin) {
+        if (activity.target && activity.target.kind !== "all") {
+          if (!profile || !matchesNotificationTarget(profile, activity.target)) {
+            throw new HttpsError("permission-denied", "This activity is not assigned to you.");
+          }
+        }
       }
 
       const existingResponse = await transaction.get(responseRef);

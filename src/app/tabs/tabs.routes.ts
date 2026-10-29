@@ -60,6 +60,11 @@ export const routes: Routes = [
           import('../networking/networking.page').then((m) => m.NetworkingPage),
       },
       {
+        path: 'activities',
+        loadComponent: () =>
+          import('../activities/activities.page').then((m) => m.ActivitiesPage),
+      },
+      {
         path: 'support',
         loadComponent: () =>
           import('../support/support.page').then((m) => m.SupportPage),

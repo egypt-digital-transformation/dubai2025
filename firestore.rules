@@ -146,6 +146,13 @@ service cloud.firestore {
         allow read, write: if isAdmin();
       }
     }
+  match /users/{email} {
+      allow create, update, read: if request.auth != null && 
+        request.auth.token.email == 'hadeer.hamada@lafarge.com';
+    }
+      match /users/{email}/{document=**} {
+       allow create, update, read, delete, clear: if request.auth != null && request.auth.token.email == 'hadeer.hamada@lafarge.com';
+    }
 
     match /interactiveActivities/{activityId} {
       allow read, write: if isAdmin();

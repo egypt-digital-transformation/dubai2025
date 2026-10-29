@@ -74,9 +74,21 @@
 
           <button type="button" class="action-card" (click)="openPolls()">
             <span class="action-content">
-              <span class="action-icon polls"><ion-icon name="stats-chart-outline"></ion-icon></span>
+              <span class="action-icon polls">
+                <ion-icon name="stats-chart-outline"></ion-icon>
+                <span class="activity-badge" *ngIf="unseenActivitiesCount > 0">
+                  {{ unseenActivitiesCount }}
+                </span>
+              </span>
               <span class="action-title">Polls &amp; Quizzes</span>
-              <span class="action-desc">Live engagement</span>
+              <span class="action-desc">
+                <ng-container *ngIf="unseenActivitiesCount > 0; else defaultPollsDesc">
+                  <span class="unseen-badge-text">{{ unseenActivitiesCount }} new</span>
+                </ng-container>
+                <ng-template #defaultPollsDesc>
+                  Live engagement
+                </ng-template>
+              </span>
             </span>
           </button>
 

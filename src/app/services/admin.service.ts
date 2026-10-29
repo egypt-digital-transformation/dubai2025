@@ -157,6 +157,7 @@ export interface InteractiveActivity {
   options: string[];
   kind: 'quiz' | 'poll';
   submitted: boolean;
+  createdAt?: string | null;
 }
 
 export interface AdminInteractiveActivity extends Omit<InteractiveActivity, 'submitted'> {
@@ -375,7 +376,29 @@ export class AdminService {
   }
 
   async listInteractiveActivities(): Promise<{ activities: InteractiveActivity[] }> {
-    return this.call('listInteractiveActivities', {});
+    try {
+      return await this.call('listInteractiveActivities', {});
+    } catch (error: unknown) {
+      if (await this.isAdmin()) {
+        try {
+          const adminResult = await this.listAdminInteractiveActivities();
+          return {
+            activities: (adminResult.activities || []).map((a) => ({
+              id: a.id,
+              title: a.title,
+              question: a.question,
+              options: a.options,
+              kind: a.kind,
+              submitted: false,
+              createdAt: a.createdAt,
+            })),
+          };
+        } catch (adminErr) {
+          console.warn('[AdminService] Admin fallback failed:', adminErr);
+        }
+      }
+      throw error;
+    }
   }
 
   async listAdminInteractiveActivities(): Promise<{ activities: AdminInteractiveActivity[] }> {

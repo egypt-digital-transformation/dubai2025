@@ -72,6 +72,7 @@ import { greetingForNationality } from '../shared/nationality-greetings';
 import { AdminPreviewService } from '../services/admin-preview.service';
 import QRCode from 'qrcode';
 import { mapAgendaDaySessions, parseAgendaDate } from '../shared/agenda-day';
+import { ActivitiesService } from '../services/activities.service';
 
 interface Session {
   id: string;
@@ -146,9 +147,11 @@ export class HomePage implements OnInit, OnDestroy {
   totalInductionsRequired = 1;
   completedInductionsCount = 0;
   isPlantVisitRequired = false;
+  public unseenActivitiesCount = 0;
 
   private destroy$ = new Subject<void>();
   private readonly agendaSessions$ = new BehaviorSubject<Session[] | null>(null);
+  private readonly activitiesService = inject(ActivitiesService);
   private readonly TICK_MS = 1000;
   private safetyInductionUnsubscribe?: Unsubscribe;
   private agendaUnsubscribe?: Unsubscribe;
@@ -167,9 +170,20 @@ export class HomePage implements OnInit, OnDestroy {
     addIcons({ qrCodeOutline, mapOutline, bulbOutline, cameraOutline, statsChartOutline, chevronForward, locationOutline, hourglassOutline, calendarOutline, radioOutline, keyOutline, closeOutline, personOutline, briefcaseOutline, callOutline, mailOutline, timeOutline, checkmarkCircle, trophy, });
   }
 
+  ionViewWillEnter() {
+    void this.activitiesService.refreshUnseenCount();
+  }
+
   ngOnInit() {
 
     this.showQR = false;
+
+    this.activitiesService.unseenCount$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((count) => {
+        this.unseenActivitiesCount = count;
+      });
+    void this.activitiesService.refreshUnseenCount();
 
     // sessions$ from data service but ensure it's sorted and convert timestamps lazily when needed.
     const sessionsSorted$ = combineLatest([
@@ -861,6 +875,8 @@ export class HomePage implements OnInit, OnDestroy {
   openPolls() {
     if (this.pollsUrl) {
       window.open(this.pollsUrl, '_blank', 'noopener,noreferrer');
+    } else {
+      this.router.navigate(['/activities']);
     }
   }
 
