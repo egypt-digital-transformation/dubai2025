@@ -85,6 +85,35 @@ h3,
   font-family: 'Holcim Headline', 'Montserrat', 'Holcim', sans-serif;
 }
 
+.skyline-hero {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border: 1px solid rgba(var(--white-rgb), 0.12);
+  border-radius: 1.25rem;
+  background:
+    radial-gradient(ellipse at 82% 15%, rgba(var(--holcim-bright-blue-rgb), 0.22), transparent 37%),
+    linear-gradient(125deg, var(--holcim-premium-blue) 0%, #031027 60%, var(--holcim-dark-blue) 100%);
+  color: var(--white);
+}
+
+.skyline-hero-image {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: bottom center;
+  opacity: 0.22;
+  pointer-events: none;
+}
+
+.skyline-hero > :not(.skyline-hero-image) {
+  position: relative;
+  z-index: 1;
+}
+
 /* Ensure form controls, buttons, and ionic elements use Holcim */
 button,
 input,

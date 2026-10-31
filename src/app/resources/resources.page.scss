@@ -12,16 +12,11 @@ $holcim-light-green: var(--border-color); // Subtle background highlight
   color: var(--holcim-dark-blue);
   margin: 0 auto;
   max-width: 760px;
-  padding: 2rem 1rem 6rem;
+  padding: 1rem 0.5rem 6rem;
 }
 
 .resource-library-header {
-  background: linear-gradient(135deg, var(--holcim-premium-blue) 0%, #031027 65%, var(--holcim-dark-blue) 100%);
-  border-radius: 0 0 1.25rem 1.25rem;
-  color: var(--white);
-  overflow: hidden;
   padding: 2rem 1.25rem 2.25rem;
-  position: relative;
   margin-bottom: 1.5rem;
 }
 
@@ -49,12 +44,7 @@ $holcim-light-green: var(--border-color); // Subtle background highlight
 }
 
 .resource-header-overlay {
-  bottom: -1.5rem;
-  opacity: .32;
-  pointer-events: none;
-  position: absolute;
-  right: -3rem;
-  width: 15rem;
+  opacity: 0.22;
 }
 
 .resource-tools {
@@ -224,26 +214,17 @@ $holcim-light-green: var(--border-color); // Subtle background highlight
 
 .header-overlay {
   position: absolute;
-  top: 0;
+  bottom: 0;
+  left: 0;
   right: 0;
-  width: 25rem;
-  height: auto;
-  opacity: 0.55;
-  z-index: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.22;
   pointer-events: none;
-  user-select: none;
-  mix-blend-mode: soft-light;
-  transform: translate(20%, -15%);
-
-  @media (min-width: 480px) {
-    width: 15rem;
-    transform: translate(30%, -10%);
-  }
-
-  @media (min-width: 768px) {
-    width: 20rem;
-    transform: translate(40%, -20%);
-  }
+  mix-blend-mode: overlay;
+  object-fit: cover;
+  object-position: bottom center;
+  z-index: 0;
 }
 
 .header-title {
