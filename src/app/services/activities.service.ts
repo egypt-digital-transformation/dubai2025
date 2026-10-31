@@ -43,7 +43,9 @@ export class ActivitiesService {
 
     // Update unseen count based on fetched activities
     const seenIds = this.getSeenIds();
-    const unseen = sorted.filter((a) => !seenIds.has(a.id) && !a.submitted);
+    const unseen = sorted.filter(
+      (activity) => activity.active !== false && !seenIds.has(activity.id) && !activity.submitted
+    );
     this.unseenCountSubject.next(unseen.length);
 
     return sorted;
@@ -57,7 +59,10 @@ export class ActivitiesService {
       const result = await this.adminService.listInteractiveActivities();
       const seenIds = this.getSeenIds();
       const unseen = (result.activities || []).filter(
-        (a) => !seenIds.has(a.id) && !a.submitted
+        (activity) =>
+          activity.active !== false &&
+          !seenIds.has(activity.id) &&
+          !activity.submitted
       );
       const count = unseen.length;
       this.unseenCountSubject.next(count);

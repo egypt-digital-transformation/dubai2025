@@ -1,16 +1,23 @@
 <ion-content [scrollY]="true">
   <div class="home-wrapper">
     <div class="content-container">
+      <div *ngIf="eventArchiveStatusError" class="session-load-error" role="alert">
+        Event status could not be refreshed. The event archive state may be out of date; please check your connection.
+      </div>
       <section class="welcome-hero skyline-hero" aria-labelledby="welcome-title">
         <img src="assets/skyline.webp" alt="" class="welcome-skyline skyline-hero-image" />
         <div class="welcome-copy">
-          <p class="welcome-eyebrow">Your digital companion for the AMEA Management Meeting 2026!</p>
+          <p class="welcome-eyebrow">
+            {{ messageType === 'over' ? 'THANK YOU FOR BEING PART OF AMEA 2026' : 'Your digital companion for the AMEA Management Meeting 2026!' }}
+          </p>
           <h1 id="welcome-title">{{ welcomeGreeting }}, {{ firstName || displayName || 'there' }}.</h1>
           <p class="welcome-description">
-            Stay updated with real-time schedules, venue guides, and notifications—guiding you through every moment of the event and Cairo.
+            {{ messageType === 'over'
+              ? 'The meeting may be over, but the highlights are yours to revisit. Explore the agenda, resources, and captured moments.'
+              : 'Stay updated with real-time schedules, venue guides, and notifications—guiding you through every moment of the event and Cairo.' }}
           </p>
           <div class="welcome-meta">
-            <span class="welcome-day">{{ eventDayLabel }}</span>
+            <span class="welcome-day">{{ messageType === 'over' ? 'EVENT ARCHIVE' : eventDayLabel }}</span>
             <span>Egypt · 2026</span>
           </div>
         </div>
@@ -22,11 +29,15 @@
         </div>
         <div class="ahlan-card-copy-box">
           <div class="ahlan-card-copy">
-            <h2 id="ahlan-card-title">Ahlan!</h2>
-            <p>
+            <h2 id="ahlan-card-title">{{ messageType === 'over' ? 'Until we meet again' : 'Ahlan!' }}</h2>
+            <p *ngIf="messageType !== 'over'">
               In Arabic, "Ahlan" means "welcome," and "Ahlan wa sahlan" adds, "may your arrival be easy."
               Like the greeting, this app is here to make your visit easy with quick access to your
               schedule, local info, and more.
+            </p>
+            <p *ngIf="messageType === 'over'">
+              We hope your time in Cairo was memorable. Keep the meeting close with the agenda, shared
+              moments and shared resources from AMEA 2026.
             </p>
           </div>
         </div>
@@ -35,8 +46,12 @@
       <section class="home-section essentials-section" aria-labelledby="essentials-heading">
         <div class="home-section-heading">
           <div>
-            <p class="section-eyebrow">HERE WHEN YOU NEED THEM</p>
-            <h2 id="essentials-heading">Your Event Essentials</h2>
+            <p class="section-eyebrow">
+              {{ messageType === 'over' ? 'REVISIT THE MOMENTS' : 'HERE WHEN YOU NEED THEM' }}
+            </p>
+            <h2 id="essentials-heading">
+              {{ messageType === 'over' ? 'Explore the event archive' : 'Your Event Essentials' }}
+            </h2>
           </div>
         </div>
         <div class="quick-actions">
@@ -86,7 +101,7 @@
                   <span class="unseen-badge-text">{{ unseenActivitiesCount }} new</span>
                 </ng-container>
                 <ng-template #defaultPollsDesc>
-                  Live engagement
+                  {{ messageType === 'over' ? 'Your answers and results' : 'Live engagement' }}
                 </ng-template>
               </span>
             </span>
@@ -109,11 +124,16 @@
 
       <div class="home-section-heading">
         <div>
-          <p class="section-eyebrow">MAKE THE MOST OF TODAY</p>
-          <h2 id="next-session-heading">Your next chapter</h2>
+          <p class="section-eyebrow">
+            {{ messageType === 'over' ? 'LOOK BACK ON THE MEETING' : 'MAKE THE MOST OF TODAY' }}
+          </p>
+          <h2 id="next-session-heading">
+            {{ messageType === 'over' ? 'Revisit the event' : 'Your next chapter' }}
+          </h2>
         </div>
-        <span class="day-chip" *ngIf="currentDay > 0">DAY {{ currentDay }}</span>
-        <span class="day-chip" *ngIf="currentDay === 0">COMING SOON</span>
+        <span class="day-chip" *ngIf="messageType === 'over'">ARCHIVE</span>
+        <span class="day-chip" *ngIf="messageType !== 'over' && currentDay > 0">DAY {{ currentDay }}</span>
+        <span class="day-chip" *ngIf="messageType !== 'over' && currentDay === 0">COMING SOON</span>
       </div>
 
       <!-- Skeleton Loader -->
@@ -274,8 +294,11 @@
                   Enjoy some downtime and we’ll see you tomorrow!
                 </p>
                 <p class="session-text" *ngIf="messageType === 'over'">
-                  Thank you for being part of our AMEA 2026 strategy. Safe travels home!
+                  Thank you for being part of AMEA 2026. Revisit the sessions, captured moments, and shared resources.
                 </p>
+                <div class="archive-actions" *ngIf="messageType === 'over'">
+                  <button type="button" class="welcome-link" (click)="navigateToAgenda()">Browse the agenda</button>
+                </div>
 
                 <div class="no-session-decoration"></div>
               </div>
@@ -284,14 +307,18 @@
         </section>
 
         <!-- My Agenda -->
-        <section class="agenda-card home-section">
+        <section class="agenda-card home-section" *ngIf="messageType !== 'over'">
           <div class="card-content">
             <div class="card-header">
               <div>
-                <p class="section-eyebrow">A LITTLE MORE TO LOOK FORWARD TO</p>
-                <h2 class="card-title">Today’s agenda</h2>
+                <p class="section-eyebrow">
+                  {{ messageType === 'over' ? 'FROM THE FINAL EVENT DAY' : 'A LITTLE MORE TO LOOK FORWARD TO' }}
+                </p>
+                <h2 class="card-title">{{ messageType === 'over' ? 'Event schedule' : 'Today’s agenda' }}</h2>
               </div>
-              <button class="view-all-btn" (click)="navigateToAgenda()">View all</button>
+              <button class="view-all-btn" (click)="navigateToAgenda()">
+                {{ messageType === 'over' ? 'Browse archive' : 'View all' }}
+              </button>
             </div>
 
             <div class="agenda-sessions" *ngIf="todaySessions$ | async as todaySessions">
@@ -313,11 +340,14 @@
                   <div class="empty-icon">
                     <ion-icon name="calendar-outline"></ion-icon>
                   </div>
-                  <h4 class="empty-title">No Sessions Today</h4>
-                  <p class="empty-text">
+                  <h4 class="empty-title">{{ messageType === 'over' ? 'Explore the event archive' : 'No Sessions Today' }}</h4>
+                  <p class="empty-text" *ngIf="messageType !== 'over'">
                     Free time! Relax or visit the
                     <a [routerLink]="['/tabs/resources']" class="deeplink-text">Resources tab</a>
                     for things to do in Egypt.
+                  </p>
+                  <p class="empty-text" *ngIf="messageType === 'over'">
+                    Browse all event days, sessions, and shared materials in the schedule archive.
                   </p>
                 </div>
               </ng-template>
@@ -326,25 +356,44 @@
         </section>
 
         <!-- Hotel Wi-Fi Details -->
-        <div class="hotel-card subtle-highlight">
+        <section class="hotel-card wifi-card" *ngIf="messageType !== 'over'" aria-labelledby="wifi-card-title">
           <div class="card-content">
-            <div class="card-header">
-              <div class="card-title-with-icon">
-                <h3 class="card-title">Hotel Wi-Fi Details</h3>
+            <div class="wifi-card-heading">
+              <span class="wifi-card-icon" aria-hidden="true">
+                <ion-icon name="radio-outline"></ion-icon>
+              </span>
+              <div>
+                <p class="wifi-card-eyebrow">STAY CONNECTED</p>
+                <h3 class="card-title" id="wifi-card-title">Hotel Wi-Fi</h3>
               </div>
             </div>
-            <div class="wifi-details">
-              <p>
-                <ion-icon name="radio-outline"></ion-icon>
-                <strong>Network:</strong> HolcimGuest
-              </p>
-              <p>
-                <ion-icon name="key-outline"></ion-icon>
-                <strong>Password:</strong> Welcome2026!
-              </p>
+            <div class="wifi-credentials">
+              <div class="wifi-credential">
+                <span class="wifi-credential-label">NETWORK</span>
+                <span class="wifi-credential-value">Holcim</span>
+              </div>
+              <div class="wifi-credential">
+                <span class="wifi-credential-label">PASSWORD</span>
+                <div class="wifi-password-row">
+                  <span class="wifi-credential-value">OneAMEA2026</span>
+                  <button
+                    class="wifi-copy-button"
+                    type="button"
+                    (click)="copyWifiPassword()"
+                    [attr.aria-label]="isWifiPasswordCopied ? 'Password copied' : 'Copy Wi-Fi password'"
+                    [attr.title]="isWifiPasswordCopied ? 'Copied' : 'Copy password'"
+                  >
+                    <ion-icon [name]="isWifiPasswordCopied ? 'checkmark-outline' : 'copy-outline'" aria-hidden="true"></ion-icon>
+                  </button>
+                </div>
+              </div>
             </div>
+            <p class="wifi-copy-status" *ngIf="isWifiPasswordCopied" role="status">Password copied</p>
+            <p class="wifi-copy-status wifi-copy-error" *ngIf="wifiPasswordCopyError" role="alert">
+              {{ wifiPasswordCopyError }}
+            </p>
           </div>
-        </div>
+        </section>
       </ng-container>
     </div>
   </div>

@@ -37,7 +37,14 @@ import {
   calendarOutline,
   cameraOutline,
   statsChartOutline,
-  keyOutline, closeOutline, personOutline, briefcaseOutline, callOutline, mailOutline
+  keyOutline,
+  closeOutline,
+  personOutline,
+  briefcaseOutline,
+  callOutline,
+  mailOutline,
+  copyOutline,
+  checkmarkOutline,
 } from 'ionicons/icons';
 
 import {
@@ -73,6 +80,12 @@ import { AdminPreviewService } from '../services/admin-preview.service';
 import QRCode from 'qrcode';
 import { mapAgendaDaySessions, parseAgendaDate } from '../shared/agenda-day';
 import { ActivitiesService } from '../services/activities.service';
+import { EventArchiveService } from '../services/event-archive.service';
+import {
+  SafetyInductionModalComponent,
+  SafetyInductionSite,
+  SafetyInductions,
+} from '../hse-induction/safety-induction-modal.component';
 
 interface Session {
   id: string;
@@ -113,7 +126,9 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 })
 export class HomePage implements OnInit, OnDestroy {
   private readonly firebaseContext = inject(FirebaseInjectionContext);
-  private readonly functions = getFunctions(undefined, 'europe-west1');
+  private get functions() {
+    return getFunctions(undefined, 'europe-west1');
+  }
   public primarySession: Session | null = null;
   public secondarySession: Session | null = null;
   public isLoadingSessions = true;
@@ -151,16 +166,22 @@ export class HomePage implements OnInit, OnDestroy {
   completedInductionsCount = 0;
   isPlantVisitRequired = false;
   public unseenActivitiesCount = 0;
+  public isEventArchived = false;
+  public eventArchiveStatusError = false;
+  public isWifiPasswordCopied = false;
+  public wifiPasswordCopyError = '';
 
   private destroy$ = new Subject<void>();
   private readonly retrySessions$ = new Subject<void>();
   private readonly agendaSessions$ = new BehaviorSubject<Session[] | null>(null);
   private readonly activitiesService = inject(ActivitiesService);
+  private readonly eventArchiveService = inject(EventArchiveService);
   private readonly TICK_MS = 1000;
   private safetyInductionUnsubscribe?: Unsubscribe;
   private agendaUnsubscribe?: Unsubscribe;
   private viewGeneration = 0;
   private profileDocumentId = '';
+  private wifiCopyResetTimer?: ReturnType<typeof setTimeout>;
 
   constructor(
     private router: Router,
@@ -171,7 +192,7 @@ export class HomePage implements OnInit, OnDestroy {
     private zone: NgZone,
     private readonly adminPreview: AdminPreviewService
   ) {
-    addIcons({ qrCodeOutline, mapOutline, bulbOutline, cameraOutline, statsChartOutline, chevronForward, locationOutline, hourglassOutline, calendarOutline, radioOutline, keyOutline, closeOutline, personOutline, briefcaseOutline, callOutline, mailOutline, timeOutline, checkmarkCircle, trophy, });
+    addIcons({ qrCodeOutline, mapOutline, bulbOutline, cameraOutline, statsChartOutline, chevronForward, locationOutline, hourglassOutline, calendarOutline, radioOutline, keyOutline, closeOutline, personOutline, briefcaseOutline, callOutline, mailOutline, copyOutline, checkmarkOutline, timeOutline, checkmarkCircle, trophy, });
   }
 
   ionViewWillEnter() {
@@ -184,6 +205,16 @@ export class HomePage implements OnInit, OnDestroy {
   ngOnInit() {
 
     this.showQR = false;
+
+    this.eventArchiveService.start();
+    this.eventArchiveService.state$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((state) => {
+        this.zone.run(() => {
+          this.isEventArchived = state.archived;
+          this.eventArchiveStatusError = state.status === 'error';
+        });
+      });
 
     this.activitiesService.unseenCount$
       .pipe(takeUntil(this.destroy$))
@@ -269,7 +300,11 @@ export class HomePage implements OnInit, OnDestroy {
           this.currentDay = currentDay;
           this.primarySession = evaluation.primary;
           this.secondarySession = evaluation.secondary;
-          this.messageType = evaluation.messageType;
+          this.messageType = this.isEventArchived
+            ? 'over'
+            : evaluation.messageType === 'over'
+              ? 'today'
+              : evaluation.messageType;
         });
       });
 
@@ -591,8 +626,29 @@ export class HomePage implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     this.agendaUnsubscribe?.();
+    if (this.wifiCopyResetTimer) clearTimeout(this.wifiCopyResetTimer);
     this.destroy$.next();
     this.destroy$.complete();
+  }
+
+  async copyWifiPassword(): Promise<void> {
+    this.wifiPasswordCopyError = '';
+    try {
+      if (!navigator.clipboard?.writeText) {
+        throw new Error('Clipboard access is unavailable in this browser.');
+      }
+      await navigator.clipboard.writeText('OneAMEA2026');
+      this.isWifiPasswordCopied = true;
+      if (this.wifiCopyResetTimer) clearTimeout(this.wifiCopyResetTimer);
+      this.wifiCopyResetTimer = setTimeout(() => {
+        this.isWifiPasswordCopied = false;
+      }, 2000);
+    } catch (error) {
+      console.error('[HomePage] Could not copy the hotel Wi-Fi password:', error);
+      this.isWifiPasswordCopied = false;
+      this.wifiPasswordCopyError =
+        'Could not copy the password. Please select and copy it manually.';
+    }
   }
 
   private async loadSafetyInductionStatus(email: string, generation: number): Promise<void> {
@@ -653,6 +709,7 @@ export class HomePage implements OnInit, OnDestroy {
     if (this.isPreviewingUser) {
       return;
     }
+
     const modal = await this.modalController.create({
       component: SafetyInductionModalComponent,
       componentProps: {
@@ -670,7 +727,7 @@ export class HomePage implements OnInit, OnDestroy {
     const { data } = await modal.onDidDismiss<{ site?: SafetyInductionSite }>();
 
     if (data?.site) {
-      window.open(this.safetyInductions[data.site].link, '_blank');
+      window.open(this.safetyInductions[data.site].link, '_blank', 'noopener,noreferrer');
     }
     if (this.profileEmail) {
       void this.loadSafetyInductionStatus(this.profileEmail, this.viewGeneration);

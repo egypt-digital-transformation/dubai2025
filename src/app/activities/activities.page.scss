@@ -156,8 +156,8 @@
    ========================================= */
 .activity-card {
   position: relative;
-  margin: 0 0 1.1rem;
-  padding: 1.2rem;
+  margin: 0 0 0.85rem;
+  padding: 0.9rem 1rem;
   border: 1px solid rgba(var(--holcim-dark-blue-rgb), 0.08);
   border-radius: 1.1rem;
   background: var(--white);
@@ -165,11 +165,11 @@
   overflow: hidden;
 
   &[data-kind='quiz'] {
-    border-top: 3px solid var(--holcim-fuchsia);
+    border-left: 4px solid var(--holcim-fuchsia);
   }
 
   &[data-kind='poll'] {
-    border-top: 3px solid var(--holcim-bright-blue);
+    border-left: 4px solid var(--holcim-bright-blue);
   }
 
   &.is-submitted {
@@ -182,7 +182,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
-  margin-bottom: 0.85rem;
+  margin-bottom: 0.6rem;
 }
 
 .kind-tag {
@@ -232,6 +232,12 @@
     border: 1px solid rgba(var(--holcim-bright-blue-rgb), 0.24);
   }
 
+  &.timed-out {
+    background: rgba(var(--holcim-gray-03-rgb), 0.12);
+    color: var(--bright-gray);
+    border: 1px solid rgba(var(--holcim-gray-03-rgb), 0.3);
+  }
+
   ion-icon {
     font-size: 0.85rem;
   }
@@ -246,7 +252,7 @@
 }
 
 .activity-title {
-  margin: 0 0 1rem;
+  margin: 0 0 0.75rem;
   color: var(--holcim-dark-blue);
   font-size: 1.12rem;
   font-weight: 700;
@@ -286,8 +292,8 @@
 .options-list {
   display: flex;
   flex-direction: column;
-  gap: 0.55rem;
-  margin-bottom: 1rem;
+  gap: 0.45rem;
+  margin-bottom: 0.75rem;
 }
 
 .option-card {
@@ -299,7 +305,7 @@
   background: var(--white);
   border: 1.5px solid var(--border-color);
   border-radius: 0.8rem;
-  padding: 0.75rem 0.85rem;
+  padding: 0.6rem 0.75rem;
   font: inherit;
   color: var(--holcim-dark-blue);
   cursor: pointer;
@@ -355,7 +361,7 @@
 }
 
 .submitted-options {
-  margin-top: 0.85rem;
+  margin-top: 0.65rem;
   margin-bottom: 0;
 
   .option-card {
@@ -408,6 +414,48 @@
   font-size: 0.9rem;
   font-weight: 600;
   line-height: 1.35;
+}
+
+.option-percentage {
+  min-width: 3rem;
+  color: var(--holcim-dark-blue);
+  font-size: 0.82rem;
+  font-weight: 800;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.option-result-track {
+  position: absolute;
+  right: 0.75rem;
+  bottom: 0.55rem;
+  left: calc(0.75rem + 1.75rem + 0.75rem);
+  display: block;
+  height: 0.32rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(var(--holcim-dark-blue-rgb), 0.08);
+}
+
+.option-card.has-result {
+  position: relative;
+  padding-bottom: 1.1rem;
+}
+
+.option-result-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--holcim-bright-blue);
+  transition: width 0.35s ease;
+
+  .correct & {
+    background: var(--holcim-green);
+  }
+
+  .incorrect & {
+    background: var(--holcim-bright-red);
+  }
 }
 
 .option-indicator {
@@ -472,25 +520,6 @@
     opacity: 0.45;
     cursor: not-allowed;
     box-shadow: none;
-  }
-}
-
-.submitted-confirmation {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  padding: 0.75rem 0.9rem;
-  background: rgba(var(--holcim-green-rgb), 0.08);
-  border: 1px solid rgba(var(--holcim-green-rgb), 0.22);
-  border-radius: 0.75rem;
-  color: var(--holcim-dark-blue);
-  font-size: 0.84rem;
-  font-weight: 600;
-
-  ion-icon {
-    font-size: 1.2rem;
-    color: var(--holcim-green);
-    flex-shrink: 0;
   }
 }
 

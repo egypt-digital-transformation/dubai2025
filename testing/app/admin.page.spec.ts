@@ -1,7 +1,12 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { AlertController } from '@ionic/angular';
 import { vi } from 'vitest';
-import { AdminDashboard, AdminService } from '../../src/app/services/admin.service';
+import {
+  AdminDashboard,
+  AdminInteractiveActivity,
+  AdminService,
+} from '../../src/app/services/admin.service';
+import { EventArchiveService } from '../../src/app/services/event-archive.service';
 import { AdminPage } from '../../src/app/admin/admin.page';
 
 describe('AdminPage', () => {
@@ -17,10 +22,22 @@ describe('AdminPage', () => {
     sendNotification: vi.fn<AdminService['sendNotification']>(),
     scheduleNotification: vi.fn<AdminService['scheduleNotification']>(),
     listAdminInteractiveActivities: vi.fn<AdminService['listAdminInteractiveActivities']>(),
+    setInteractiveActivityActive: vi.fn<AdminService['setInteractiveActivityActive']>(),
     createInteractiveActivity: vi.fn<AdminService['createInteractiveActivity']>(),
     loadAdminRequests: vi.fn<AdminService['loadAdminRequests']>(),
     updateAdminRequest: vi.fn<AdminService['updateAdminRequest']>(),
+    loadEventEndAt: vi.fn<AdminService['loadEventEndAt']>(),
+    saveEventEndAt: vi.fn<AdminService['saveEventEndAt']>(),
   });
+
+  const selectAudienceKind = (
+    kind: 'all' | 'users' | 'group' | 'groupNumber' | 'plantVisitors' | 'nonPlantVisitors' | 'rebrandingEvent',
+    context: 'update' | 'activity'
+  ): void => {
+    const event = new Event('change');
+    Object.defineProperty(event, 'target', { value: { checked: true } });
+    component.onAudienceKindChange(kind, event, context);
+  };
 
   const dashboard: AdminDashboard = {
     refreshedAt: new Date().toISOString(),
@@ -68,7 +85,12 @@ describe('AdminPage', () => {
     adminService.loadSafetyInductionStatus.mockResolvedValue(dashboard.attendees);
     adminService.loadAdminRequests.mockResolvedValue([]);
     adminService.updateAdminRequest.mockResolvedValue(undefined);
+    adminService.loadEventEndAt.mockResolvedValue(null);
+    adminService.saveEventEndAt.mockResolvedValue(undefined);
     adminService.listAdminInteractiveActivities.mockResolvedValue({ activities: [] });
+    adminService.setInteractiveActivityActive.mockImplementation(
+      async (_activityId, active) => ({ active })
+    );
     adminService.createInteractiveActivity.mockResolvedValue({ id: 'activity-1' });
     adminService.sendNotification.mockResolvedValue({
       campaignId: 'campaign-1',
@@ -97,6 +119,10 @@ describe('AdminPage', () => {
       imports: [AdminPage],
       providers: [
         { provide: AdminService, useValue: adminService },
+        {
+          provide: EventArchiveService,
+          useValue: { refresh: vi.fn().mockResolvedValue(undefined) },
+        },
         {
           provide: AlertController,
           useValue: { create: vi.fn().mockResolvedValue(alert) },
@@ -135,6 +161,17 @@ describe('AdminPage', () => {
         label: 'Plant visitors',
       }),
     ]));
+  });
+
+  it('saves the archive end time as a Cairo-local instant', async () => {
+    component.eventEndDateTime = '2026-11-09T19:00';
+
+    await component.saveEventConfiguration();
+
+    expect(adminService.saveEventEndAt).toHaveBeenCalledWith(
+      new Date('2026-11-09T17:00:00.000Z')
+    );
+    expect(component.eventConfigurationNotice).toContain('archive will activate');
   });
 
   it('loads the notification audience independently from Firestore', async () => {
@@ -181,8 +218,8 @@ describe('AdminPage', () => {
   });
 
   it('sends to any number of individually selected users', async () => {
-    component.audienceKind = 'users';
     component.selectedUserIds = ['delegate-a', 'delegate-b'];
+    selectAudienceKind('users', 'update');
     component.notificationTitle = 'Important update';
     component.notificationBody = 'Please read this update.';
 
@@ -196,8 +233,8 @@ describe('AdminPage', () => {
   });
 
   it('saves notifications for selected users even when no push token is available', async () => {
-    component.audienceKind = 'users';
     component.selectedUserIds = ['delegate-a'];
+    selectAudienceKind('users', 'update');
     component.notificationAudience = [
       { ...dashboard.attendees[0], hasPushToken: false },
     ];
@@ -237,7 +274,7 @@ describe('AdminPage', () => {
 
   it('shows the same Firestore-backed audience choices for updates and activities', () => {
     component.selectedSection = 'updates';
-    component.audienceKind = 'users';
+    selectAudienceKind('users', 'update');
     fixture.detectChanges();
     const updatesText = fixture.nativeElement.textContent as string;
 
@@ -250,7 +287,7 @@ describe('AdminPage', () => {
     expect(fixture.nativeElement.querySelectorAll('.audience-mode').length).toBe(1);
 
     component.selectedSection = 'engagement';
-    component.activityAudienceKind = 'users';
+    selectAudienceKind('users', 'activity');
     fixture.detectChanges();
     const activitiesText = fixture.nativeElement.textContent as string;
 
@@ -262,7 +299,7 @@ describe('AdminPage', () => {
     expect(activitiesText).toContain('b@example.com');
     expect(fixture.nativeElement.querySelectorAll('.audience-mode').length).toBe(1);
 
-    component.activityAudienceKind = 'group';
+    selectAudienceKind('group', 'activity');
     fixture.detectChanges();
     const groupText = fixture.nativeElement.textContent as string;
     expect(groupText).toContain('Choose a participants group');
@@ -271,8 +308,8 @@ describe('AdminPage', () => {
   });
 
   it('sends to the selected Firestore participant group after confirmation', async () => {
-    component.audienceKind = 'group';
-    component.selectedSegmentKey = 'participantsGroup:Leadership';
+    selectAudienceKind('group', 'update');
+    component.selectedSegmentKeys = ['participantsGroup:Leadership'];
     component.notificationTitle = 'Schedule update';
     component.notificationBody = 'The session location changed.';
 
@@ -286,8 +323,8 @@ describe('AdminPage', () => {
   });
 
   it('targets the exact participantsGroup value', async () => {
-    component.audienceKind = 'group';
-    component.selectedSegmentKey = 'participantsGroup:Leadership';
+    selectAudienceKind('group', 'update');
+    component.selectedSegmentKeys = ['participantsGroup:Leadership'];
     component.notificationTitle = 'Leadership briefing';
     component.notificationBody = 'Please review the updated agenda.';
 
@@ -301,7 +338,7 @@ describe('AdminPage', () => {
   });
 
   it('targets only attendees marked as plant visitors', async () => {
-    component.audienceKind = 'plantVisitors';
+    selectAudienceKind('plantVisitors', 'update');
     component.notificationTitle = 'Plant visit update';
     component.notificationBody = 'Please review the site visit details.';
 
@@ -337,8 +374,8 @@ describe('AdminPage', () => {
     component.activityQuestion = 'Which item protects your eyes?';
     component.activityOptions = ['Safety glasses', 'Open sandals'];
     component.correctOptionIndex = 0;
-    component.activityAudienceKind = 'group';
-    component.activitySelectedSegmentKey = 'participantsGroup:Leadership';
+    selectAudienceKind('group', 'activity');
+    component.activitySelectedSegmentKeys = ['participantsGroup:Leadership'];
 
     await component.createInteractiveActivity();
 
@@ -357,8 +394,8 @@ describe('AdminPage', () => {
     component.activityTitle = 'Quick check';
     component.activityQuestion = 'Are you ready?';
     component.activityOptions = ['Yes', 'No'];
-    component.activityAudienceKind = 'users';
     component.activitySelectedUserIds = ['delegate-a', 'delegate-b'];
+    selectAudienceKind('users', 'activity');
 
     await component.createInteractiveActivity();
 
@@ -374,7 +411,7 @@ describe('AdminPage', () => {
     component.activityTitle = 'Site visit check';
     component.activityQuestion = 'Are you attending the plant visit?';
     component.activityOptions = ['Yes', 'No'];
-    component.activityAudienceKind = 'plantVisitors';
+    selectAudienceKind('plantVisitors', 'activity');
 
     await component.createInteractiveActivity();
 
@@ -528,7 +565,7 @@ describe('AdminPage', () => {
     expect(revokeObjectUrl).toHaveBeenCalledWith('blob:test');
   });
 
-  it('shows activity lifecycle status without offering unsupported close persistence', async () => {
+  it('shows activity lifecycle controls and current status', async () => {
     adminService.listAdminInteractiveActivities.mockResolvedValue({
       activities: [
         {
@@ -585,12 +622,61 @@ describe('AdminPage', () => {
     fixture.detectChanges();
 
     const pageText = fixture.nativeElement.textContent as string;
-    expect(pageText).toContain('Activity lifecycle controls unavailable');
-    expect(pageText).toContain('Closing an activity is not supported');
+    expect(pageText).toContain('Close activity');
+    expect(pageText).toContain('Reopen activity');
     expect(fixture.nativeElement.querySelectorAll('.status-badge').length).toBe(2);
     expect(fixture.nativeElement.querySelector('.status-badge')?.textContent).toContain('Open');
     expect(fixture.nativeElement.querySelector('.status-badge-closed')?.textContent).toContain('Closed');
-    expect(pageText).not.toContain('Close activity');
+  });
+
+  it('closes an activity after confirmation and preserves the response list', async () => {
+    const activity: AdminInteractiveActivity = {
+      id: 'open-activity',
+      title: 'Open check',
+      question: 'Question?',
+      options: ['Yes', 'No'],
+      kind: 'poll',
+      active: true,
+      target: { kind: 'all' },
+      responseCount: 1,
+      optionCounts: [1, 0],
+      correctCount: null,
+      responses: [],
+    };
+    adminService.setInteractiveActivityActive.mockResolvedValue({ active: false });
+
+    await component.setActivityActive(activity);
+
+    expect(adminService.setInteractiveActivityActive).toHaveBeenCalledWith(
+      'open-activity',
+      false
+    );
+    expect(activity.active).toBe(false);
+  });
+
+  it('reopens a closed activity without asking for close confirmation', async () => {
+    const activity: AdminInteractiveActivity = {
+      id: 'closed-activity',
+      title: 'Closed check',
+      question: 'Question?',
+      options: ['A', 'B'],
+      kind: 'quiz',
+      active: false,
+      target: { kind: 'all' },
+      responseCount: 0,
+      optionCounts: [0, 0],
+      correctCount: 0,
+      responses: [],
+    };
+    adminService.setInteractiveActivityActive.mockResolvedValue({ active: true });
+
+    await component.setActivityActive(activity);
+
+    expect(adminService.setInteractiveActivityActive).toHaveBeenCalledWith(
+      'closed-activity',
+      true
+    );
+    expect(activity.active).toBe(true);
   });
 
   it('shows respondent, selected answer, and quiz correctness in activity results', async () => {

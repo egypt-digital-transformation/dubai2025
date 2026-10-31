@@ -27,9 +27,11 @@ export {
   createInteractiveActivity,
   listAdminInteractiveActivities,
   listInteractiveActivities,
+  setInteractiveActivityActive,
   submitInteractiveActivityResponse,
 } from "./activities/interactive-activities.js";
 export {
   getMySafetyInductionStatus,
   getAdminSafetyInductionStatuses,
 } from "./hse/safety-induction.js";
+export { getEventArchiveStatus } from "./event-archive.js";

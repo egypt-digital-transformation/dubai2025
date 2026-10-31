@@ -193,6 +193,129 @@ ion-content {
   }
 }
 
+.wifi-card {
+  overflow: hidden;
+  border: 1px solid rgba(var(--holcim-bright-blue-rgb), 0.18);
+  background:
+    radial-gradient(circle at 100% 0, rgba(var(--holcim-bright-blue-rgb), 0.1), transparent 42%),
+    var(--white);
+
+  .card-content {
+    padding: 1.15rem;
+  }
+
+  .card-title {
+    font-size: 1.1rem;
+    letter-spacing: -0.02em;
+  }
+}
+
+.wifi-card-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  margin-bottom: 1rem;
+}
+
+.wifi-card-icon {
+  display: grid;
+  width: 2.75rem;
+  height: 2.75rem;
+  flex: 0 0 2.75rem;
+  place-items: center;
+  border-radius: 0.9rem;
+  background: rgba(var(--holcim-bright-blue-rgb), 0.1);
+  color: var(--holcim-medium-blue);
+
+  ion-icon {
+    font-size: 1.4rem;
+  }
+}
+
+.wifi-card-eyebrow {
+  margin: 0 0 0.2rem;
+  color: var(--holcim-medium-blue);
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+.wifi-credentials {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.wifi-credential {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.35rem;
+  border: 1px solid rgba(var(--holcim-dark-blue-rgb), 0.08);
+  border-radius: 0.75rem;
+  padding: 0.7rem 0.75rem;
+  background: rgba(var(--white-rgb), 0.8);
+}
+
+.wifi-credential-label {
+  color: var(--bright-gray);
+  font-size: 0.62rem;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+}
+
+.wifi-credential-value {
+  overflow-wrap: anywhere;
+  color: var(--holcim-dark-blue);
+  font-size: 0.88rem;
+  font-weight: 750;
+}
+
+.wifi-password-row {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+}
+
+.wifi-copy-button {
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  flex: 0 0 2rem;
+  place-items: center;
+  border: 0;
+  border-radius: 0.6rem;
+  background: rgba(var(--holcim-bright-blue-rgb), 0.1);
+  color: var(--holcim-medium-blue);
+  cursor: pointer;
+
+  ion-icon {
+    font-size: 1.05rem;
+  }
+
+  &:hover {
+    background: rgba(var(--holcim-bright-blue-rgb), 0.18);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--holcim-medium-blue);
+    outline-offset: 2px;
+  }
+}
+
+.wifi-copy-status {
+  margin: 0.55rem 0 0;
+  color: var(--holcim-green);
+  font-size: 0.76rem;
+  font-weight: 650;
+}
+
+.wifi-copy-error {
+  color: var(--holcim-dark-red);
+}
+
 /* ========================================
    UNIFIED SESSION CARD SYSTEM - COMPACT
    ======================================== */
@@ -1821,14 +1944,14 @@ ion-modal::part(content) {
 // Home screen visual system
 .home-wrapper {
   min-height: 100%;
-  padding-bottom: 1.5rem;
+  padding-bottom: 0;
   background: var(--background-color);
 }
 
 .content-container {
   margin: 0 auto;
   max-width: 58rem;
-  padding: 1rem 0.5rem 2rem;
+  padding: 1rem 0.5rem 0.5rem;
 }
 
 .welcome-hero {
@@ -1939,6 +2062,16 @@ ion-modal::part(content) {
   &:hover {
     background: var(--background-color);
     transform: translateY(-1px);
+  }
+}
+
+.archive-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+
+  .welcome-link {
+    margin-top: 0.75rem;
   }
 }
 
@@ -2106,12 +2239,12 @@ ion-modal::part(content) {
 .announcements-card,
 .hotel-card {
   border-radius: 1rem;
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
 }
 
 @media (min-width: 640px) {
   .content-container {
-    padding: 1.75rem 1.5rem 2.5rem;
+    padding: 1.75rem 1.5rem 0.75rem;
   }
 
   .ahlan-card-character {
@@ -2128,6 +2261,12 @@ ion-modal::part(content) {
   .quick-actions {
     grid-template-columns: repeat(6, minmax(0, 1fr));
     gap: 0.75rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .wifi-credentials {
+    grid-template-columns: 1fr;
   }
 }
 

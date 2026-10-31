@@ -1027,6 +1027,8 @@
 .activity-actions {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
   gap: 10px;
 }
 
@@ -1055,25 +1057,6 @@
 .status-badge.status-badge--attention {
   background: var(--background-color);
   color: var(--holcim-orange);
-}
-
-.unsupported-note {
-  display: grid;
-  gap: 4px;
-  margin: 0 0 16px;
-  border: 1px solid var(--border-color);
-  border-left: 4px solid var(--holcim-gray-03);
-  border-radius: 10px;
-  padding: 11px 13px;
-  background: var(--background-color);
-  color: var(--dark-gray);
-  font-size: 0.8rem;
-  line-height: 1.45;
-
-  strong {
-    color: var(--holcim-dark-blue);
-    font-size: 0.82rem;
-  }
 }
 
 .activity-result-counts {

@@ -28,11 +28,6 @@ export const routes: Routes = [
     loadComponent: () => import('./venue/venue.page').then(m => m.VenuePage),
   },
   {
-    path: 'hse-induction',
-    canActivate: [AuthGuard, DataPrefetchGuard],
-    loadComponent: () => import('./hse-induction/hse-induction.page').then(m => m.HseInductionPage),
-  },
-  {
     path: 'admin',
     canActivate: [AuthGuard, AdminGuard],
     loadComponent: () => import('./admin/admin.page').then(m => m.AdminPage),
@@ -46,11 +41,6 @@ export const routes: Routes = [
   {
     path: 'requests',
     redirectTo: 'tabs/requests',
-    pathMatch: 'full',
-  },
-  {
-    path: 'takeaways',
-    redirectTo: 'tabs/takeaways',
     pathMatch: 'full',
   },
   {

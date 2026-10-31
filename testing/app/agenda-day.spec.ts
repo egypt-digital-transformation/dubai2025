@@ -71,7 +71,7 @@ describe('mapAgendaDaySessions', () => {
 
     expect(sessions.map((session) => session.color)).toEqual([
       'var(--holcim-bright-green)',
-      'var(--holcim-dark-turquoise)',
+      'var(--holcim-premium-blue)',
     ]);
   });
 

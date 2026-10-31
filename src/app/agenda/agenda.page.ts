@@ -41,6 +41,7 @@ import {
 import { interval, Subject, Subscription, takeUntil, timeout } from 'rxjs';
 import { filter } from 'rxjs/operators';
 import { AdminPreviewService } from '../services/admin-preview.service';
+import { EventArchiveService } from '../services/event-archive.service';
 import { FirebaseInjectionContext } from '../services/firebase-injection-context.service';
 import {
   AgendaDayDate,
@@ -91,6 +92,7 @@ export class AgendaPage implements OnInit, OnDestroy {
   private readonly firebaseContext = inject(FirebaseInjectionContext);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly zone = inject(NgZone);
+  private readonly eventArchiveService = inject(EventArchiveService);
 
   private runInContext<T>(operation: () => T): T {
     return runInInjectionContext(this.injector, operation);
@@ -128,6 +130,8 @@ export class AgendaPage implements OnInit, OnDestroy {
   private hasAutoSelectedAgendaDay = false;
   private readonly userToggledGroupState = new Map<string, boolean>();
   private requestedAgendaDay: string | null = null;
+  private eventIsArchived = false;
+  eventArchiveStatusError = false;
 
   constructor(
     private firestore: Firestore,
@@ -152,6 +156,16 @@ export class AgendaPage implements OnInit, OnDestroy {
 
   ngOnInit() {
     console.log('[DEBUG] Initializing AgendaPage...');
+    this.eventArchiveService.start();
+    this.eventArchiveService.state$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((state) => {
+        this.zone.run(() => {
+          this.eventIsArchived = state.archived;
+          this.eventArchiveStatusError = state.status === 'error';
+          this.cdr.detectChanges();
+        });
+      });
     this.route.queryParamMap
       .pipe(takeUntil(this.destroy$))
       .subscribe((params) => {
@@ -210,6 +224,10 @@ export class AgendaPage implements OnInit, OnDestroy {
       this.updateAgendaDayForCurrentDate();
     }
   };
+
+  get isEventArchived(): boolean {
+    return this.eventIsArchived;
+  }
 
   async initializeAgenda(emailOverride?: string) {
     const loadId = ++this.agendaLoadId;
@@ -672,6 +690,11 @@ export class AgendaPage implements OnInit, OnDestroy {
 
   getSessionStartTime(session: Session): Date | null {
     return this.asDate(session.startTime);
+  }
+
+  shouldDisplaySpeaker(session: Session): boolean {
+    const speakerName = session.speaker?.name?.trim();
+    return Boolean(speakerName && speakerName.toLowerCase() !== 'all');
   }
 
   private asDate(value: any): Date | null {

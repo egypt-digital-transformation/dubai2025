@@ -130,6 +130,20 @@
         <ion-icon name="notifications-outline" aria-hidden="true"></ion-icon>
         <span>Updates</span>
       </button>
+      <button
+        id="admin-tab-event"
+        type="button"
+        role="tab"
+        aria-controls="admin-workspace"
+        [attr.aria-selected]="selectedSection === 'event'"
+        [attr.tabindex]="selectedSection === 'event' ? 0 : -1"
+        [class.active]="selectedSection === 'event'"
+        (click)="selectSection('event')"
+        (keydown)="onSectionTabKeydown($event, 'event')"
+      >
+        <ion-icon name="calendar-outline" aria-hidden="true"></ion-icon>
+        <span>Event</span>
+      </button>
     </nav>
 
     <div *ngIf="errorMessage" class="message error-message" role="alert">
@@ -151,6 +165,58 @@
       tabindex="0"
       [attr.aria-labelledby]="'admin-tab-' + selectedSection"
     >
+    <ng-container *ngIf="selectedSection === 'event'">
+      <section class="panel-card" aria-labelledby="event-configuration-heading">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">EVENT EXPERIENCE</p>
+            <h2 id="event-configuration-heading">Post-event archive</h2>
+          </div>
+        </div>
+        <p>
+          Set the event end time in Cairo. The app will switch to its post-event experience when
+          this time is reached, using server time rather than attendee device clocks.
+        </p>
+        <ion-note color="medium" class="campaign-note">
+          This only changes how the event is presented. Agenda, activities, responses, and resources
+          remain available and are not deleted. Leave the date empty to disable automatic archiving.
+        </ion-note>
+        <ion-note *ngIf="eventConfigurationError" color="danger" class="campaign-note" role="alert">
+          {{ eventConfigurationError }}
+        </ion-note>
+        <ion-note *ngIf="eventConfigurationNotice" color="success" class="campaign-note" role="status">
+          {{ eventConfigurationNotice }}
+        </ion-note>
+        <ion-input
+          label="Event end date and time (Africa/Cairo)"
+          labelPlacement="stacked"
+          fill="outline"
+          type="datetime-local"
+          [(ngModel)]="eventEndDateTime"
+          name="eventEndDateTime"
+          [disabled]="isLoadingEventConfiguration || isSavingEventConfiguration"
+        ></ion-input>
+        <div class="activity-actions">
+          <ion-button
+            type="button"
+            (click)="saveEventConfiguration()"
+            [disabled]="isLoadingEventConfiguration || isSavingEventConfiguration"
+          >
+            {{ isLoadingEventConfiguration ? 'Loading…' : isSavingEventConfiguration ? 'Saving…' : 'Save event end time' }}
+          </ion-button>
+          <ion-button
+            *ngIf="eventEndDateTime"
+            type="button"
+            fill="outline"
+            [disabled]="isLoadingEventConfiguration || isSavingEventConfiguration"
+            (click)="eventEndDateTime = ''; saveEventConfiguration()"
+          >
+            Disable automatic archive
+          </ion-button>
+        </div>
+      </section>
+    </ng-container>
+
     <ng-container *ngIf="selectedSection === 'overview'">
       <!-- Overview Loading State -->
       <section *ngIf="isLoading && !dashboard" class="panel-card admin-tab-loading" role="status" aria-live="polite">
@@ -1649,18 +1715,12 @@
           <span *ngIf="isLoadingActivities">Loading…</span>
         </ion-button>
       </div>
-      <div class="unsupported-note" role="status">
-        <strong>Activity lifecycle controls unavailable</strong>
-        <span>
-          Published activities show their current open or closed state. Closing an activity is not
-          supported by the current admin service, so no close action is offered here.
-        </span>
-      </div>
       <div *ngIf="isLoadingActivities && !adminActivities.length" class="admin-loading-badge inline-loader" role="status">
         <ion-spinner name="crescent" color="primary"></ion-spinner>
         <span>Loading quizzes and polls…</span>
       </div>
       <p *ngIf="activityLoadError" class="metric-caption">{{ activityLoadError }}</p>
+      <p *ngIf="activityActionError" class="metric-caption" role="alert">{{ activityActionError }}</p>
       <div *ngIf="!isLoadingActivities && !activityLoadError && !adminActivities.length" class="empty-state">
         <strong>No quizzes or polls yet</strong>
         <span>Published activities and their response counts will appear here.</span>
@@ -1682,6 +1742,15 @@
             >
               {{ activity.active ? 'Open' : 'Closed' }}
             </span>
+            <ion-button
+              fill="outline"
+              [color]="activity.active ? 'danger' : 'success'"
+              [disabled]="updatingActivityId === activity.id"
+              (click)="setActivityActive(activity)"
+            >
+              <ion-spinner *ngIf="updatingActivityId === activity.id" name="crescent" slot="start"></ion-spinner>
+              {{ updatingActivityId === activity.id ? 'Saving…' : activity.active ? 'Close activity' : 'Reopen activity' }}
+            </ion-button>
             <ion-button fill="outline" (click)="toggleActivityResults(activity.id)">
               {{ showActivityResults[activity.id] ? 'Hide results' : 'Show results' }}
             </ion-button>

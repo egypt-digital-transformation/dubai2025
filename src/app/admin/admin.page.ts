@@ -10,6 +10,7 @@ import {
   chevronDownOutline,
   closeOutline,
   createOutline,
+  calendarOutline,
   downloadOutline,
   folderOpenOutline,
   gridOutline,
@@ -44,6 +45,7 @@ import { ALL_PROJECTS } from '../iconic-projects/data/projects.data';
 import countryData from '../../../node_modules/flag-icons/country.json';
 import { greetingForNationality, NationalityGreeting } from '../shared/nationality-greetings';
 import { egyptDateTimeToIso, formatEgyptDateTime } from './notification-schedule-time';
+import { EventArchiveService } from '../services/event-archive.service';
 
 type SegmentField = 'participantsGroup' | 'plantVisit' | 'group' | 'rebrandingEvent';
 type AudienceKind = 'all' | 'users' | 'group' | 'groupNumber' | 'plantVisitors' | 'nonPlantVisitors' | 'rebrandingEvent';
@@ -56,7 +58,7 @@ interface AudienceSegment {
   label: string;
 }
 
-type AdminSection = 'overview' | 'attendees' | 'flights' | 'requests' | 'engagement' | 'projects' | 'resources' | 'updates';
+type AdminSection = 'overview' | 'attendees' | 'flights' | 'requests' | 'engagement' | 'projects' | 'resources' | 'updates' | 'event';
 type UpdateMode = 'now' | 'scheduled';
 type AttendeeStatusFilter = 'all' | 'active' | 'loggedIn' | 'installed' | 'pushReady';
 interface ProjectCountry {
@@ -73,6 +75,7 @@ interface ProjectCountry {
 })
 export class AdminPage implements OnInit, OnDestroy {
   private readonly adminService = inject(AdminService);
+  private readonly eventArchiveService = inject(EventArchiveService);
   private readonly alertController = inject(AlertController);
   private readonly router = inject(Router);
 
@@ -117,6 +120,8 @@ export class AdminPage implements OnInit, OnDestroy {
   isCreatingActivity = false;
   activityNotice = '';
   activityError = '';
+  activityActionError = '';
+  updatingActivityId = '';
   showActivityResults: Record<string, boolean> = {};
   adminActivities: AdminInteractiveActivity[] = [];
   isLoadingActivities = false;
@@ -165,6 +170,11 @@ export class AdminPage implements OnInit, OnDestroy {
   resourceTypes: ResourceType[] = [...DEFAULT_RESOURCE_TYPES];
   newResourceType = '';
   isSavingResourceType = false;
+  eventEndDateTime = '';
+  isLoadingEventConfiguration = true;
+  isSavingEventConfiguration = false;
+  eventConfigurationError = '';
+  eventConfigurationNotice = '';
 
   private refreshTimer?: ReturnType<typeof setInterval>;
   private navigationSubscription?: Subscription;
@@ -191,6 +201,7 @@ export class AdminPage implements OnInit, OnDestroy {
       sendOutline,
       statsChartOutline,
       cloudUploadOutline,
+      calendarOutline,
     });
   }
 
@@ -215,7 +226,7 @@ export class AdminPage implements OnInit, OnDestroy {
   }
 
   onSectionTabKeydown(event: KeyboardEvent, currentSection: AdminSection): void {
-    const sections: AdminSection[] = ['overview', 'attendees', 'flights', 'requests', 'engagement', 'projects', 'resources', 'updates'];
+    const sections: AdminSection[] = ['overview', 'attendees', 'flights', 'requests', 'engagement', 'projects', 'resources', 'updates', 'event'];
     const currentIndex = sections.indexOf(currentSection);
     let nextIndex: number;
 
@@ -255,6 +266,7 @@ export class AdminPage implements OnInit, OnDestroy {
     void this.loadNotificationAudience();
     void this.loadAdminActivities();
     void this.loadRequests();
+    void this.loadEventConfiguration();
     this.refreshTimer = setInterval(() => {
       if (!this.isLoading && !this.isSending) {
         void this.loadDashboard(true);
@@ -275,6 +287,44 @@ export class AdminPage implements OnInit, OnDestroy {
     select.defineCustomElement();
     selectOption.defineCustomElement();
     textarea.defineCustomElement();
+  }
+
+  async loadEventConfiguration(): Promise<void> {
+    this.isLoadingEventConfiguration = true;
+    this.eventConfigurationError = '';
+    try {
+      const eventEndAt = await this.adminService.loadEventEndAt();
+      this.eventEndDateTime = eventEndAt ? formatEgyptDateTime(eventEndAt) : '';
+    } catch (error) {
+      console.error('[AdminPage] Failed to load event configuration:', error);
+      this.eventConfigurationError = 'Could not load the event end time. Check your admin access and try again.';
+    } finally {
+      this.isLoadingEventConfiguration = false;
+    }
+  }
+
+  async saveEventConfiguration(): Promise<void> {
+    if (this.isSavingEventConfiguration || this.isLoadingEventConfiguration) return;
+
+    this.isSavingEventConfiguration = true;
+    this.eventConfigurationError = '';
+    this.eventConfigurationNotice = '';
+    try {
+      const eventEndAt = this.eventEndDateTime.trim()
+        ? new Date(egyptDateTimeToIso(this.eventEndDateTime))
+        : null;
+      await this.adminService.saveEventEndAt(eventEndAt);
+      await this.eventArchiveService.refresh();
+      this.eventConfigurationNotice = eventEndAt
+        ? 'Event end time saved. The archive will activate at this Cairo time.'
+        : 'Event end time cleared. The automatic archive state is disabled.';
+    } catch (error) {
+      console.error('[AdminPage] Failed to save event configuration:', error);
+      this.eventConfigurationError =
+        error instanceof Error ? error.message : 'Could not save the event end time. Try again.';
+    } finally {
+      this.isSavingEventConfiguration = false;
+    }
   }
 
   ionViewDidEnter(): void {
@@ -1590,6 +1640,38 @@ export class AdminPage implements OnInit, OnDestroy {
 
   toggleActivityResults(activityId: string): void {
     this.showActivityResults[activityId] = !this.showActivityResults[activityId];
+  }
+
+  async setActivityActive(activity: AdminInteractiveActivity): Promise<void> {
+    const active = !activity.active;
+    if (activity.active) {
+      const confirmation = await this.alertController.create({
+        header: 'Close activity?',
+        message: 'Attendees will no longer be able to submit a response. Existing responses will be kept.',
+        buttons: [
+          { text: 'Cancel', role: 'cancel' },
+          { text: 'Close activity', role: 'confirm' },
+        ],
+      });
+      await confirmation.present();
+      const { role } = await confirmation.onDidDismiss();
+      if (role !== 'confirm') return;
+    }
+
+    this.updatingActivityId = activity.id;
+    this.activityActionError = '';
+    try {
+      const result = await this.adminService.setInteractiveActivityActive(
+        activity.id,
+        active
+      );
+      activity.active = result.active;
+    } catch (error) {
+      console.error('[AdminPage] Failed to update activity status:', error);
+      this.activityActionError = 'Could not update this activity. Please try again.';
+    } finally {
+      this.updatingActivityId = '';
+    }
   }
 
   async loadAdminActivities(): Promise<void> {

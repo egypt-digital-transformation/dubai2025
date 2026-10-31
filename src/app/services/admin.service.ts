@@ -13,6 +13,7 @@ import {
   DocumentData,
   QueryDocumentSnapshot,
   QuerySnapshot,
+  Timestamp,
   addDoc,
   collection,
   collectionGroup,
@@ -168,9 +169,11 @@ export interface InteractiveActivity {
   question: string;
   options: string[];
   kind: 'quiz' | 'poll';
+  active?: boolean;
   submitted: boolean;
   submittedOptionIndex?: number | null;
   isCorrect?: boolean | null;
+  optionPercentages?: number[];
   createdAt?: string | null;
 }
 
@@ -417,7 +420,9 @@ export class AdminService {
               question: a.question,
               options: a.options,
               kind: a.kind,
+              active: a.active,
               submitted: false,
+              optionPercentages: a.optionPercentages,
               createdAt: a.createdAt,
             })),
           };
@@ -443,6 +448,13 @@ export class AdminService {
         responses: activity.responses || [],
       })),
     };
+  }
+
+  async setInteractiveActivityActive(
+    activityId: string,
+    active: boolean
+  ): Promise<{ active: boolean }> {
+    return this.call('setInteractiveActivityActive', { activityId, active });
   }
 
   async loadProjects(): Promise<IconicProject[]> {
@@ -706,6 +718,22 @@ export class AdminService {
     const savedResource: AdminResource = { ...resource, id };
     await setDoc(firestoreDoc(this.firestore, 'resources', id), savedResource);
     return savedResource;
+  }
+
+  async loadEventEndAt(): Promise<Date | null> {
+    const snapshot = await getDoc(firestoreDoc(this.firestore, 'appConfiguration', 'event'));
+    const eventEndAt = snapshot.data()?.['eventEndAt'];
+    if (!eventEndAt) return null;
+    if (eventEndAt instanceof Timestamp) return eventEndAt.toDate();
+    throw new Error('The saved event end time is invalid.');
+  }
+
+  async saveEventEndAt(eventEndAt: Date | null): Promise<void> {
+    await setDoc(firestoreDoc(this.firestore, 'appConfiguration', 'event'), {
+      eventEndAt: eventEndAt ? Timestamp.fromDate(eventEndAt) : null,
+      timeZone: 'Africa/Cairo',
+      updatedAt: serverTimestamp(),
+    }, { merge: true });
   }
 
   async deleteResource(resourceId: string): Promise<void> {

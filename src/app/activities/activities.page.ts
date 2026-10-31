@@ -80,6 +80,10 @@ export class ActivitiesPage implements OnInit {
     return String.fromCharCode(65 + index);
   }
 
+  optionPercentage(activity: InteractiveActivity, optionIndex: number): number {
+    return activity.optionPercentages?.[optionIndex] ?? 0;
+  }
+
   async doRefresh(event: any): Promise<void> {
     await this.loadActivities();
     event?.target?.complete?.();

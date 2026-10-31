@@ -2,7 +2,10 @@
   <div class="pb-20">
     <!-- Header -->
     <div class="header-gradient skyline-hero">
-      <h2 class="header-title">SCHEDULE</h2>
+      <h2 class="header-title">{{ isEventArchived ? 'EVENT ARCHIVE' : 'SCHEDULE' }}</h2>
+      <p *ngIf="isEventArchived" class="header-subtitle">
+        Revisit sessions and materials from AMEA 2026.
+      </p>
       <img src="assets/skyline.webp" alt="" class="header-overlay skyline-hero-image" />
 
       <!-- Search Bar -->
@@ -25,8 +28,16 @@
       </div>
     </div>
 
+    <div *ngIf="isEventArchived" class="archive-notice" role="status">
+      <ion-icon name="calendar-outline" aria-hidden="true"></ion-icon>
+      <span>The event has ended. Browse all days to revisit the agenda and session materials.</span>
+    </div>
+    <div *ngIf="eventArchiveStatusError" class="schedule-load-error" role="alert">
+      Event status could not be refreshed. The archive label may be out of date; please check your connection.
+    </div>
+
     <!-- Day Selector -->
-    <div class="tabs-container">
+    <div class="tabs-container" [class.is-archived]="isEventArchived">
       <div class="tabs-wrapper" *ngIf="availableDays.length > 0; else loadingDays">
         <button
           *ngFor="let day of availableDays"
@@ -158,7 +169,7 @@
             <!-- Speaker Info -->
             <div
               class="speaker-info"
-              *ngIf="session.speaker?.name && session.speaker?.name?.toLowerCase() !== 'all'"
+              *ngIf="shouldDisplaySpeaker(session)"
             >
               <div class="speaker-details">
                 <span class="speaker-label">Speaker/s:</span>

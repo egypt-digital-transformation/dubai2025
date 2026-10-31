@@ -220,7 +220,6 @@ export const listInteractiveActivities = onCall(
 
     const activitiesSnapshot = await db
       .collection(ACTIVITY_COLLECTION)
-      .where("active", "==", true)
       .get();
 
     const available = activitiesSnapshot.docs.filter((activity) => {
@@ -233,11 +232,27 @@ export const listInteractiveActivities = onCall(
 
     const activities = await Promise.all(
       available.map(async (activity) => {
-        const response = await activity.ref
-          .collection("responses")
-          .doc(user.uid)
-          .get();
         const data = activity.data();
+        const responses = await activity.ref.collection("responses").get();
+        const optionCounts = data.options.map(() => 0);
+        for (const response of responses.docs) {
+          const optionIndex = response.data().optionIndex;
+          if (
+            Number.isInteger(optionIndex) &&
+            optionIndex >= 0 &&
+            optionIndex < optionCounts.length
+          ) {
+            optionCounts[optionIndex] += 1;
+          }
+        }
+        const totalValidResponses = optionCounts.reduce(
+          (total, count) => total + count,
+          0
+        );
+        const response = responses.docs.find(
+          (responseDocument) => responseDocument.id === user.uid
+        );
+        const userResponse = response?.data();
         let createdAt = null;
         if (data.createdAt?.toDate) {
           createdAt = data.createdAt.toDate().toISOString();
@@ -251,13 +266,15 @@ export const listInteractiveActivities = onCall(
           question: data.question,
           options: data.options,
           kind: data.kind,
-          submitted: response.exists,
-          submittedOptionIndex: response.exists
-            ? response.data()?.optionIndex ?? null
-            : null,
-          isCorrect: response.exists
-            ? response.data()?.isCorrect ?? null
-            : null,
+          active: data.active === true,
+          submitted: Boolean(response),
+          submittedOptionIndex: userResponse?.optionIndex ?? null,
+          isCorrect: userResponse?.isCorrect ?? null,
+          optionPercentages: optionCounts.map((count) =>
+            totalValidResponses
+              ? Math.round((count / totalValidResponses) * 100)
+              : 0
+          ),
           createdAt,
         };
       })
@@ -375,6 +392,10 @@ export const listAdminInteractiveActivities = onCall(
               : null,
         };
       });
+      const totalValidResponses = optionCounts.reduce(
+        (total, count) => total + count,
+        0
+      );
 
       return {
         id: activityDoc.id,
@@ -386,10 +407,46 @@ export const listAdminInteractiveActivities = onCall(
         target: data.target,
         responseCount: responses.size,
         optionCounts,
+        optionPercentages: optionCounts.map((count) =>
+          totalValidResponses
+            ? Math.round((count / totalValidResponses) * 100)
+            : 0
+        ),
         correctCount: data.kind === "quiz" ? correctCount : null,
         responses: responseDetails,
       };
     }));
     return { activities };
+  }
+);
+
+export const setInteractiveActivityActive = onCall(
+  { region: "europe-west1" },
+  async (request) => {
+    await requireAdminUser(request);
+    const activityId = request.data?.activityId;
+    const active = request.data?.active;
+
+    if (
+      typeof activityId !== "string" ||
+      !/^[A-Za-z0-9_-]{1,150}$/.test(activityId) ||
+      typeof active !== "boolean"
+    ) {
+      throw new HttpsError("invalid-argument", "Choose a valid activity status.");
+    }
+
+    const activityRef = db.collection(ACTIVITY_COLLECTION).doc(activityId);
+    return db.runTransaction(async (transaction) => {
+      const activitySnapshot = await transaction.get(activityRef);
+      if (!activitySnapshot.exists) {
+        throw new HttpsError("not-found", "This activity could not be found.");
+      }
+
+      transaction.update(activityRef, {
+        active,
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+      return { active };
+    });
   }
 );

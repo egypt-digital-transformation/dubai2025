@@ -1,0 +1,67 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-title>Safety Induction</ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="close()" color="primary" aria-label="Close">
+        <ion-icon name="close-outline"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="modal-content ion-padding">
+
+  <div class="induction-sites">
+    <div class="site-card" [class.completed]="safetyInductions.sokhnaplant.completed">
+      <div class="site-header">
+        <ion-icon class="site-icon" name="business-outline" aria-hidden="true"></ion-icon>
+        <h3>Sokhna Plant</h3>
+        <span class="status-badge" [class.completed]="safetyInductions.sokhnaplant.completed">
+          {{ safetyInductions.sokhnaplant.completed ? 'Completed' : 'Pending' }}
+        </span>
+      </div>
+      <button
+        *ngIf="!safetyInductions.sokhnaplant.completed"
+        class="site-action-btn"
+        type="button"
+        (click)="navigateToSite('sokhnaplant')"
+      >
+        Start Sokhna Plant
+      </button>
+      <button
+        *ngIf="safetyInductions.sokhnaplant.completed"
+        class="site-action-btn completed"
+        type="button"
+        (click)="navigateToSite('sokhnaplant')"
+      >
+        View Certificate
+      </button>
+    </div>
+
+    <div *ngIf="rmxRequired" class="site-card" [class.completed]="safetyInductions.rmx.completed">
+      <div class="site-header">
+        <ion-icon class="site-icon" name="construct-outline" aria-hidden="true"></ion-icon>
+        <h3>RMX</h3>
+        <span class="status-badge" [class.completed]="safetyInductions.rmx.completed">
+          {{ safetyInductions.rmx.completed ? 'Completed' : 'Pending' }}
+        </span>
+      </div>
+      <button
+        *ngIf="!safetyInductions.rmx.completed"
+        class="site-action-btn"
+        type="button"
+        (click)="navigateToSite('rmx')"
+      >
+        Start RMX
+      </button>
+      <button
+        *ngIf="safetyInductions.rmx.completed"
+        class="site-action-btn completed"
+        type="button"
+        (click)="navigateToSite('rmx')"
+      >
+        View Certificate
+      </button>
+    </div>
+  </div>
+</ion-content>

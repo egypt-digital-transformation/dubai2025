@@ -45,11 +45,6 @@ export const routes: Routes = [
           import('../requests/requests.page').then((m) => m.RequestsPage),
       },
       {
-        path: 'takeaways',
-        loadComponent: () =>
-          import('../takeaways/takeaways.page').then((m) => m.TakeawaysPage),
-      },
-      {
         path: 'journey',
         loadComponent: () =>
           import('../journey/journey.page').then((m) => m.JourneyPage),
