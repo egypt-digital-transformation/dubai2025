@@ -1,2 +1,4 @@
 node_modules/
 *.local
+*service-account*.json
+*.key.json

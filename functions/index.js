@@ -29,3 +29,7 @@ export {
   listInteractiveActivities,
   submitInteractiveActivityResponse,
 } from "./activities/interactive-activities.js";
+export {
+  getMySafetyInductionStatus,
+  getAdminSafetyInductionStatuses,
+} from "./hse/safety-induction.js";
