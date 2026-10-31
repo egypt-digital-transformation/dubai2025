@@ -1083,6 +1083,54 @@
   background: var(--background-color);
 }
 
+.activity-responses-table-wrap {
+  width: 100%;
+  margin-top: 14px;
+  overflow-x: auto;
+}
+
+.activity-responses-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+
+  th,
+  td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border-color);
+    font-size: 0.82rem;
+  }
+
+  th {
+    color: var(--bright-gray);
+    font-weight: 700;
+  }
+
+  td {
+    color: var(--holcim-dark-blue);
+  }
+}
+
+.activity-answer-result {
+  display: inline-flex;
+  border-radius: 999px;
+  padding: 4px 9px;
+  background: var(--white);
+  color: var(--bright-gray);
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+.activity-answer-correct {
+  background: rgba(var(--holcim-green-rgb), 0.1);
+  color: var(--holcim-green);
+}
+
+.activity-answer-incorrect {
+  background: rgba(var(--holcim-bright-red-rgb), 0.08);
+  color: var(--holcim-bright-red);
+}
+
 .attendee-tools {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 190px;

@@ -169,6 +169,8 @@ export interface InteractiveActivity {
   options: string[];
   kind: 'quiz' | 'poll';
   submitted: boolean;
+  submittedOptionIndex?: number | null;
+  isCorrect?: boolean | null;
   createdAt?: string | null;
 }
 
@@ -178,6 +180,14 @@ export interface AdminInteractiveActivity extends Omit<InteractiveActivity, 'sub
   responseCount: number;
   optionCounts: number[];
   correctCount: number | null;
+  responses?: AdminInteractiveActivityResponse[] | null;
+}
+
+export interface AdminInteractiveActivityResponse {
+  email: string;
+  optionIndex: number | null;
+  option: string | null;
+  isCorrect: boolean | null;
 }
 
 export type NotificationTarget =
@@ -420,7 +430,19 @@ export class AdminService {
   }
 
   async listAdminInteractiveActivities(): Promise<{ activities: AdminInteractiveActivity[] }> {
-    return this.call('listAdminInteractiveActivities', {});
+    const result = await this.call<{
+      activities: Array<
+        Omit<AdminInteractiveActivity, 'responses'> & {
+          responses?: AdminInteractiveActivityResponse[] | null;
+        }
+      >;
+    }>('listAdminInteractiveActivities', {});
+    return {
+      activities: (result.activities || []).map((activity) => ({
+        ...activity,
+        responses: activity.responses || [],
+      })),
+    };
   }
 
   async loadProjects(): Promise<IconicProject[]> {
@@ -745,45 +767,13 @@ export class AdminService {
     attendees: AdminAttendee[]
   ): Promise<AdminAttendee[]> {
     try {
-      const hseApp =
-        getApps().find((app) => app.name === 'HSEApp') ??
-        initializeApp(environment.hsefirebaseConfig, 'HSEApp');
-      const hseFirestore = getFirestore(hseApp);
-      const snapshot = await getDocs(collection(hseFirestore, 'userProgress'));
-      const statusByEmail = new Map<string, { completed: boolean; status: string }>();
+      const response = await this.call<{
+        statuses: Record<string, { completed: boolean; status: string }>;
+      }>('getAdminSafetyInductionStatuses', {});
 
-      for (const progressDocument of snapshot.docs) {
-        const data = progressDocument.data() as {
-          email?: unknown;
-          RMX?: { questionnairePassed?: unknown };
-          rmx?: { questionnairePassed?: unknown };
-          sokhnaplant?: { questionnairePassed?: unknown; lastWatchedIndex?: unknown };
-          sokhnaPlant?: { questionnairePassed?: unknown; lastWatchedIndex?: unknown };
-        };
-        const email = typeof data.email === 'string'
-          ? data.email.trim().toLowerCase()
-          : '';
-        if (!email) {
-          continue;
-        }
-
-        const rmx = data.RMX ?? data.rmx;
-        const sokhna = data.sokhnaplant ?? data.sokhnaPlant;
-        const requiresRmx = rmx !== undefined;
-        const sokhnaComplete = sokhna?.questionnairePassed === true;
-        const rmxComplete = rmx?.questionnairePassed === true;
-        const completed = requiresRmx
-          ? sokhnaComplete && rmxComplete
-          : sokhnaComplete;
-        const lastWatchedIndex = sokhna?.lastWatchedIndex;
-        const progress = typeof lastWatchedIndex === 'number' && lastWatchedIndex > 0
-          ? `${lastWatchedIndex}/5`
-          : 'Not started';
-        statusByEmail.set(email, {
-          completed,
-          status: completed ? 'Done' : progress,
-        });
-      }
+      const statusByEmail = new Map<string, { completed: boolean; status: string }>(
+        Object.entries(response?.statuses ?? {})
+      );
 
       return attendees.map((attendee) => {
         if (!attendee.plantVisit) {

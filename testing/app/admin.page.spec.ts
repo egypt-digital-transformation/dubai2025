@@ -542,6 +542,14 @@ describe('AdminPage', () => {
           responseCount: 1,
           optionCounts: [1, 0],
           correctCount: null,
+          responses: [
+            {
+              email: 'poll-user@example.com',
+              optionIndex: 0,
+              option: 'Yes',
+              isCorrect: null,
+            },
+          ],
         },
         {
           id: 'closed-activity',
@@ -554,6 +562,20 @@ describe('AdminPage', () => {
           responseCount: 2,
           optionCounts: [1, 1],
           correctCount: 1,
+          responses: [
+            {
+              email: 'quiz-user@example.com',
+              optionIndex: 0,
+              option: 'A',
+              isCorrect: true,
+            },
+            {
+              email: 'another-user@example.com',
+              optionIndex: 1,
+              option: 'B',
+              isCorrect: false,
+            },
+          ],
         },
       ],
     });
@@ -569,5 +591,114 @@ describe('AdminPage', () => {
     expect(fixture.nativeElement.querySelector('.status-badge')?.textContent).toContain('Open');
     expect(fixture.nativeElement.querySelector('.status-badge-closed')?.textContent).toContain('Closed');
     expect(pageText).not.toContain('Close activity');
+  });
+
+  it('shows respondent, selected answer, and quiz correctness in activity results', async () => {
+    adminService.listAdminInteractiveActivities.mockResolvedValue({
+      activities: [
+        {
+          id: 'quiz-results',
+          title: 'Knowledge check',
+          question: 'Which answer is correct?',
+          options: ['Correct option', 'Other option'],
+          kind: 'quiz',
+          active: true,
+          target: { kind: 'all' },
+          responseCount: 2,
+          optionCounts: [1, 1],
+          correctCount: 1,
+          responses: [
+            {
+              email: 'right@example.com',
+              optionIndex: 0,
+              option: 'Correct option',
+              isCorrect: true,
+            },
+            {
+              email: 'wrong@example.com',
+              optionIndex: 1,
+              option: 'Other option',
+              isCorrect: false,
+            },
+          ],
+        },
+      ],
+    });
+
+    await component.loadAdminActivities();
+    component.selectedSection = 'engagement';
+    component.toggleActivityResults('quiz-results');
+    fixture.detectChanges();
+
+    const tableText = fixture.nativeElement.querySelector('.activity-responses-table')
+      ?.textContent as string;
+    expect(tableText).toContain('right@example.com');
+    expect(tableText).toContain('Correct option');
+    expect(tableText).toContain('Correct');
+    expect(tableText).toContain('wrong@example.com');
+    expect(tableText).toContain('Other option');
+    expect(tableText).toContain('Incorrect');
+  });
+
+  it('renders legacy activity results without a response list', async () => {
+    adminService.listAdminInteractiveActivities.mockResolvedValue({
+      activities: [
+        {
+          id: 'legacy-activity',
+          title: 'Legacy poll',
+          question: 'Legacy question?',
+          options: ['A', 'B'],
+          kind: 'poll',
+          active: true,
+          target: { kind: 'all' },
+          responseCount: 1,
+          optionCounts: [1, 0],
+          correctCount: null,
+        },
+      ],
+    });
+
+    await component.loadAdminActivities();
+    component.selectedSection = 'engagement';
+    component.toggleActivityResults('legacy-activity');
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain(
+      '1 response(s) recorded, but respondent details were not returned.'
+    );
+    expect(fixture.nativeElement.textContent).toContain(
+      'update the Cloud Functions deployment.'
+    );
+    expect(fixture.nativeElement.textContent).not.toContain('No responses yet.');
+  });
+
+  it('shows no responses when counts and respondent details are empty', async () => {
+    adminService.listAdminInteractiveActivities.mockResolvedValue({
+      activities: [
+        {
+          id: 'empty-activity',
+          title: 'Empty poll',
+          question: 'No one responded?',
+          options: ['A', 'B'],
+          kind: 'poll',
+          active: true,
+          target: { kind: 'all' },
+          responseCount: 0,
+          optionCounts: [0, 0],
+          correctCount: null,
+          responses: [],
+        },
+      ],
+    });
+
+    await component.loadAdminActivities();
+    component.selectedSection = 'engagement';
+    component.toggleActivityResults('empty-activity');
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('No responses yet.');
+    expect(fixture.nativeElement.textContent).not.toContain(
+      'respondent details were not returned'
+    );
   });
 });

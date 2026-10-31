@@ -252,6 +252,12 @@ export const listInteractiveActivities = onCall(
           options: data.options,
           kind: data.kind,
           submitted: response.exists,
+          submittedOptionIndex: response.exists
+            ? response.data()?.optionIndex ?? null
+            : null,
+          isCorrect: response.exists
+            ? response.data()?.isCorrect ?? null
+            : null,
           createdAt,
         };
       })
@@ -344,15 +350,31 @@ export const listAdminInteractiveActivities = onCall(
       const responses = await activityDoc.ref.collection("responses").get();
       const optionCounts = data.options.map(() => 0);
       let correctCount = 0;
-      for (const response of responses.docs) {
+      const responseDetails = responses.docs.map((response) => {
         const answer = response.data();
-        if (Number.isInteger(answer.optionIndex) &&
-            answer.optionIndex >= 0 &&
-            answer.optionIndex < optionCounts.length) {
+        const hasValidOption =
+          Number.isInteger(answer.optionIndex) &&
+          answer.optionIndex >= 0 &&
+          answer.optionIndex < data.options.length;
+
+        if (hasValidOption) {
           optionCounts[answer.optionIndex] += 1;
         }
         if (answer.isCorrect === true) correctCount += 1;
-      }
+
+        return {
+          email:
+            typeof answer.email === "string" && answer.email.trim()
+              ? answer.email.trim()
+              : "Unknown attendee",
+          optionIndex: hasValidOption ? answer.optionIndex : null,
+          option: hasValidOption ? data.options[answer.optionIndex] : null,
+          isCorrect:
+            data.kind === "quiz" && typeof answer.isCorrect === "boolean"
+              ? answer.isCorrect
+              : null,
+        };
+      });
 
       return {
         id: activityDoc.id,
@@ -365,6 +387,7 @@ export const listAdminInteractiveActivities = onCall(
         responseCount: responses.size,
         optionCounts,
         correctCount: data.kind === "quiz" ? correctCount : null,
+        responses: responseDetails,
       };
     }));
     return { activities };

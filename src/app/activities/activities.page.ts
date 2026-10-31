@@ -15,6 +15,7 @@ import {
   arrowBackOutline,
   sparklesOutline,
   checkmarkCircle,
+  closeCircleOutline,
   radioButtonOn,
   checkmarkCircleOutline,
   helpCircleOutline,
@@ -47,6 +48,7 @@ export class ActivitiesPage implements OnInit {
       arrowBackOutline,
       sparklesOutline,
       checkmarkCircle,
+      closeCircleOutline,
       radioButtonOn,
       checkmarkCircleOutline,
       helpCircleOutline,
@@ -125,12 +127,8 @@ export class ActivitiesPage implements OnInit {
         optionIndex
       );
       activity.submitted = true;
-      this.feedback[activity.id] =
-        activity.kind === 'quiz'
-          ? response.isCorrect
-            ? 'Correct answer. Thank you for responding!'
-            : 'Thank you for responding. Check the correct answer with the event team.'
-          : 'Your poll response has been recorded. Thank you!';
+      activity.submittedOptionIndex = optionIndex;
+      activity.isCorrect = response.isCorrect;
     } catch (error) {
       console.error('[ActivitiesPage] Failed to submit response:', error);
       this.feedback[activity.id] =

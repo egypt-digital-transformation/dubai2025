@@ -1694,6 +1694,43 @@
           <p *ngIf="activity.kind === 'quiz'">
             Correct answers: {{ activity.correctCount }} of {{ activity.responseCount }}
           </p>
+          <div class="activity-responses-table-wrap">
+            <table class="activity-responses-table">
+              <thead>
+                <tr>
+                  <th scope="col">User</th>
+                  <th scope="col">Selected answer</th>
+                  <th *ngIf="activity.kind === 'quiz'" scope="col">Result</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let response of activity.responses || []">
+                  <td>{{ response.email }}</td>
+                  <td>{{ response.option || 'No valid answer recorded' }}</td>
+                  <td *ngIf="activity.kind === 'quiz'">
+                    <span
+                      class="activity-answer-result"
+                      [class.activity-answer-correct]="response.isCorrect === true"
+                      [class.activity-answer-incorrect]="response.isCorrect === false"
+                    >
+                      {{ response.isCorrect === true ? 'Correct' : response.isCorrect === false ? 'Incorrect' : 'Unavailable' }}
+                    </span>
+                  </td>
+                </tr>
+                <tr *ngIf="!activity.responses?.length && activity.responseCount > 0">
+                  <td [attr.colspan]="activity.kind === 'quiz' ? 3 : 2">
+                    {{ activity.responseCount }} response(s) recorded, but respondent details were not returned.
+                    Refresh results; if this continues, update the Cloud Functions deployment.
+                  </td>
+                </tr>
+                <tr *ngIf="!activity.responses?.length && activity.responseCount === 0">
+                  <td [attr.colspan]="activity.kind === 'quiz' ? 3 : 2">
+                    No responses yet.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </article>
     </section>

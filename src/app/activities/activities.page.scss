@@ -129,14 +129,16 @@
 .header-overlay {
   position: absolute;
   bottom: 0;
-  right: -20px;
-  height: 90%;
-  max-height: 180px;
-  width: auto;
+  left: 0;
+  right: 0;
+  width: 100%;
+  height: 100%;
   opacity: 0.22;
   pointer-events: none;
   mix-blend-mode: overlay;
-  object-fit: contain;
+  object-fit: cover;
+  object-position: bottom center;
+  z-index: 0;
 }
 
 /* =========================================
@@ -327,6 +329,59 @@
       border-color: transparent;
       background: transparent;
     }
+  }
+
+  &.correct {
+    border-color: var(--holcim-green);
+    background: rgba(var(--holcim-green-rgb), 0.08);
+
+    .option-letter {
+      background: var(--holcim-green);
+      border-color: var(--holcim-green);
+      color: var(--white);
+    }
+  }
+
+  &.incorrect {
+    border-color: var(--holcim-bright-red);
+    background: rgba(var(--holcim-bright-red-rgb), 0.06);
+
+    .option-letter {
+      background: var(--holcim-bright-red);
+      border-color: var(--holcim-bright-red);
+      color: var(--white);
+    }
+  }
+}
+
+.submitted-options {
+  margin-top: 0.85rem;
+  margin-bottom: 0;
+
+  .option-card {
+    cursor: default;
+  }
+}
+
+.answer-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: var(--holcim-medium-blue);
+  font-size: 0.72rem;
+  font-weight: 700;
+  flex-shrink: 0;
+
+  ion-icon {
+    font-size: 1.05rem;
+  }
+
+  .correct & {
+    color: var(--holcim-green);
+  }
+
+  .incorrect & {
+    color: var(--holcim-bright-red);
   }
 }
 

@@ -3,7 +3,6 @@
     <ion-refresher-content pullingText="Pull to refresh" refreshingSpinner="crescent"></ion-refresher-content>
   </ion-refresher>
 
-  <!-- Header with Holcim Navy gradient and Cairo skyline (matching Insider Guide) -->
   <header class="header-gradient">
     <div class="header-nav">
       <button type="button" class="back-pill-btn" (click)="returnToApp()" aria-label="Back to home">
@@ -57,10 +56,9 @@
           ></ion-icon>
           <span>{{ activity.kind === 'quiz' ? 'QUIZ' : 'POLL' }}</span>
         </span>
-        <span class="status-tag" [ngClass]="activity.submitted ? 'completed' : 'active'">
-          <span class="status-dot" *ngIf="!activity.submitted" aria-hidden="true"></span>
-          <ion-icon *ngIf="activity.submitted" name="checkmark-circle" aria-hidden="true"></ion-icon>
-          <span>{{ activity.submitted ? 'Responded' : 'Active' }}</span>
+        <span *ngIf="!activity.submitted" class="status-tag active">
+          <span class="status-dot" aria-hidden="true"></span>
+          <span>Active</span>
         </span>
       </div>
 
@@ -70,6 +68,30 @@
         <div class="submitted-confirmation">
           <ion-icon name="checkmark-circle-outline" aria-hidden="true"></ion-icon>
           <span>You have already participated in this {{ activity.kind }}. Thank you!</span>
+        </div>
+        <div class="options-list submitted-options" aria-label="Answer options">
+          <div
+            class="option-card"
+            *ngFor="let option of activity.options; let i = index"
+            [class.selected]="activity.submittedOptionIndex === i"
+            [class.correct]="activity.kind === 'quiz' && activity.isCorrect === true && activity.submittedOptionIndex === i"
+            [class.incorrect]="activity.kind === 'quiz' && activity.isCorrect === false && activity.submittedOptionIndex === i"
+          >
+            <span class="option-letter" aria-hidden="true">{{ optionLetter(i) }}</span>
+            <span class="option-text">{{ option }}</span>
+            <span class="answer-indicator" *ngIf="activity.submittedOptionIndex === i">
+              <ion-icon
+                [name]="activity.kind === 'quiz' && activity.isCorrect === false ? 'close-circle-outline' : 'checkmark-circle'"
+                aria-hidden="true"
+              ></ion-icon>
+              <span>
+                Your answer
+                <ng-container *ngIf="activity.kind === 'quiz'">
+                  — {{ activity.isCorrect === true ? 'Correct' : activity.isCorrect === false ? 'Incorrect' : 'result unavailable' }}
+                </ng-container>
+              </span>
+            </span>
+          </div>
         </div>
       </ng-container>
 
