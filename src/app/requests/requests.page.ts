@@ -61,6 +61,7 @@ export class RequestsPage implements OnInit, OnDestroy {
     this.requestsSubscription?.unsubscribe();
     this.requests = [];
     this.isLoading = true;
+    this.errorMessage = '';
     this.requestsSubscription = this.adminService.watchUserRequests(email).subscribe({
       next: (requests) => {
         this.requests = requests

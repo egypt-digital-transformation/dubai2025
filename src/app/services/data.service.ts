@@ -6,9 +6,18 @@ import {
   orderBy,
   query,
   CollectionReference,
-  DocumentData,
 } from '@angular/fire/firestore';
-import { Observable, shareReplay, firstValueFrom } from 'rxjs';
+import {
+  BehaviorSubject,
+  Observable,
+  catchError,
+  defer,
+  firstValueFrom,
+  shareReplay,
+  tap,
+  throwError,
+  timeout,
+} from 'rxjs';
 
 export interface Session {
   id: string;
@@ -38,44 +47,52 @@ export interface Announcement {
   priority: string;
 }
 
+export type DataLoadState<T> =
+  | { status: 'loading' }
+  | { status: 'loaded'; data: T }
+  | { status: 'error'; error: unknown };
+
 @Injectable({ providedIn: 'root' })
 export class DataService {
   private _sessions$!: Observable<Session[]>;
   private _announcements$!: Observable<Announcement[]>;
   private _initialized = false;
+  private initialization?: Promise<{ sessions: Session[]; announcements: Announcement[] }>;
+  private readonly sessionsState = new BehaviorSubject<DataLoadState<Session[]>>({
+    status: 'loading',
+  });
+  private readonly announcementsState = new BehaviorSubject<DataLoadState<Announcement[]>>({
+    status: 'loading',
+  });
 
   constructor(private firestore: Firestore) {}
 
-  /** Start fetching Firestore data early */
-  initData(): void {
-    if (this._initialized) return;
-    this._initialized = true;
+  /** Start fetching Firestore data early and resolve when both collections emit. */
+  initData(): Promise<{ sessions: Session[]; announcements: Announcement[] }> {
+    this.ensureInit();
+    if (this.initialization) return this.initialization;
 
-    // ✅ Strongly type your collection references
-    const sessionsRef = collection(
-      this.firestore,
-      'sessions'
-    ) as CollectionReference<Session>;
+    const initialization = Promise.all([
+      firstValueFrom(this._sessions$),
+      firstValueFrom(this._announcements$),
+    ]).then(([sessions, announcements]) => ({ sessions, announcements }));
 
-    const announcementsRef = collection(
-      this.firestore,
-      'announcements'
-    ) as CollectionReference<Announcement>;
+    this.initialization = initialization;
+    void initialization.catch(() => {
+      if (this.initialization === initialization) {
+        this.initialization = undefined;
+      }
+    });
 
-    // ✅ Now query() inherits the correct type automatically
-    this._sessions$ = collectionData(
-      query(sessionsRef, orderBy('startTime', 'asc')),
-      { idField: 'id' }
-    ).pipe(shareReplay(1));
+    return initialization;
+  }
 
-    this._announcements$ = collectionData(
-      query(announcementsRef, orderBy('timestamp', 'desc')),
-      { idField: 'id' }
-    ).pipe(shareReplay(1));
+  get sessionsState$(): Observable<DataLoadState<Session[]>> {
+    return this.sessionsState.asObservable();
+  }
 
-    // ⚡ Prefetch (non-blocking)
-    firstValueFrom(this._sessions$).catch(() => {});
-    firstValueFrom(this._announcements$).catch(() => {});
+  get announcementsState$(): Observable<DataLoadState<Announcement[]>> {
+    return this.announcementsState.asObservable();
   }
 
   /** Observable getters */
@@ -89,7 +106,49 @@ export class DataService {
     return this._announcements$;
   }
 
-  private ensureInit() {
-    if (!this._initialized) this.initData();
+  private ensureInit(): void {
+    if (this._initialized) return;
+    this._initialized = true;
+
+    const sessionsRef = collection(
+      this.firestore,
+      'sessions'
+    ) as CollectionReference<Session>;
+    const announcementsRef = collection(
+      this.firestore,
+      'announcements'
+    ) as CollectionReference<Announcement>;
+
+    this._sessions$ = this.trackLoadState(
+      () => collectionData(
+        query(sessionsRef, orderBy('startTime', 'asc')),
+        { idField: 'id' }
+      ),
+      this.sessionsState
+    );
+    this._announcements$ = this.trackLoadState(
+      () => collectionData(
+        query(announcementsRef, orderBy('timestamp', 'desc')),
+        { idField: 'id' }
+      ),
+      this.announcementsState
+    );
+  }
+
+  private trackLoadState<T>(
+    source: () => Observable<T>,
+    state: BehaviorSubject<DataLoadState<T>>
+  ): Observable<T> {
+    return defer(() => {
+      state.next({ status: 'loading' });
+      return source().pipe(
+        timeout({ first: 15_000 }),
+        tap((data) => state.next({ status: 'loaded', data })),
+        catchError((error: unknown) => {
+          state.next({ status: 'error', error });
+          return throwError(() => error);
+        })
+      );
+    }).pipe(shareReplay({ bufferSize: 1, refCount: false }));
   }
 }

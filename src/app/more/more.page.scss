@@ -14,16 +14,16 @@
 .more-page {
   max-width: 760px;
   margin: 0 auto;
-  padding: 2rem 1.25rem 6rem;
+  padding: 1rem 0.5rem 6rem;
 }
 
 .more-hero {
-  background: linear-gradient(135deg, var(--holcim-premium-blue) 0%, #031027 65%, var(--holcim-dark-blue) 100%);
-  border-radius: 1.5rem;
-  color: var(--white);
-  padding: 2.25rem 1.5rem;
+  padding: clamp(1.2rem, 3.5vw, 1.75rem) clamp(0.85rem, 2.5vw, 1.25rem);
   margin-bottom: 2rem;
-  box-shadow: 0 1rem 2.5rem rgba(var(--holcim-premium-blue-rgb), 0.16);
+}
+
+.more-hero .skyline-hero-image {
+  display: block;
 }
 
 .eyebrow {

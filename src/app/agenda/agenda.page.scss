@@ -3,17 +3,15 @@
 }
 
 .pb-20 {
-  padding-bottom: 80px;
+  padding: 1rem 0.5rem 80px;
 }
 
 // ============================================
 // HEADER SECTION  (mobile-first)
 // ============================================
 .header-gradient {
-  background: linear-gradient(135deg, var(--holcim-premium-blue) 0%, #031027 65%, var(--holcim-dark-blue) 100%);
   padding: 4.5rem 1.25rem 3rem;  // ⬆️ more vertical padding on mobile
-  position: relative;
-  overflow: hidden;
+  margin-bottom: 1rem;
 
   @media (min-width: 480px) {
     padding: 4rem 1.5rem 3rem;
@@ -25,27 +23,7 @@
 }
 
 .header-overlay {
-  position: absolute;
-  top: 0;
-  right: 0;
-  width: 25rem;
-  height: auto;
-  opacity: 0.55;
-  z-index: 0;
-  pointer-events: none;
-  user-select: none;
-  mix-blend-mode: soft-light;
-  transform: translate(20%, -15%);
-
-  @media (min-width: 480px) {
-    width: 15rem;
-    transform: translate(30%, -10%);
-  }
-
-  @media (min-width: 768px) {
-    width: 20rem;
-    transform: translate(40%, -20%);
-  }
+  opacity: 0.22;
 }
 
 .header-title {
@@ -82,6 +60,30 @@
     font-size: 1rem;
   }
 }
+
+.schedule-load-error {
+  border: 1px solid rgba(var(--holcim-dark-red-rgb), 0.2);
+  border-radius: 0.85rem;
+  padding: 1rem;
+  background: var(--white);
+  color: var(--holcim-dark-red);
+
+  p {
+    margin: 0 0 0.75rem;
+    line-height: 1.5;
+  }
+
+  button {
+    border: 0;
+    border-radius: 0.55rem;
+    padding: 0.6rem 0.9rem;
+    background: var(--holcim-premium-blue);
+    color: var(--white);
+    font: inherit;
+    font-weight: 700;
+  }
+}
+
 // Search Bar Styling
 .search-container {
   background: rgba(var(--white-rgb), 0.1);

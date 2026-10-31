@@ -1,9 +1,9 @@
 <ion-content [fullscreen]="true" class="agenda-content">
   <div class="pb-20">
     <!-- Header -->
-    <div class="header-gradient">
+    <div class="header-gradient skyline-hero">
       <h2 class="header-title">SCHEDULE</h2>
-      <img src="assets/skyline.webp" alt="" class="header-overlay" />
+      <img src="assets/skyline.webp" alt="" class="header-overlay skyline-hero-image" />
 
       <!-- Search Bar -->
       <div class="search-container">
@@ -76,7 +76,22 @@
       </div>
 
       <ng-container *ngIf="!isLoadingSchedule">
-        <ng-container *ngIf="filteredSessionGroups.length > 0; else noSessions">
+        <div *ngIf="scheduleLoadError" class="schedule-load-error" role="alert">
+          <p>{{ scheduleLoadError }}</p>
+          <button type="button" (click)="retryScheduleLoad()">Try again</button>
+        </div>
+
+        <ng-container *ngIf="!scheduleLoadError">
+          <div *ngIf="scheduleEmptyMessage" class="no-sessions" role="status">
+            <div class="no-sessions-icon">
+              <ion-icon name="calendar-clear-outline" aria-hidden="true"></ion-icon>
+            </div>
+            <h3 class="no-sessions-title">Agenda not available yet</h3>
+            <p class="no-sessions-text">{{ scheduleEmptyMessage }}</p>
+          </div>
+
+          <ng-container *ngIf="!scheduleEmptyMessage">
+            <ng-container *ngIf="filteredSessionGroups.length > 0; else noSessions">
     <section *ngFor="let group of filteredSessionGroups; let gi = index" class="agenda-session-group">
       <button
         type="button"
@@ -287,7 +302,9 @@
           </p>
         </div>
       </ng-template>
-      </ng-container>
+            </ng-container>
+          </ng-container>
+        </ng-container>
     </div>
   </div>
 </ion-content>

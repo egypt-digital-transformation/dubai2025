@@ -10,6 +10,7 @@ import {
   EnvironmentInjector,
   runInInjectionContext,
   ChangeDetectorRef,
+  NgZone,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { IonContent, IonIcon, IonSpinner } from '@ionic/angular/standalone';
@@ -37,7 +38,7 @@ import {
   documentTextOutline,
   closeOutline,
 } from 'ionicons/icons';
-import { interval, Subject, Subscription, takeUntil } from 'rxjs';
+import { interval, Subject, Subscription, takeUntil, timeout } from 'rxjs';
 import { filter } from 'rxjs/operators';
 import { AdminPreviewService } from '../services/admin-preview.service';
 import { FirebaseInjectionContext } from '../services/firebase-injection-context.service';
@@ -89,6 +90,7 @@ export class AgendaPage implements OnInit, OnDestroy {
   private readonly injector = inject(EnvironmentInjector);
   private readonly firebaseContext = inject(FirebaseInjectionContext);
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly zone = inject(NgZone);
 
   private runInContext<T>(operation: () => T): T {
     return runInInjectionContext(this.injector, operation);
@@ -96,6 +98,8 @@ export class AgendaPage implements OnInit, OnDestroy {
   selectedDay = '1';
   availableDays: string[] = [];
   isLoadingSchedule = true;
+  scheduleLoadError = '';
+  scheduleEmptyMessage = '';
   isTransitioning = false;
 
   @ViewChildren('sessionCard') sessionCards!: QueryList<ElementRef>;
@@ -210,6 +214,8 @@ export class AgendaPage implements OnInit, OnDestroy {
   async initializeAgenda(emailOverride?: string) {
     const loadId = ++this.agendaLoadId;
     this.isLoadingSchedule = true;
+    this.scheduleLoadError = '';
+    this.scheduleEmptyMessage = '';
     this.sessionsSubscription?.unsubscribe();
     this.userAgendaSubscription?.unsubscribe();
     this.sessionsSubscription = undefined;
@@ -230,6 +236,7 @@ export class AgendaPage implements OnInit, OnDestroy {
       const email = emailOverride ?? user?.email?.toLowerCase() ?? null;
       if (!email) {
         console.warn('[DEBUG] No authenticated user found.');
+        this.scheduleLoadError = 'Could not identify your attendee account. Try loading the schedule again.';
         this.isLoadingSchedule = false;
         return;
       }
@@ -249,7 +256,11 @@ export class AgendaPage implements OnInit, OnDestroy {
 
       if (snapshot.empty) {
         console.warn(`[DEBUG] No user found with email ${this.userEmail}`);
-        this.isLoadingSchedule = false;
+        this.zone.run(() => {
+          this.scheduleEmptyMessage =
+            'Your personalized agenda is not available yet. No sessions are assigned to your attendee profile. Please check back later or contact the event team.';
+          this.isLoadingSchedule = false;
+        });
         return;
       }
 
@@ -261,97 +272,124 @@ export class AgendaPage implements OnInit, OnDestroy {
       const userAgenda$ = this.runInContext(() =>
         collectionData(userAgendaRef, { idField: 'id' })
       );
-      this.userAgendaSubscription = userAgenda$.subscribe({
+      this.userAgendaSubscription = userAgenda$.pipe(timeout({ first: 15_000 })).subscribe({
         next: (documents: any[]) => {
           if (loadId !== this.agendaLoadId) return;
-          const dayDocuments = documents.filter(
-            (document) =>
-              typeof document.dayNumber === 'number' &&
-              Array.isArray(document.sessions)
-          );
+          this.zone.run(() => {
+            const dayDocuments = documents.filter(
+              (document) =>
+                typeof document.dayNumber === 'number' &&
+                Array.isArray(document.sessions)
+            );
 
-          if (dayDocuments.length) {
-            this.sessionsSubscription?.unsubscribe();
-            this.sessionsSubscription = undefined;
-            this.hasUserAgenda = true;
-            this.availableDays = [...new Set(
-              dayDocuments.map((dayDocument) => String(dayDocument.dayNumber))
-            )].sort((a, b) => Number(a) - Number(b));
-            this.agendaDayDates = dayDocuments
-              .map((dayDocument) => ({
-                dayNumber: Number(dayDocument.dayNumber),
-                date: parseAgendaDate(dayDocument.date),
-              }))
-              .filter(
-                (day): day is AgendaDayDate =>
-                  Number.isInteger(day.dayNumber) &&
-                  day.dayNumber > 0 &&
-                  day.date !== null
-              );
-            this.updateAgendaDayForCurrentDate();
-            this.applyRequestedAgendaDay();
-            this.keepSelectedDayAvailable();
-            this.sessions = [];
-            dayDocuments.forEach((dayDocument) => {
-              this.sessions.push(...this.mapUserAgendaSessions(dayDocument));
-            });
-            this.applyFilters();
-            this.isLoadingSchedule = false;
-            return;
-          }
+            if (dayDocuments.length) {
+              this.sessionsSubscription?.unsubscribe();
+              this.sessionsSubscription = undefined;
+              this.hasUserAgenda = true;
+              this.availableDays = [...new Set(
+                dayDocuments.map((dayDocument) => String(dayDocument.dayNumber))
+              )].sort((a, b) => Number(a) - Number(b));
+              this.agendaDayDates = dayDocuments
+                .map((dayDocument) => ({
+                  dayNumber: Number(dayDocument.dayNumber),
+                  date: parseAgendaDate(dayDocument.date),
+                }))
+                .filter(
+                  (day): day is AgendaDayDate =>
+                    Number.isInteger(day.dayNumber) &&
+                    day.dayNumber > 0 &&
+                    day.date !== null
+                );
+              this.updateAgendaDayForCurrentDate();
+              this.applyRequestedAgendaDay();
+              this.keepSelectedDayAvailable();
+              this.sessions = [];
+              dayDocuments.forEach((dayDocument) => {
+                this.sessions.push(...this.mapUserAgendaSessions(dayDocument));
+              });
+              this.applyFilters();
+              this.scheduleLoadError = '';
+              this.isLoadingSchedule = false;
+              return;
+            }
 
-          this.hasUserAgenda = false;
-          if (!this.sessionsSubscription) {
-            this.subscribeToSharedSessions();
-          } else {
-            this.isLoadingSchedule = false;
-          }
+            this.hasUserAgenda = false;
+            if (!this.sessionsSubscription) {
+              this.subscribeToSharedSessions(loadId);
+            } else {
+              this.isLoadingSchedule = false;
+            }
+          });
         },
         error: (error) => {
           console.error('[AgendaPage] Failed to load the user agenda:', error);
-          this.hasUserAgenda = false;
-          if (loadId === this.agendaLoadId && !this.sessionsSubscription) {
-            this.subscribeToSharedSessions();
-          } else {
-            this.isLoadingSchedule = false;
-          }
+          if (loadId !== this.agendaLoadId) return;
+          this.zone.run(() => {
+            this.hasUserAgenda = false;
+            if (!this.sessionsSubscription) {
+              this.subscribeToSharedSessions(loadId);
+            } else {
+              this.isLoadingSchedule = false;
+            }
+          });
         },
       });
     } catch (err) {
       console.error('[DEBUG] Error initializing agenda:', err);
-      this.isLoadingSchedule = false;
+      if (loadId === this.agendaLoadId) {
+        this.zone.run(() => {
+          this.scheduleLoadError = 'Could not load the schedule. Check your connection and try again.';
+          this.isLoadingSchedule = false;
+        });
+      }
     }
   }
 
-  private subscribeToSharedSessions() {
+  retryScheduleLoad(): void {
+    const email =
+      this.adminPreview.selectedUser?.email ??
+      this.auth.currentUser?.email ??
+      undefined;
+    void this.initializeAgenda(email);
+  }
+
+  private subscribeToSharedSessions(loadId: number) {
     const sessionsRef = collection(this.firestore, 'sessions');
     const sessions$ = this.runInContext(() =>
       collectionData(sessionsRef, { idField: 'id' })
     );
-    this.sessionsSubscription = sessions$.subscribe({
+    this.sessionsSubscription = sessions$.pipe(timeout({ first: 15_000 })).subscribe({
       next: (data: any[]) => {
-        this.sessions = data || [];
-        this.availableDays = [...new Set(
-          this.sessions
-            .map((session) => String(session.day ?? ''))
-            .filter((day) => day !== '')
-        )].sort((a, b) => Number(a) - Number(b));
-        this.applyRequestedAgendaDay();
-        this.keepSelectedDayAvailable();
-        console.log('[DEBUG] Total shared sessions loaded:', this.sessions.length);
-        this.applyFilters();
-        this.isLoadingSchedule = false;
+        if (loadId !== this.agendaLoadId) return;
+        this.zone.run(() => {
+          this.sessions = data || [];
+          this.availableDays = [...new Set(
+            this.sessions
+              .map((session) => String(session.day ?? ''))
+              .filter((day) => day !== '')
+          )].sort((a, b) => Number(a) - Number(b));
+          this.applyRequestedAgendaDay();
+          this.keepSelectedDayAvailable();
+          console.log('[DEBUG] Total shared sessions loaded:', this.sessions.length);
+          this.applyFilters();
+          this.scheduleLoadError = '';
+          this.isLoadingSchedule = false;
 
-        this.route.queryParams.subscribe((params) => {
-          const targetSessionId = params['sessionId'] || null;
-          if (targetSessionId) {
-            setTimeout(() => this.scrollToSession(targetSessionId), 150);
-          }
+          this.route.queryParams.subscribe((params) => {
+            const targetSessionId = params['sessionId'] || null;
+            if (targetSessionId) {
+              setTimeout(() => this.scrollToSession(targetSessionId), 150);
+            }
+          });
         });
       },
       error: (error) => {
+        if (loadId !== this.agendaLoadId) return;
         console.error('[AgendaPage] Failed to load shared sessions:', error);
-        this.isLoadingSchedule = false;
+        this.zone.run(() => {
+          this.scheduleLoadError = 'Could not load the schedule. Check your connection and try again.';
+          this.isLoadingSchedule = false;
+        });
       },
     });
   }

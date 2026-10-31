@@ -1,9 +1,10 @@
 <ion-content [fullscreen]="true" class="more-content">
   <main class="more-page">
-    <header class="more-hero">
+    <header class="more-hero skyline-hero">
       <p class="eyebrow">YOUR COMPANION</p>
       <h1>Everything else,<br />right here.</h1>
       <p>Your journey, your connections, your peace of mind.</p>
+      <img src="assets/skyline.webp" alt="" class="skyline-hero-image" />
     </header>
 
     <section class="more-section" aria-label="Companion services">
@@ -19,8 +20,9 @@
       </div>
     </section>
 
-    <section class="more-section more-links" aria-label="More actions" *ngIf="isAdmin">
-      <button class="wide-link admin-link" type="button" (click)="openAdmin($event)">
+    <section class="more-section more-links" aria-label="More actions" *ngIf="isAdminStatusLoading || isAdmin">
+      <p *ngIf="isAdminStatusLoading" class="module-muted" role="status">Checking administrator access…</p>
+      <button *ngIf="!isAdminStatusLoading && isAdmin" class="wide-link admin-link" type="button" (click)="openAdmin($event)">
         <span><strong>Admin Panel</strong><small>Manage attendees, updates and engagement</small></span>
         <ion-icon name="arrow-forward-outline"></ion-icon>
       </button>

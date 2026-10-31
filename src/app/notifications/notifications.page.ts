@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import {
   IonContent,
@@ -17,7 +17,7 @@ import { FcmService } from '../services/fcm.service';
   templateUrl: './notifications.page.html',
   styleUrls: ['./notifications.page.scss'],
 })
-export class NotificationsPage implements OnInit {
+export class NotificationsPage {
   private readonly adminService = inject(AdminService);
   private readonly fcmService = inject(FcmService);
   private readonly router = inject(Router);
@@ -37,11 +37,8 @@ export class NotificationsPage implements OnInit {
     addIcons({ notificationsOutline, refreshOutline });
   }
 
-  ngOnInit(): void {
-    void this.loadNotifications();
-  }
-
   async ionViewWillEnter(): Promise<void> {
+    void this.loadNotifications();
     await this.refreshPermissionState();
     if (this.isPushSupported && this.isPermissionGranted) {
       await this.fcmService.ensurePushTokenRegistered();

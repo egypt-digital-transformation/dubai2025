@@ -10,6 +10,7 @@ import {
 } from '@ionic/angular/standalone';
 import { Auth, signOut, onAuthStateChanged } from '@angular/fire/auth';
 import { ModalController } from '@ionic/angular/standalone';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 import { DataService } from '../services/data.service';
 import { environment } from '../../environments/environment';
 import { getApps, initializeApp } from 'firebase/app';
@@ -20,11 +21,7 @@ import {
   onSnapshot,
   Unsubscribe,
 } from 'firebase/firestore';
-import {
-  SafetyInductionModalComponent,
-  SafetyInductionSite,
-  SafetyInductions,
-} from '../hse-induction/safety-induction-modal.component';
+
 import { addIcons } from 'ionicons';
 import {
   timeOutline,
@@ -66,6 +63,9 @@ import {
   shareReplay,
   startWith,
   BehaviorSubject,
+  catchError,
+  of,
+  switchMap,
 } from 'rxjs';
 import { RouterModule } from '@angular/router';
 import { greetingForNationality } from '../shared/nationality-greetings';
@@ -100,8 +100,8 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 @Component({
   selector: 'app-home',
   standalone: true,
-  templateUrl: 'home.page.html',
-  styleUrls: ['home.page.scss'],
+  templateUrl: './home.page.html',
+  styleUrls: ['./home.page.scss'],
   imports: [
     IonModal,
     IonContent,
@@ -113,8 +113,11 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 })
 export class HomePage implements OnInit, OnDestroy {
   private readonly firebaseContext = inject(FirebaseInjectionContext);
+  private readonly functions = getFunctions(undefined, 'europe-west1');
   public primarySession: Session | null = null;
   public secondarySession: Session | null = null;
+  public isLoadingSessions = true;
+  public sessionsLoadError = '';
   public todaySessions$!: Observable<Session[]>;
   public messageType: MessageType = null;
   public currentDay = 0;
@@ -150,6 +153,7 @@ export class HomePage implements OnInit, OnDestroy {
   public unseenActivitiesCount = 0;
 
   private destroy$ = new Subject<void>();
+  private readonly retrySessions$ = new Subject<void>();
   private readonly agendaSessions$ = new BehaviorSubject<Session[] | null>(null);
   private readonly activitiesService = inject(ActivitiesService);
   private readonly TICK_MS = 1000;
@@ -172,6 +176,9 @@ export class HomePage implements OnInit, OnDestroy {
 
   ionViewWillEnter() {
     void this.activitiesService.refreshUnseenCount();
+    if (this.profileEmail) {
+      void this.loadSafetyInductionStatus(this.profileEmail, this.viewGeneration);
+    }
   }
 
   ngOnInit() {
@@ -186,8 +193,31 @@ export class HomePage implements OnInit, OnDestroy {
     void this.activitiesService.refreshUnseenCount();
 
     // sessions$ from data service but ensure it's sorted and convert timestamps lazily when needed.
+    this.data.sessionsState$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((state) => {
+        this.zone.run(() => {
+          this.isLoadingSessions = state.status === 'loading';
+          this.sessionsLoadError =
+            state.status === 'error'
+              ? 'Could not load the schedule. Check your connection and try again.'
+              : '';
+        });
+      });
+
+    const sharedSessions$ = this.retrySessions$.pipe(
+      startWith(undefined),
+      switchMap(() =>
+        this.data.sessions$.pipe(
+          catchError((error: unknown) => {
+            console.error('[HomePage] Failed to load sessions:', error);
+            return of([] as Session[]);
+          })
+        )
+      )
+    );
     const sessionsSorted$ = combineLatest([
-      this.data.sessions$,
+      sharedSessions$,
       this.agendaSessions$,
     ]).pipe(
       map(([sharedSessions, agendaSessions]) =>
@@ -235,10 +265,12 @@ export class HomePage implements OnInit, OnDestroy {
         takeUntil(this.destroy$)
       )
       .subscribe(({ currentDay, evaluation }) => {
-        this.currentDay = currentDay;
-        this.primarySession = evaluation.primary;
-        this.secondarySession = evaluation.secondary;
-        this.messageType = evaluation.messageType;
+        this.zone.run(() => {
+          this.currentDay = currentDay;
+          this.primarySession = evaluation.primary;
+          this.secondarySession = evaluation.secondary;
+          this.messageType = evaluation.messageType;
+        });
       });
 
     // expose top-3 sessions for "today" (derived from sorted sessions)
@@ -253,6 +285,10 @@ export class HomePage implements OnInit, OnDestroy {
 
   get isPreviewingUser(): boolean {
     return this.adminPreview.isPreviewing;
+  }
+
+  retrySessionLoad(): void {
+    this.retrySessions$.next();
   }
 
   get isContactSharingDisabled(): boolean {
@@ -323,7 +359,7 @@ export class HomePage implements OnInit, OnDestroy {
     }
     void this.loadWelcomeProfile(email, uid, generation);
     void this.loadPlantVisitRequirement(email, uid, generation);
-    this.listenToSafetyInductionStatus(email, generation);
+    void this.loadSafetyInductionStatus(email, generation);
   }
 
   private isCurrentViewingUser(email: string, uid: string | null, generation: number): boolean {
@@ -554,38 +590,47 @@ export class HomePage implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
-    this.safetyInductionUnsubscribe?.();
     this.agendaUnsubscribe?.();
     this.destroy$.next();
     this.destroy$.complete();
   }
 
-  private listenToSafetyInductionStatus(email: string, generation: number): void {
-    this.safetyInductionUnsubscribe?.();
-    this.safetyInductionUnsubscribe = undefined;
+  private async loadSafetyInductionStatus(email: string, generation: number): Promise<void> {
+    if (!email) {
+      this.updateSafetyInductionStatus();
+      return;
+    }
 
-    const normalizedEmail = email.trim().toLowerCase();
-    const hseApp =
-      getApps().find((app) => app.name === 'HSEApp') ??
-      initializeApp(environment.hsefirebaseConfig, 'HSEApp');
-    const hseFirestore = getFirestore(hseApp);
-    this.safetyInductionUnsubscribe = onSnapshot(
-      firebaseCollection(hseFirestore, 'userProgress'),
-      (snapshot) => {
-        const matchingProgress = snapshot.docs.find((progressDocument) =>
-          String(progressDocument.data()['email'] ?? '').trim().toLowerCase() === normalizedEmail
-        );
-        if (this.viewGeneration === generation) {
-          this.zone.run(() => this.updateSafetyInductionStatus(matchingProgress?.data()));
+    try {
+      const getStatus = httpsCallable<
+        object,
+        {
+          found: boolean;
+          sokhnaplant?: { completed?: boolean; lastWatchedIndex?: number };
+          rmx?: { completed?: boolean; required?: boolean };
         }
-      },
-      (error) => {
-        console.error('[SafetyInduction] Failed to load induction progress:', error);
-        if (this.viewGeneration === generation) {
-          this.zone.run(() => this.updateSafetyInductionStatus());
-        }
+      >(this.functions, 'getMySafetyInductionStatus');
+
+      const result = await getStatus({ email });
+      if (this.viewGeneration === generation) {
+        this.zone.run(() => {
+          const data = result.data;
+          this.safetyInductions.sokhnaplant.completed = data?.sokhnaplant?.completed === true;
+          this.safetyInductions.rmx.completed = data?.rmx?.completed === true;
+          this.rmxRequired = data?.rmx?.required === true;
+          this.totalInductionsRequired = this.rmxRequired ? 2 : 1;
+          this.completedInductionsCount = [
+            this.safetyInductions.sokhnaplant.completed,
+            this.rmxRequired && this.safetyInductions.rmx.completed,
+          ].filter(Boolean).length;
+        });
       }
-    );
+    } catch (error) {
+      console.error('[SafetyInduction] Failed to load induction progress via Cloud Function:', error);
+      if (this.viewGeneration === generation) {
+        this.zone.run(() => this.updateSafetyInductionStatus());
+      }
+    }
   }
 
   private updateSafetyInductionStatus(docData?: DocumentData): void {
@@ -626,6 +671,9 @@ export class HomePage implements OnInit, OnDestroy {
 
     if (data?.site) {
       window.open(this.safetyInductions[data.site].link, '_blank');
+    }
+    if (this.profileEmail) {
+      void this.loadSafetyInductionStatus(this.profileEmail, this.viewGeneration);
     }
   }
 

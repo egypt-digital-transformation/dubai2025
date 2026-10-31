@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject, OnDestroy, OnInit } from '@angular/core';
+import { Component, inject, NgZone, OnDestroy, OnInit } from '@angular/core';
 import { Auth, onAuthStateChanged, signOut, Unsubscribe } from '@angular/fire/auth';
 import { IonicModule } from '@ionic/angular';
 import { addIcons } from 'ionicons';
@@ -43,9 +43,11 @@ export class MorePage implements OnInit, OnDestroy {
   private readonly router = inject(Router);
   private readonly adminService = inject(AdminService);
   private readonly firebaseContext = inject(FirebaseInjectionContext);
+  private readonly zone = inject(NgZone);
   private authUnsubscribe?: Unsubscribe;
 
   isAdmin = false;
+  isAdminStatusLoading = true;
 
   readonly journeyItems: MoreItem[] = [
     { title: 'Help requests', description: 'Create & track a concierge request', icon: 'chatbubbles-outline', route: '/tabs/requests' },
@@ -82,15 +84,26 @@ export class MorePage implements OnInit, OnDestroy {
       onAuthStateChanged(this.auth, (user) => {
         this.isAdmin = false;
         if (!user?.email) {
+          this.isAdminStatusLoading = false;
           return;
         }
 
+        this.isAdminStatusLoading = true;
         void this.adminService.isAdmin(user.email).then((isAdmin) => {
           if (this.auth.currentUser?.uid === user.uid) {
-            this.isAdmin = isAdmin;
+            this.zone.run(() => {
+              this.isAdmin = isAdmin;
+              this.isAdminStatusLoading = false;
+            });
           }
         }).catch((error) => {
           console.error('[MorePage] Failed to verify admin access:', error);
+          if (this.auth.currentUser?.uid === user.uid) {
+            this.zone.run(() => {
+              this.isAdmin = false;
+              this.isAdminStatusLoading = false;
+            });
+          }
         });
       })
     );

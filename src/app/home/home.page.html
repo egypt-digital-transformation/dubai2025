@@ -1,8 +1,8 @@
 <ion-content [scrollY]="true">
   <div class="home-wrapper">
     <div class="content-container">
-      <section class="welcome-hero" aria-labelledby="welcome-title">
-        <img src="assets/skyline.webp" alt="" class="welcome-skyline" />
+      <section class="welcome-hero skyline-hero" aria-labelledby="welcome-title">
+        <img src="assets/skyline.webp" alt="" class="welcome-skyline skyline-hero-image" />
         <div class="welcome-copy">
           <p class="welcome-eyebrow">Your digital companion for the AMEA Management Meeting 2026!</p>
           <h1 id="welcome-title">{{ welcomeGreeting }}, {{ firstName || displayName || 'there' }}.</h1>
@@ -117,7 +117,7 @@
       </div>
 
       <!-- Skeleton Loader -->
-      <ng-container *ngIf="primarySession === null && messageType === null; else loadedContent">
+      <ng-container *ngIf="isLoadingSessions">
         <div class="session-card skeleton-loader">
           <div class="card-content">
             <div class="session-header">
@@ -135,8 +135,13 @@
         </div>
       </ng-container>
 
+      <div *ngIf="!isLoadingSessions && sessionsLoadError" class="session-load-error" role="alert">
+        <p>{{ sessionsLoadError }}</p>
+        <button type="button" class="welcome-link" (click)="retrySessionLoad()">Try again</button>
+      </div>
+
       <!-- ================= ACTUAL CONTENT ================= -->
-      <ng-template #loadedContent>
+      <ng-container *ngIf="!isLoadingSessions && !sessionsLoadError">
         <section class="home-section next-section" aria-labelledby="next-session-heading">
           <!-- Primary or Upcoming Session -->
           <ng-container *ngIf="primarySession; else noSession">
@@ -276,7 +281,6 @@
               </div>
             </div>
           </ng-template>
-
         </section>
 
         <!-- My Agenda -->
@@ -341,7 +345,7 @@
             </div>
           </div>
         </div>
-      </ng-template>
+      </ng-container>
     </div>
   </div>
 

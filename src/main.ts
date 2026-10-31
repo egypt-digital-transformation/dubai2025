@@ -16,7 +16,6 @@ import { provideServiceWorker } from '@angular/service-worker';
 import { defineCustomElements } from '@ionic/pwa-elements/loader';
 import { provideRouter } from '@angular/router';
 import { DataService } from './app/services/data.service';
-import { firstValueFrom } from 'rxjs';
 import { SplashScreen } from '@capacitor/splash-screen';
 
 if (environment.production) {
@@ -31,18 +30,12 @@ defineCustomElements(window);
 export function preloadData(dataService: DataService) {
   return async () => {
     console.log('[INIT] Starting Firestore preload...');
-    dataService.initData();
 
     try {
-      // ✅ Wait for first emission of both observables
-      const [sessions, announcements] = await Promise.all([
-        firstValueFrom(dataService.sessions$),
-        firstValueFrom(dataService.announcements$),
-      ]);
-
+      const { sessions, announcements } = await dataService.initData();
       console.log(`[INIT] Loaded ${sessions.length} sessions, ${announcements.length} announcements`);
     } catch (err) {
-      console.warn('[INIT] Firestore preload failed or offline', err);
+      console.error('[INIT] Firestore preload failed or timed out; pages will show their data error state.', err);
     } finally {
       // ✅ Hide splash only after data loaded
       try {
