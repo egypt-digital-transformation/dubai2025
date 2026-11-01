@@ -81,7 +81,13 @@ async function claimReminder(dayRef, dueLabel) {
   });
 }
 
-async function updateReminderLabel(dayRef, dueLabel, claimId, update) {
+async function updateReminderLabel(
+  dayRef,
+  dueLabel,
+  claimId,
+  update,
+  releaseClaim = true
+) {
   return db.runTransaction(async (transaction) => {
     const daySnapshot = await transaction.get(dayRef);
     if (!daySnapshot.exists) {
@@ -101,8 +107,10 @@ async function updateReminderLabel(dayRef, dueLabel, claimId, update) {
     }
 
     const updatedLabel = { ...label };
-    delete updatedLabel.reminderClaimedAt;
-    delete updatedLabel.reminderClaimId;
+    if (releaseClaim) {
+      delete updatedLabel.reminderClaimedAt;
+      delete updatedLabel.reminderClaimId;
+    }
     labels[dueLabel.index] = { ...updatedLabel, ...update };
     transaction.update(dayRef, { labels });
     return true;
@@ -164,6 +172,7 @@ async function sendReminderForLabel(
   }
 
   const { claimId, inAppSaved } = claim;
+  let pushAccepted = false;
   try {
     const campaignId = inAppSaved
       ? getReminderCampaignId(userEmail, dayDoc, dueLabel)
@@ -173,7 +182,8 @@ async function sendReminderForLabel(
         dayDoc.ref,
         dueLabel,
         claimId,
-        { reminderInAppSaved: true }
+        { reminderInAppSaved: true },
+        false
       );
       if (!saved) {
         throw new Error("Could not record the in-app agenda reminder.");
@@ -203,9 +213,9 @@ async function sendReminderForLabel(
         throw error;
       }
     }
-    await updateInAppNotificationPushSummary(campaignId, recipients, results);
     const successfulResults = results.filter((result) => result.success);
     if (successfulResults.length === 0) {
+      await updateInAppNotificationPushSummary(campaignId, recipients, results);
       console.warn(
         `[SessionReminders] No push device accepted the reminder for ${userLabel}; it remains pending for retry.`,
         results.map((result) => result.errorCode)
@@ -225,6 +235,7 @@ async function sendReminderForLabel(
     const messageIds = successfulResults
       .map((result) => result.messageId)
       .filter(Boolean);
+    pushAccepted = true;
     const reminderUpdate = {
       reminderSent: true,
       reminderSentAt: Timestamp.now(),
@@ -243,10 +254,26 @@ async function sendReminderForLabel(
       throw new Error("Could not mark the agenda label reminder as sent.");
     }
 
+    try {
+      await updateInAppNotificationPushSummary(campaignId, recipients, results);
+    } catch (error) {
+      console.error(
+        `[SessionReminders] Push was accepted for ${userLabel}, but its campaign summary could not be updated:`,
+        error
+      );
+    }
+
     console.log(`Recorded session reminder for "${dueLabel.label}" for ${userLabel}`);
     return true;
   } catch (error) {
-    await updateReminderLabel(dayDoc.ref, dueLabel, claimId, {});
+    if (pushAccepted) {
+      console.error(
+        `[SessionReminders] Push was accepted for ${userLabel}, but the sent state could not be saved; keeping the claim to avoid an immediate duplicate:`,
+        error
+      );
+    } else {
+      await updateReminderLabel(dayDoc.ref, dueLabel, claimId, {});
+    }
     throw error;
   }
 }
