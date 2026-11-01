@@ -50,8 +50,8 @@ export class MorePage implements OnInit, OnDestroy {
   isAdminStatusLoading = true;
 
   readonly journeyItems: MoreItem[] = [
-    { title: 'Help requests', description: 'Create & track a concierge request', icon: 'chatbubbles-outline', route: '/tabs/requests' },
     { title: 'My journey', description: 'Flights, transfers & hotel', icon: 'compass-outline', route: '/tabs/journey' },
+    { title: 'Help requests', description: 'Create & track a concierge request', icon: 'chatbubbles-outline', route: '/tabs/requests' },
   ];
 
   readonly eventItems: MoreItem[] = [
