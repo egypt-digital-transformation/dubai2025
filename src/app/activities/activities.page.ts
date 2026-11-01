@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { IonicModule } from '@ionic/angular';
@@ -31,7 +31,7 @@ import {
   styleUrls: ['./activities.page.scss'],
   imports: [CommonModule, FormsModule, IonicModule],
 })
-export class ActivitiesPage implements OnInit {
+export class ActivitiesPage implements OnInit, OnDestroy {
   private readonly adminService = inject(AdminService);
   private readonly activitiesService = inject(ActivitiesService);
   private readonly router = inject(Router);
@@ -42,6 +42,8 @@ export class ActivitiesPage implements OnInit {
   isLoading = true;
   errorMessage = '';
   feedback: Record<string, string> = {};
+  private refreshTimer?: ReturnType<typeof setInterval>;
+  private isRefreshing = false;
 
   constructor() {
     addIcons({
@@ -64,6 +66,24 @@ export class ActivitiesPage implements OnInit {
 
   ionViewWillEnter(): void {
     void this.loadActivities();
+    if (!this.refreshTimer) {
+      this.refreshTimer = setInterval(() => {
+        if (!this.isRefreshing) {
+          void this.loadActivities(true);
+        }
+      }, 15_000);
+    }
+  }
+
+  ionViewWillLeave(): void {
+    if (this.refreshTimer) {
+      clearInterval(this.refreshTimer);
+      this.refreshTimer = undefined;
+    }
+  }
+
+  ngOnDestroy(): void {
+    this.ionViewWillLeave();
   }
 
   selectOption(activityId: string, optionIndex: number): void {
@@ -89,9 +109,13 @@ export class ActivitiesPage implements OnInit {
     event?.target?.complete?.();
   }
 
-  async loadActivities(): Promise<void> {
-    this.isLoading = true;
-    this.errorMessage = '';
+  async loadActivities(silent = false): Promise<void> {
+    if (this.isRefreshing) return;
+    this.isRefreshing = true;
+    if (!silent) {
+      this.isLoading = true;
+      this.errorMessage = '';
+    }
     try {
       const fetchPromise = this.activitiesService.getActivities();
       const timeoutPromise = new Promise<InteractiveActivity[]>((_, reject) =>
@@ -102,17 +126,19 @@ export class ActivitiesPage implements OnInit {
       );
 
       this.activities = await Promise.race([fetchPromise, timeoutPromise]);
+      this.errorMessage = '';
       // Mark all activities as seen since user is viewing the page
       this.activitiesService.markActivitiesAsSeen(this.activities);
     } catch (error: any) {
       console.error('[ActivitiesPage] Failed to load activities:', error);
-      if (!this.activities.length) {
+      if (!silent && !this.activities.length) {
         this.errorMessage = error?.message?.includes('delegate profile')
           ? 'Delegate profile verification in progress. Please pull down to refresh.'
           : 'Could not load quizzes and polls. Please pull down to refresh.';
       }
     } finally {
-      this.isLoading = false;
+      this.isRefreshing = false;
+      if (!silent) this.isLoading = false;
     }
   }
 

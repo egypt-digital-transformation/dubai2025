@@ -1,8 +1,9 @@
-import { Component, HostListener, inject } from '@angular/core';
+import { Component, HostListener, inject, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { IonContent } from '@ionic/angular/standalone';
 import { IconicProject } from './models/project.model';
 import { AdminService } from '../services/admin.service';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-iconic-projects',
@@ -11,29 +12,41 @@ import { AdminService } from '../services/admin.service';
   styleUrls: ['./iconic-projects.page.scss'],
   imports: [CommonModule, IonContent],
 })
-export class IconicProjectsPage {
+export class IconicProjectsPage implements OnDestroy {
   private readonly adminService = inject(AdminService);
+  private projectsSubscription?: Subscription;
   egyptProjects: IconicProject[] = [];
   ameaProjects: IconicProject[] = [];
   isLoading = true;
   errorMessage = '';
   selectedImage: { url: string; title: string } | null = null;
 
-  constructor() {
-    void this.loadProjects();
+  ionViewWillEnter(): void {
+    this.isLoading = true;
+    this.errorMessage = '';
+    this.projectsSubscription?.unsubscribe();
+    this.projectsSubscription = this.adminService.watchProjects().subscribe({
+      next: (projects) => {
+        this.egyptProjects = projects.filter((project) => project.region === 'egypt');
+        this.ameaProjects = projects.filter((project) => project.region === 'amea');
+        this.isLoading = false;
+        this.errorMessage = '';
+      },
+      error: (error: unknown) => {
+        console.error('[IconicProjectsPage] Failed to watch projects:', error);
+        this.isLoading = false;
+        this.errorMessage = 'Projects are temporarily unavailable. Please try again later.';
+      },
+    });
   }
 
-  private async loadProjects(): Promise<void> {
-    try {
-      const projects = await this.adminService.loadProjects();
-      this.egyptProjects = projects.filter((project) => project.region === 'egypt');
-      this.ameaProjects = projects.filter((project) => project.region === 'amea');
-    } catch (error) {
-      console.error('[IconicProjectsPage] Failed to load projects:', error);
-      this.errorMessage = 'Projects are temporarily unavailable. Please try again later.';
-    } finally {
-      this.isLoading = false;
-    }
+  ionViewWillLeave(): void {
+    this.projectsSubscription?.unsubscribe();
+    this.projectsSubscription = undefined;
+  }
+
+  ngOnDestroy(): void {
+    this.ionViewWillLeave();
   }
 
   onImageError(event: Event) {

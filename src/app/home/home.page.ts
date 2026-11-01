@@ -179,9 +179,11 @@ export class HomePage implements OnInit, OnDestroy {
   private readonly TICK_MS = 1000;
   private safetyInductionUnsubscribe?: Unsubscribe;
   private agendaUnsubscribe?: Unsubscribe;
+  private profileUnsubscribe?: Unsubscribe;
   private viewGeneration = 0;
   private profileDocumentId = '';
   private wifiCopyResetTimer?: ReturnType<typeof setTimeout>;
+  private safetyStatusRefreshTimer?: ReturnType<typeof setInterval>;
 
   constructor(
     private router: Router,
@@ -199,6 +201,23 @@ export class HomePage implements OnInit, OnDestroy {
     void this.activitiesService.refreshUnseenCount();
     if (this.profileEmail) {
       void this.loadSafetyInductionStatus(this.profileEmail, this.viewGeneration);
+      if (!this.safetyStatusRefreshTimer) {
+        this.safetyStatusRefreshTimer = setInterval(() => {
+          if (this.profileEmail) {
+            void this.loadSafetyInductionStatus(
+              this.profileEmail,
+              this.viewGeneration
+            );
+          }
+        }, 30_000);
+      }
+    }
+  }
+
+  ionViewWillLeave(): void {
+    if (this.safetyStatusRefreshTimer) {
+      clearInterval(this.safetyStatusRefreshTimer);
+      this.safetyStatusRefreshTimer = undefined;
     }
   }
 
@@ -388,12 +407,13 @@ export class HomePage implements OnInit, OnDestroy {
     this.agendaDayDates = [];
     this.agendaSessions$.next(null);
     this.isPlantVisitRequired = false;
+    this.profileUnsubscribe?.();
+    this.profileUnsubscribe = undefined;
     if (!email) {
       this.updateSafetyInductionStatus();
       return;
     }
     void this.loadWelcomeProfile(email, uid, generation);
-    void this.loadPlantVisitRequirement(email, uid, generation);
     void this.loadSafetyInductionStatus(email, generation);
   }
 
@@ -428,29 +448,46 @@ export class HomePage implements OnInit, OnDestroy {
         );
       }
       const userDocument = snapshot.docs[0];
-      const data = userDocument?.data() as {
-        firstName?: unknown;
-        lastName?: unknown;
-        nationality?: unknown;
-        currentPosition?: unknown;
-        locationCountry?: unknown;
-        emailAddress?: unknown;
-        email?: unknown;
-        mobileNumber?: unknown;
-        mobile?: unknown;
-        mobileNo?: unknown;
-        phoneNumber?: unknown;
-        phone?: unknown;
-        phoneNo?: unknown;
-        telephone?: unknown;
-        contactNumber?: unknown;
-        shareContactCard?: unknown;
-        'Mobile Number'?: unknown;
-        'Phone Number'?: unknown;
-      } | undefined;
-      if (!data || !this.isCurrentViewingUser(email, uid, generation)) {
+      if (!userDocument || !this.isCurrentViewingUser(email, uid, generation)) {
         return;
       }
+      this.profileDocumentId = userDocument.id;
+      this.profileUnsubscribe?.();
+      this.profileUnsubscribe = this.firebaseContext.run(() =>
+        onSnapshot(
+          userDocument.ref,
+          (profileSnapshot) => {
+            const data = profileSnapshot.data();
+            if (!data || !this.isCurrentViewingUser(email, uid, generation)) {
+              return;
+            }
+            void this.updateWelcomeProfile(
+              userDocument.id,
+              data,
+              email,
+              uid,
+              generation
+            );
+          },
+          (error) => {
+            console.error('[HomePage] Failed to listen to the user profile:', error);
+          }
+        )
+      );
+      this.loadAgendaStartDate(userDocument.id, email, uid, generation);
+    } catch (error) {
+      console.error('[HomePage] Failed to load welcome profile:', error);
+    }
+  }
+
+  private async updateWelcomeProfile(
+    userId: string,
+    data: DocumentData,
+    email: string,
+    uid: string | null,
+    generation: number
+  ): Promise<void> {
+    try {
       const firstName = String(data.firstName ?? '').trim();
       const nationality = String(data.nationality ?? '').trim();
       const lastName = String(data.lastName ?? '').trim();
@@ -490,7 +527,7 @@ export class HomePage implements OnInit, OnDestroy {
       );
       if (!this.isCurrentViewingUser(email, uid, generation)) return;
       this.zone.run(() => {
-        this.profileDocumentId = userDocument?.id ?? '';
+        this.profileDocumentId = userId;
         this.shareContactCard = data.shareContactCard === true;
         this.firstName = firstName || null;
         this.profileName = profileName;
@@ -500,12 +537,10 @@ export class HomePage implements OnInit, OnDestroy {
         this.profilePosition = profilePosition;
         this.profileCountry = String(data.locationCountry ?? '').trim();
         this.welcomeGreeting = nationality ? greetingForNationality(nationality) : 'Ahlan';
+        this.isPlantVisitRequired = data.plantVisit === true;
       });
-      if (userDocument) {
-        await this.loadAgendaStartDate(userDocument.id, email, uid, generation);
-      }
     } catch (error) {
-      console.error('[HomePage] Failed to load welcome profile:', error);
+      console.error('[HomePage] Failed to update the live welcome profile:', error);
     }
   }
 
@@ -604,27 +639,9 @@ export class HomePage implements OnInit, OnDestroy {
     }
   }
 
-  private async loadPlantVisitRequirement(email: string, uid: string | null, generation: number): Promise<void> {
-    this.isPlantVisitRequired = false;
-
-    try {
-      const usersQuery = query(
-        collection(this.firestore, 'users'),
-        where('emailAddress', '==', email)
-      );
-      const snapshot = await this.firebaseContext.run(() => getDocs(usersQuery));
-      const plantVisit = snapshot.docs[0]?.data()['plantVisit'] === true;
-      if (this.isCurrentViewingUser(email, uid, generation)) {
-        this.zone.run(() => {
-          this.isPlantVisitRequired = plantVisit;
-        });
-      }
-    } catch (error) {
-      console.error('[HomePage] Failed to load plant visit requirement:', error);
-    }
-  }
-
   ngOnDestroy() {
+    this.ionViewWillLeave();
+    this.profileUnsubscribe?.();
     this.agendaUnsubscribe?.();
     if (this.wifiCopyResetTimer) clearTimeout(this.wifiCopyResetTimer);
     this.destroy$.next();

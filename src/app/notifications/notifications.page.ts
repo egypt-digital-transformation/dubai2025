@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
 import {
   IonContent,
@@ -17,7 +17,7 @@ import { FcmService } from '../services/fcm.service';
   templateUrl: './notifications.page.html',
   styleUrls: ['./notifications.page.scss'],
 })
-export class NotificationsPage {
+export class NotificationsPage implements OnDestroy {
   private readonly adminService = inject(AdminService);
   private readonly fcmService = inject(FcmService);
   private readonly router = inject(Router);
@@ -28,6 +28,8 @@ export class NotificationsPage {
   isPushSupported = false;
   isPermissionGranted = false;
   isPermissionDenied = false;
+  private refreshTimer?: ReturnType<typeof setInterval>;
+  private isRefreshing = false;
 
   get unreadCount(): number {
     return this.notifications.filter((n) => !n.opened).length;
@@ -38,23 +40,48 @@ export class NotificationsPage {
   }
 
   async ionViewWillEnter(): Promise<void> {
+    this.ionViewWillLeave();
     void this.loadNotifications();
+    this.refreshTimer = setInterval(() => {
+      if (!this.isRefreshing) {
+        void this.loadNotifications(true);
+      }
+    }, 15_000);
     await this.refreshPermissionState();
     if (this.isPushSupported && this.isPermissionGranted) {
       await this.fcmService.ensurePushTokenRegistered();
     }
   }
 
-  async loadNotifications(): Promise<void> {
-    this.isLoading = true;
-    this.loadError = '';
+  ionViewWillLeave(): void {
+    if (this.refreshTimer) {
+      clearInterval(this.refreshTimer);
+      this.refreshTimer = undefined;
+    }
+  }
+
+  ngOnDestroy(): void {
+    this.ionViewWillLeave();
+  }
+
+  async loadNotifications(silent = false): Promise<void> {
+    if (this.isRefreshing) return;
+    this.isRefreshing = true;
+    if (!silent) {
+      this.isLoading = true;
+      this.loadError = '';
+    }
     try {
       this.notifications = await this.adminService.listReceivedNotifications();
+      this.loadError = '';
     } catch (error) {
       console.error('[NotificationsPage] Failed to load received notifications:', error);
-      this.loadError = 'Notifications could not be loaded. Please try again.';
+      if (!silent || !this.notifications.length) {
+        this.loadError = 'Notifications could not be loaded. Please try again.';
+      }
     } finally {
-      this.isLoading = false;
+      this.isRefreshing = false;
+      if (!silent) this.isLoading = false;
     }
   }
 

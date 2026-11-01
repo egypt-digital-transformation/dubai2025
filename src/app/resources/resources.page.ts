@@ -1,10 +1,11 @@
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
+import { Component, OnDestroy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { IonicModule } from '@ionic/angular';
 import { inject } from '@angular/core';
 import { AdminResource, AdminService, DEFAULT_RESOURCE_TYPES, ResourceType } from '../services/admin.service';
 import { addIcons } from 'ionicons';
+import { Subscription } from 'rxjs';
 import {
   closeCircleOutline,
   folderOpenOutline,
@@ -20,8 +21,10 @@ type ResourceFilter = 'All' | ResourceType;
   styleUrls: ['resources.page.scss'],
   imports: [IonicModule, CommonModule, FormsModule],
 })
-export class ResourcesPage {
+export class ResourcesPage implements OnDestroy {
   private readonly adminService = inject(AdminService);
+  private resourcesSubscription?: Subscription;
+  private resourceTypesSubscription?: Subscription;
   resourceFilters: ResourceFilter[] = ['All', ...DEFAULT_RESOURCE_TYPES];
   activeFilter: ResourceFilter = 'All';
   resourceSearch = '';
@@ -34,22 +37,41 @@ export class ResourcesPage {
       folderOpenOutline,
       searchOutline,
     });
-    void this.loadResources();
   }
 
-  async loadResources(): Promise<void> {
-    try {
-      const [resources, resourceTypes] = await Promise.all([
-        this.adminService.loadResources(),
-        this.adminService.loadResourceTypes(),
-      ]);
-      this.resources = resources;
-      this.resourceFilters = ['All', ...resourceTypes];
-    } catch (error) {
-      console.error('[ResourcesPage] Failed to load resources:', error);
-    } finally {
-      this.isLoading = false;
-    }
+  ionViewWillEnter(): void {
+    this.isLoading = true;
+    this.resourcesSubscription?.unsubscribe();
+    this.resourceTypesSubscription?.unsubscribe();
+    this.resourcesSubscription = this.adminService.watchResources().subscribe({
+      next: (resources) => {
+        this.resources = resources;
+        this.isLoading = false;
+      },
+      error: (error: unknown) => {
+        console.error('[ResourcesPage] Failed to watch resources:', error);
+        this.isLoading = false;
+      },
+    });
+    this.resourceTypesSubscription = this.adminService.watchResourceTypes().subscribe({
+      next: (resourceTypes) => {
+        this.resourceFilters = ['All', ...resourceTypes];
+      },
+      error: (error: unknown) => {
+        console.error('[ResourcesPage] Failed to watch resource types:', error);
+      },
+    });
+  }
+
+  ionViewWillLeave(): void {
+    this.resourcesSubscription?.unsubscribe();
+    this.resourceTypesSubscription?.unsubscribe();
+    this.resourcesSubscription = undefined;
+    this.resourceTypesSubscription = undefined;
+  }
+
+  ngOnDestroy(): void {
+    this.ionViewWillLeave();
   }
 
   setFilter(filter: ResourceFilter): void {

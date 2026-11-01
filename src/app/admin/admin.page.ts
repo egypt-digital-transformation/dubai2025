@@ -269,9 +269,24 @@ export class AdminPage implements OnInit, OnDestroy {
     void this.loadEventConfiguration();
     this.refreshTimer = setInterval(() => {
       if (!this.isLoading && !this.isSending) {
+        if (this.selectedSection === 'flights') {
+          this.hasLoadedFlightDetails = false;
+        }
+        if (this.selectedSection === 'attendees') {
+          this.hasLoadedSafetyInductionStatus = false;
+        }
         void this.loadDashboard(true);
         void this.loadNotificationAudience();
         void this.loadRequests();
+        if (this.selectedSection === 'projects') {
+          void this.loadProjects(true);
+        } else if (this.selectedSection === 'resources') {
+          void this.loadResources();
+        } else if (this.selectedSection === 'engagement') {
+          void this.loadAdminActivities();
+        } else if (this.selectedSection === 'event') {
+          void this.loadEventConfiguration();
+        }
       }
     }, 30_000);
   }
@@ -532,11 +547,11 @@ export class AdminPage implements OnInit, OnDestroy {
     }
   }
 
-  async loadProjects(): Promise<void> {
+  async loadProjects(forceRefresh = false): Promise<void> {
     this.isLoadingProjects = true;
     this.projectLoadError = '';
     try {
-      this.projects = await this.adminService.loadProjects();
+      this.projects = await this.adminService.loadProjects(forceRefresh);
     } catch (error) {
       console.error('[AdminPage] Failed to load projects:', error);
       this.projectLoadError = 'Could not load projects. Check your connection and try again.';
