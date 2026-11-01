@@ -1,0 +1,139 @@
+.support-shell {
+  max-width: 860px;
+  padding-top: 1rem;
+}
+
+.support-hero {
+  margin-bottom: 1.25rem;
+  min-height: 10rem;
+  padding: clamp(1.5rem, 5vw, 2.25rem);
+}
+
+.support-hero .skyline-hero-image {
+  height: 100%;
+  inset: 0;
+  object-fit: cover;
+  object-position: center bottom;
+  opacity: 0.28;
+  width: 100%;
+}
+
+.support-hero h1 {
+  max-width: 65%;
+}
+
+.support-hero p:last-child {
+  line-height: 1.55;
+  max-width: 34rem;
+}
+
+.support-contact-grid {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.support-contact-card {
+  align-items: flex-start;
+  display: flex;
+  gap: 0.9rem;
+  margin: 0;
+  min-width: 0;
+  padding: 1.15rem;
+  transition: box-shadow 160ms ease, transform 160ms ease;
+}
+
+.support-contact-card:hover {
+  box-shadow: 0 0.75rem 1.75rem rgba(var(--holcim-premium-blue-rgb), 0.1);
+  transform: translateY(-2px);
+}
+
+.support-contact-icon {
+  align-items: center;
+  background: var(--background-color);
+  border: 1px solid var(--border-color);
+  border-radius: 0.85rem;
+  color: var(--holcim-bright-turquoise);
+  display: flex;
+  flex: 0 0 2.75rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  height: 2.75rem;
+  justify-content: center;
+}
+
+.support-contact-copy {
+  min-width: 0;
+}
+
+.support-contact-label {
+  color: var(--holcim-bright-turquoise);
+  font-size: 0.64rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  line-height: 1.4;
+  margin: 0 0 0.35rem;
+}
+
+.support-contact-copy h2 {
+  color: var(--holcim-premium-blue);
+  font-size: 1.08rem;
+  line-height: 1.3;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.support-contact-description {
+  color: var(--app-text-muted);
+  font-size: 0.84rem;
+  line-height: 1.5;
+  margin: 0.4rem 0 0.6rem;
+}
+
+.support-contact-copy a {
+  color: var(--holcim-bright-turquoise);
+  display: block;
+  font-size: 0.88rem;
+  font-weight: 700;
+  line-height: 1.45;
+  margin-top: 0.4rem;
+  overflow-wrap: anywhere;
+  text-decoration: none;
+}
+
+.support-contact-copy a:focus-visible {
+  border-radius: 0.2rem;
+  outline: 2px solid var(--holcim-bright-turquoise);
+  outline-offset: 3px;
+}
+
+.support-urgent-note {
+  line-height: 1.5;
+  margin: 1rem 0 0;
+}
+
+@media (min-width: 640px) {
+  .support-contact-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 380px) {
+  .support-hero h1 {
+    max-width: 75%;
+  }
+
+  .support-contact-card {
+    gap: 0.7rem;
+    padding: 1rem 0.85rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .support-contact-card {
+    transition: none;
+  }
+
+  .support-contact-card:hover {
+    transform: none;
+  }
+}

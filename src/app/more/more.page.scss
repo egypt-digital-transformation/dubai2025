@@ -85,6 +85,8 @@ h1, h2, p {
 
 .more-card {
   cursor: pointer;
+  overflow: hidden;
+  position: relative;
 }
 
 .more-card:hover,
