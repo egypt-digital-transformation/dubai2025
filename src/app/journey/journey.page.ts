@@ -7,6 +7,7 @@ import {
   airplaneOutline,
   bedOutline,
   businessOutline,
+  carOutline,
   calendarOutline,
   checkmarkCircleOutline,
   keyOutline,
@@ -14,7 +15,15 @@ import {
   locationOutline,
   timeOutline,
 } from 'ionicons/icons';
-import { AccommodationDetails, AdminService, FlightDetails, FlightLeg } from '../services/admin.service';
+import {
+  AccommodationDetails,
+  AdminService,
+  CarDetails,
+  FlightDetails,
+  FlightLeg,
+  JourneyDetails,
+  MeetAndGreetRepresentative,
+} from '../services/admin.service';
 import { AdminPreviewService } from '../services/admin-preview.service';
 import { Subscription } from 'rxjs';
 
@@ -28,9 +37,12 @@ import { Subscription } from 'rxjs';
 export class JourneyPage implements OnInit, OnDestroy {
   flightDetails: FlightDetails | null = null;
   accommodationDetails: AccommodationDetails | null = null;
+  carDetails: CarDetails | null = null;
+  meetAndGreetRepresentative: MeetAndGreetRepresentative | null = null;
   isLoadingFlightDetails = true;
   isLoadingAccommodationDetails = true;
   private previewSubscription?: Subscription;
+  private journeyDetailsSubscription?: Subscription;
   private loadGeneration = 0;
 
   constructor(
@@ -42,6 +54,7 @@ export class JourneyPage implements OnInit, OnDestroy {
       airplaneOutline,
       bedOutline,
       businessOutline,
+      carOutline,
       calendarOutline,
       checkmarkCircleOutline,
       keyOutline,
@@ -59,6 +72,7 @@ export class JourneyPage implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.previewSubscription?.unsubscribe();
+    this.journeyDetailsSubscription?.unsubscribe();
   }
 
   hasAirport(leg?: FlightLeg | null): boolean {
@@ -169,10 +183,13 @@ export class JourneyPage implements OnInit, OnDestroy {
 
   private async loadJourneyDetails(previewEmail?: string): Promise<void> {
     const generation = ++this.loadGeneration;
+    this.journeyDetailsSubscription?.unsubscribe();
     this.isLoadingFlightDetails = true;
     this.isLoadingAccommodationDetails = true;
     this.flightDetails = null;
     this.accommodationDetails = null;
+    this.carDetails = null;
+    this.meetAndGreetRepresentative = null;
     try {
       await this.auth.authStateReady();
       const email =
@@ -180,23 +197,30 @@ export class JourneyPage implements OnInit, OnDestroy {
         this.adminPreview.selectedUser?.email ??
         this.auth.currentUser?.email ??
         '';
-      const [flightDetails, accommodationDetails] = await Promise.all([
-        this.adminService.loadFlightDetails(email).catch((error) => {
-          console.error('[JourneyPage] Failed to load flight details:', error);
-          return null;
-        }),
-        this.adminService.loadAccommodationDetails(email).catch((error) => {
-          console.error('[JourneyPage] Failed to load accommodation details:', error);
-          return null;
-        }),
-      ]);
-      if (generation === this.loadGeneration) {
-        this.flightDetails = flightDetails;
-        this.accommodationDetails = accommodationDetails;
-      }
+      if (generation !== this.loadGeneration) return;
+      this.journeyDetailsSubscription = this.adminService
+        .watchJourneyDetails(email)
+        .subscribe({
+          next: (details: JourneyDetails) => {
+            if (generation !== this.loadGeneration) return;
+            this.flightDetails = details.flightDetails;
+            this.accommodationDetails = details.accommodationDetails;
+            this.carDetails = details.carDetails;
+            this.meetAndGreetRepresentative =
+              details.meetAndGreetRepresentative;
+            this.isLoadingFlightDetails = false;
+            this.isLoadingAccommodationDetails = false;
+          },
+          error: (error: unknown) => {
+            console.error('[JourneyPage] Failed to watch journey details:', error);
+            if (generation === this.loadGeneration) {
+              this.isLoadingFlightDetails = false;
+              this.isLoadingAccommodationDetails = false;
+            }
+          },
+        });
     } catch (error) {
       console.error('[JourneyPage] Failed to load journey details:', error);
-    } finally {
       if (generation === this.loadGeneration) {
         this.isLoadingFlightDetails = false;
         this.isLoadingAccommodationDetails = false;

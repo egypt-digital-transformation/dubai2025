@@ -4,7 +4,7 @@
       <div class="hero-accent-bar" aria-hidden="true"></div>
       <p class="hero-eyebrow">YOUR PERSONAL CONCIERGE</p>
       <h1>A seamless journey</h1>
-      <p class="hero-subtitle">Your flights and hotel reservation, together in one place.</p>
+      <p class="hero-subtitle">Your flights, transfers, and hotel reservation, together in one place.</p>
     </header>
 
     <!-- ================= FLIGHT DETAILS ================= -->
@@ -123,8 +123,69 @@
       </div>
     </section>
 
+    <section
+      *ngIf="carDetails || meetAndGreetRepresentative"
+      class="journey-section"
+      aria-labelledby="transfers-heading"
+    >
+      <div class="section-header">
+        <div>
+          <p class="section-eyebrow">ARRIVAL &amp; TRANSFERS</p>
+          <h2 id="transfers-heading">Transfers &amp; Meet &amp; Greet</h2>
+        </div>
+        <span class="section-icon-badge" aria-hidden="true">
+          <ion-icon name="car-outline"></ion-icon>
+        </span>
+      </div>
+
+      <div class="logistics-grid">
+        <article class="logistics-card" *ngIf="carDetails">
+          <h3>Car transfer</h3>
+          <dl>
+            <div class="logistics-detail">
+              <dt>Car</dt>
+              <dd>{{ carDetails?.carModel || 'To be confirmed' }}</dd>
+            </div>
+            <div class="logistics-detail">
+              <dt>License plate</dt>
+              <dd>{{ carDetails?.licensePlate || 'To be confirmed' }}</dd>
+            </div>
+          </dl>
+        </article>
+
+        <article class="logistics-card" *ngIf="meetAndGreetRepresentative">
+          <h3>Meet &amp; Greet representative</h3>
+          <dl>
+            <div class="logistics-detail">
+              <dt>Name</dt>
+              <dd>{{ meetAndGreetRepresentative?.name || 'To be confirmed' }}</dd>
+            </div>
+            <div class="logistics-detail">
+              <dt>Phone</dt>
+              <dd>
+                <a
+                  *ngIf="meetAndGreetRepresentative?.phoneNumber; else pendingRepresentativePhone"
+                  [href]="'tel:' + meetAndGreetRepresentative?.phoneNumber"
+                >
+                  {{ meetAndGreetRepresentative?.phoneNumber }}
+                </a>
+                <ng-template #pendingRepresentativePhone>To be confirmed</ng-template>
+              </dd>
+            </div>
+          </dl>
+          <p class="visa-assistance-note">
+            If you haven't issued your visa prior to departure, your Meet &amp; Greet representative will assist you with issuing it directly at the airport upon arrival.
+          </p>
+        </article>
+      </div>
+    </section>
+
     <!-- ================= ACCOMMODATION / YOUR STAY ================= -->
-    <section class="journey-section" aria-labelledby="stay-heading">
+    <section
+      *ngIf="accommodationDetails"
+      class="journey-section"
+      aria-labelledby="stay-heading"
+    >
       <div class="section-header">
         <div>
           <p class="section-eyebrow">ACCOMMODATION</p>
@@ -135,12 +196,11 @@
         </span>
       </div>
 
-      <ng-container *ngIf="accommodationDetails; else pendingStay">
-        <div class="stay-card">
+      <div class="stay-card">
           <div class="stay-header">
             <div class="hotel-identity">
               <h3 class="hotel-name">
-                {{ accommodationDetails.hotel || 'Meeting hotel · To be confirmed' }}
+                {{ accommodationDetails.hotel || 'To be confirmed' }}
               </h3>
             </div>
           </div>
@@ -153,7 +213,7 @@
               <div class="tile-copy">
                 <span class="tile-label">ROOM</span>
                 <strong class="tile-value">
-                  {{ accommodationDetails.roomNumber || 'At check-in' }}
+                  {{ accommodationDetails.roomNumber || 'To be confirmed' }}
                 </strong>
               </div>
             </div>
@@ -165,11 +225,15 @@
               <div class="tile-copy">
                 <span class="tile-label">FLOOR</span>
                 <strong class="tile-value">
-                  {{ accommodationDetails.floor || '—' }}
+                  {{ accommodationDetails.floor || 'To be confirmed' }}
                 </strong>
               </div>
             </div>
           </div>
+
+          <p class="stay-pending-note" *ngIf="!accommodationDetails.roomNumber">
+            Your room assignment will appear here once it is ready. We will notify you when it is added.
+          </p>
 
           <div class="stay-dates-grid">
             <div class="stay-date-box">
@@ -198,21 +262,7 @@
               </span>
             </div>
           </div>
-        </div>
-      </ng-container>
-
-      <ng-template #pendingStay>
-        <div class="stay-pending-card">
-          <span class="pending-icon" aria-hidden="true">
-            <ion-icon name="business-outline"></ion-icon>
-          </span>
-          <div class="pending-copy">
-            <strong>Meeting hotel · To be confirmed</strong>
-            <small>Room · Assigned at check-in</small>
-          </div>
-          <span class="pending-pill">Pending</span>
-        </div>
-      </ng-template>
+      </div>
     </section>
   </main>
 </ion-content>

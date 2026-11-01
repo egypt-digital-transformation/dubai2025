@@ -5,6 +5,7 @@ import {
   collection as angularCollection,
   collectionData,
   doc,
+  docData,
   getDoc,
   query as angularQuery,
   where as angularWhere,
@@ -31,7 +32,7 @@ import {
 import { getApp, getApps, initializeApp } from 'firebase/app';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { getDownloadURL, getStorage, ref, uploadBytes } from 'firebase/storage';
-import { Observable, map } from 'rxjs';
+import { Observable, combineLatest, from, map, of, switchMap } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { IconicProject, HolcimProduct, ProjectStats } from '../iconic-projects/models/project.model';
 import { PreviewUser } from './admin-preview.service';
@@ -65,6 +66,23 @@ export interface AccommodationDetails {
   checkIn: string;
   checkOut: string;
   updatedAt?: string;
+}
+
+export interface CarDetails {
+  carModel: string;
+  licensePlate: string;
+}
+
+export interface MeetAndGreetRepresentative {
+  name: string;
+  phoneNumber: string;
+}
+
+export interface JourneyDetails {
+  flightDetails: FlightDetails | null;
+  accommodationDetails: AccommodationDetails | null;
+  carDetails: CarDetails | null;
+  meetAndGreetRepresentative: MeetAndGreetRepresentative | null;
 }
 
 export interface FlightLeg {
@@ -457,8 +475,12 @@ export class AdminService {
     return this.call('setInteractiveActivityActive', { activityId, active });
   }
 
-  async loadProjects(): Promise<IconicProject[]> {
-    if (this.projectsCache && Date.now() - this.projectsCache.loadedAt < 60_000) {
+  async loadProjects(forceRefresh = false): Promise<IconicProject[]> {
+    if (
+      !forceRefresh &&
+      this.projectsCache &&
+      Date.now() - this.projectsCache.loadedAt < 60_000
+    ) {
       return this.projectsCache.projects;
     }
     const snapshot = await getDocs(collection(this.firestore, 'projects'));
@@ -467,6 +489,23 @@ export class AdminService {
       .sort((a, b) => a.order - b.order || a.name.localeCompare(b.name));
     this.projectsCache = { loadedAt: Date.now(), projects };
     return projects;
+  }
+
+  watchProjects(): Observable<IconicProject[]> {
+    return collectionData(angularCollection(this.firestore, 'projects'), {
+      idField: 'id',
+    }).pipe(
+      map((documents) =>
+        documents
+          .map((project) =>
+            this.toProject(
+              String(project['id'] ?? ''),
+              project as Record<string, unknown>
+            )
+          )
+          .sort((a, b) => a.order - b.order || a.name.localeCompare(b.name))
+      )
+    );
   }
 
   async loadFlightDetailsForAttendees(
@@ -632,6 +671,110 @@ export class AdminService {
     return this.loadAccommodationDetailsForUserId(userId);
   }
 
+  async loadCarDetails(email: string): Promise<CarDetails | null> {
+    const userId = await this.findUserDocumentId(email);
+    if (!userId) return null;
+    const carDocument = await firebaseGetDoc(
+      firestoreDoc(this.firestore, 'users', userId, 'cardata', 'details')
+    );
+    if (!carDocument.exists()) return null;
+
+    const data = carDocument.data();
+    const carDetails = {
+      carModel: String(data['carModel'] ?? '').trim(),
+      licensePlate: String(data['licensePlate'] ?? '').trim(),
+    };
+    return carDetails;
+  }
+
+  async loadMeetAndGreetRepresentative(
+    email: string
+  ): Promise<MeetAndGreetRepresentative | null> {
+    const userId = await this.findUserDocumentId(email);
+    if (!userId) return null;
+    const representativeDocument = await firebaseGetDoc(
+      firestoreDoc(
+        this.firestore,
+        'users',
+        userId,
+        'meet&greetrepresentative',
+        'details'
+      )
+    );
+    if (!representativeDocument.exists()) return null;
+
+    const data = representativeDocument.data();
+    const representative = {
+      name: String(data['name'] ?? '').trim(),
+      phoneNumber: String(data['phoneNumber'] ?? '').trim(),
+    };
+    return representative;
+  }
+
+  watchJourneyDetails(email: string): Observable<JourneyDetails> {
+    const emptyDetails: JourneyDetails = {
+      flightDetails: null,
+      accommodationDetails: null,
+      carDetails: null,
+      meetAndGreetRepresentative: null,
+    };
+    return from(this.findUserDocumentId(email)).pipe(
+      switchMap((userId) => {
+        if (!userId) return of(emptyDetails);
+        const userPath = ['users', userId];
+        return combineLatest({
+          flightDetails: docData(
+            doc(this.firestore, ...userPath, 'flightDetails', 'flightInfo')
+          ).pipe(
+            map((data) =>
+              data
+                ? this.toFlightDetails(data as Record<string, unknown>)
+                : null
+            )
+          ),
+          accommodationDetails: docData(
+            doc(this.firestore, ...userPath, 'accommodation', 'details')
+          ).pipe(
+            map((data) =>
+              data
+                ? this.toAccommodationDetails(data as Record<string, unknown>)
+                : null
+            )
+          ),
+          carDetails: docData(
+            doc(this.firestore, ...userPath, 'cardata', 'details')
+          ).pipe(
+            map((data) =>
+              data
+                ? {
+                    carModel: String(data['carModel'] ?? '').trim(),
+                    licensePlate: String(data['licensePlate'] ?? '').trim(),
+                  }
+                : null
+            )
+          ),
+          meetAndGreetRepresentative: docData(
+            doc(
+              this.firestore,
+              ...userPath,
+              'meet&greetrepresentative',
+              'details'
+            )
+          ).pipe(
+            map((data) =>
+              data
+                ? {
+                    name: String(data['name'] ?? '').trim(),
+                    phoneNumber: String(data['phoneNumber'] ?? '').trim(),
+                  }
+                : null
+            )
+          ),
+        });
+      })
+    );
+  }
+
   private async findUserDocumentId(email: string): Promise<string | null> {
     const normalizedEmail = email.trim().toLowerCase();
     if (!normalizedEmail) return null;
@@ -686,6 +829,21 @@ export class AdminService {
       .sort((a, b) => a.title.localeCompare(b.title));
   }
 
+  watchResources(): Observable<AdminResource[]> {
+    return collectionData(angularCollection(this.firestore, 'resources'), {
+      idField: 'id',
+    }).pipe(
+      map((documents) =>
+        documents
+          .map((resource) => ({
+            id: String(resource['id'] ?? ''),
+            ...(resource as Omit<AdminResource, 'id'>),
+          }))
+          .sort((a, b) => a.title.localeCompare(b.title))
+      )
+    );
+  }
+
   async loadResourceTypes(): Promise<ResourceType[]> {
     const [typeSnapshot, resourceSnapshot] = await Promise.all([
       getDocs(collection(this.firestore, 'resourceTypes')),
@@ -699,6 +857,32 @@ export class AdminService {
       (resourceDocument.data() as Partial<AdminResource>).type
     );
     return this.uniqueResourceTypes([...DEFAULT_RESOURCE_TYPES, ...types, ...usedTypes]);
+  }
+
+  watchResourceTypes(): Observable<ResourceType[]> {
+    return combineLatest([
+      collectionData(angularCollection(this.firestore, 'resourceTypes'), {
+        idField: 'id',
+      }),
+      collectionData(angularCollection(this.firestore, 'resources'), {
+        idField: 'id',
+      }),
+    ]).pipe(
+      map(([typeDocuments, resourceDocuments]) => {
+        const types = typeDocuments.map((typeDocument) => {
+          const name = String(typeDocument['name'] ?? '').trim();
+          return name || String(typeDocument['id'] ?? '');
+        });
+        const usedTypes = resourceDocuments.map((resource) =>
+          typeof resource['type'] === 'string' ? resource['type'] : undefined
+        );
+        return this.uniqueResourceTypes([
+          ...DEFAULT_RESOURCE_TYPES,
+          ...types,
+          ...usedTypes,
+        ]);
+      })
+    );
   }
 
   async saveResourceType(name: string): Promise<ResourceType> {
@@ -967,10 +1151,6 @@ export class AdminService {
     const checkIn = asText(data['checkIn']);
     const checkOut = asText(data['checkOut']);
     const updatedAt = asText(data['updatedAt']) || undefined;
-
-    if (!hotel && !roomNumber && !floor && !checkIn && !checkOut) {
-      return null;
-    }
 
     return {
       hotel,

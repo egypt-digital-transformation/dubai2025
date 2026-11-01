@@ -20,6 +20,11 @@ export {
   notifyUserOfRequestUpdate,
 } from "./requests/request-notifications.js";
 export {
+  notifyUserOfCarDetails,
+  notifyUserOfMeetAndGreetDetails,
+  notifyUserOfRoomAssignment,
+} from "./accommodation/accommodation-notifications.js";
+export {
   sendSessionReminders,
   sendSessionRemindersManual,
 } from "./reminders/session-reminders.js";

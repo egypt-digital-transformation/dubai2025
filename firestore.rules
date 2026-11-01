@@ -70,6 +70,24 @@ service cloud.firestore {
           );
         allow write: if isAdmin();
       }
+
+      match /cardata/{carDocumentId} {
+        allow read: if isAdmin()
+          || (
+            exists(/databases/$(database)/documents/users/$(userId))
+            && isOwnUser(get(/databases/$(database)/documents/users/$(userId)).data)
+          );
+        allow write: if isAdmin();
+      }
+
+      match /meet&greetrepresentative/{representativeDocumentId} {
+        allow read: if isAdmin()
+          || (
+            exists(/databases/$(database)/documents/users/$(userId))
+            && isOwnUser(get(/databases/$(database)/documents/users/$(userId)).data)
+          );
+        allow write: if isAdmin();
+      }
     }
 
     match /{path=**}/flightDetails/{flightId} {

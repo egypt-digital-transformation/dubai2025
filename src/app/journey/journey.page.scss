@@ -117,6 +117,68 @@
   }
 }
 
+.logistics-grid {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.logistics-card {
+  background: var(--white);
+  border: 1px solid rgba(var(--holcim-dark-blue-rgb), 0.08);
+  border-radius: 1.1rem;
+  padding: 1rem 1.1rem;
+  box-shadow: 0 4px 18px -4px rgba(var(--holcim-dark-blue-rgb), 0.06);
+
+  h3 {
+    color: var(--holcim-dark-blue);
+    font-size: 0.95rem;
+    font-weight: 700;
+    margin: 0 0 0.7rem;
+  }
+
+  dl {
+    display: grid;
+    gap: 0.6rem;
+    margin: 0;
+  }
+}
+
+.logistics-detail {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.75rem;
+
+  dt {
+    color: var(--app-text-muted);
+    font-size: 0.75rem;
+  }
+
+  dd {
+    color: var(--holcim-dark-blue);
+    font-size: 0.82rem;
+    font-weight: 650;
+    margin: 0;
+    text-align: right;
+    overflow-wrap: anywhere;
+  }
+
+  a {
+    color: var(--holcim-medium-blue);
+    text-decoration: none;
+  }
+}
+
+.visa-assistance-note {
+  background: rgba(var(--holcim-bright-blue-rgb), 0.07);
+  border-radius: 0.65rem;
+  color: var(--holcim-dark-blue);
+  font-size: 0.76rem;
+  line-height: 1.5;
+  margin: 0.85rem 0 0;
+  padding: 0.7rem 0.75rem;
+}
+
 /* =========================================
    BOARDING PASS / FLIGHT CARD
    ========================================= */
@@ -409,6 +471,13 @@
   margin-top: 0.08rem;
 }
 
+.stay-pending-note {
+  color: var(--app-text-muted);
+  font-size: 0.78rem;
+  line-height: 1.45;
+  margin: 0 0 0.75rem;
+}
+
 .stay-dates-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -492,4 +561,3 @@
   font-weight: 650;
   padding: 0.28rem 0.6rem;
 }
-
