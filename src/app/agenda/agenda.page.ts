@@ -542,6 +542,19 @@ export class AgendaPage implements OnInit, OnDestroy {
     return group.sessions.every((session) => this.getSessionStatus(session) === 'past');
   }
 
+  shouldDisplaySessionTitle(group: AgendaSessionGroup, session: Session): boolean {
+    if (group.sessions.length !== 1) return true;
+
+    const normalizeTitle = (title: string): string =>
+      title.trim().replace(/\s+/g, ' ').toLowerCase();
+
+    return normalizeTitle(group.label) !== normalizeTitle(session.title);
+  }
+
+  shouldDisplaySessionStatus(group: AgendaSessionGroup, session: Session): boolean {
+    return this.shouldDisplaySessionTitle(group, session);
+  }
+
   isGroupCollapsed(groupOrKey: AgendaSessionGroup | string): boolean {
     const key = typeof groupOrKey === 'string' ? groupOrKey : groupOrKey.key;
 

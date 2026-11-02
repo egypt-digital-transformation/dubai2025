@@ -338,7 +338,15 @@
   letter-spacing: -0.01em;
   line-height: 1.35;
   margin: 0;
-  flex: 1;
+  flex: 0 1 auto;
+}
+
+.agenda-label-heading {
+  display: flex;
+  align-items: center;
+  flex: 1 1 auto;
+  gap: 0.5rem;
+  min-width: 0;
 }
 
 .agenda-label-right {
@@ -359,6 +367,8 @@
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
+  flex-shrink: 0;
+  white-space: nowrap;
 
   ion-icon {
     font-size: 0.78rem;

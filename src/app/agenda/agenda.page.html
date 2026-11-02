@@ -113,13 +113,15 @@
         [attr.aria-controls]="group.panelId"
         (click)="toggleSessionGroup(group)"
       >
-        <span class="agenda-label-title">{{ group.label }}</span>
+        <span class="agenda-label-heading">
+          <span class="agenda-label-title">{{ group.label }}</span>
+        </span>
         <div class="agenda-label-right">
+          <span class="group-count-badge">{{ group.sessions.length }}</span>
           <span class="completed-group-pill" *ngIf="isGroupCompleted(group)">
             <ion-icon name="checkmark-outline" aria-hidden="true"></ion-icon>
             Completed
           </span>
-          <span class="group-count-badge">{{ group.sessions.length }}</span>
           <ion-icon
             name="chevron-down-outline"
             class="agenda-label-chevron"
@@ -153,7 +155,10 @@
                 <span class="live-indicator"></span>
                 <span>Live Now</span>
               </span>
-              <span class="status-badge past" *ngIf="getSessionStatus(session) === 'past'">
+              <span
+                class="status-badge past"
+                *ngIf="getSessionStatus(session) === 'past' && shouldDisplaySessionStatus(group, session)"
+              >
                 <ion-icon name="checkmark-outline" aria-hidden="true"></ion-icon>
                 <span>Completed</span>
               </span>
@@ -164,7 +169,9 @@
             </div>
 
             <!-- Title -->
-            <h3 class="session-title">{{ session.title }}</h3>
+            <h3 class="session-title" *ngIf="shouldDisplaySessionTitle(group, session)">
+              {{ session.title }}
+            </h3>
 
             <!-- Speaker Info -->
             <div
