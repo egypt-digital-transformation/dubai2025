@@ -287,6 +287,24 @@
   margin-bottom: 0.75rem;
 }
 
+.agenda-single-session-divider {
+  border-top: 1px solid var(--app-border);
+  margin: 1.35rem 0 0.85rem;
+  position: relative;
+
+  &::before {
+    background: var(--holcim-bright-blue);
+    border: 2px solid var(--app-background);
+    border-radius: 50%;
+    content: '';
+    height: 0.55rem;
+    left: 0;
+    position: absolute;
+    top: -0.35rem;
+    width: 0.55rem;
+  }
+}
+
 .agenda-label-toggle {
   width: 100%;
   min-height: 2.6rem;
@@ -400,6 +418,10 @@
   display: grid;
   gap: 0.65rem;
   padding-top: 0.55rem;
+
+  &.single-session {
+    padding-top: 0;
+  }
 
   .session-card {
     margin-bottom: 0;

@@ -103,8 +103,12 @@
 
           <ng-container *ngIf="!scheduleEmptyMessage">
             <ng-container *ngIf="filteredSessionGroups.length > 0; else noSessions">
-    <section *ngFor="let group of filteredSessionGroups; let gi = index" class="agenda-session-group">
+    <section
+      *ngFor="let group of filteredSessionGroups; let gi = index"
+      class="agenda-session-group"
+    >
       <button
+        *ngIf="group.sessions.length > 1"
         type="button"
         class="agenda-label-toggle"
         [class.completed-group]="isGroupCompleted(group)"
@@ -131,9 +135,16 @@
         </div>
       </button>
       <div
+        *ngIf="gi > 0 && group.sessions.length === 1"
+        class="agenda-single-session-divider"
+        role="separator"
+        aria-label="Next agenda item"
+      ></div>
+      <div
         [id]="group.panelId"
         class="agenda-label-sessions"
-        *ngIf="!isGroupCollapsed(group)"
+        [class.single-session]="group.sessions.length === 1"
+        *ngIf="group.sessions.length === 1 || !isGroupCollapsed(group)"
       >
       <article
         *ngFor="let session of group.sessions"
@@ -157,7 +168,7 @@
               </span>
               <span
                 class="status-badge past"
-                *ngIf="getSessionStatus(session) === 'past' && shouldDisplaySessionStatus(group, session)"
+                *ngIf="getSessionStatus(session) === 'past'"
               >
                 <ion-icon name="checkmark-outline" aria-hidden="true"></ion-icon>
                 <span>Completed</span>
@@ -169,7 +180,7 @@
             </div>
 
             <!-- Title -->
-            <h3 class="session-title" *ngIf="shouldDisplaySessionTitle(group, session)">
+            <h3 class="session-title" *ngIf="session.title">
               {{ session.title }}
             </h3>
 
