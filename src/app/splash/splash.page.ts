@@ -4,7 +4,7 @@ import { AuthService } from '../services/auth.service';
 import { IonContent } from "@ionic/angular/standalone";
 import { IonicModule } from "@ionic/angular";
 
-const SPLASH_DURATION_MS = 10_000;
+const SPLASH_DURATION_MS = 5_000;
 
 @Component({
   selector: 'app-splash',
