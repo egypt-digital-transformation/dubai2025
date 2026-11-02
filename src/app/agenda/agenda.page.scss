@@ -284,44 +284,43 @@
 }
 
 .agenda-session-group {
-  margin-bottom: 1rem;
+  margin-bottom: 0.75rem;
 }
 
-// Group Header Toggle - Clean & Executive
 .agenda-label-toggle {
   width: 100%;
-  min-height: 3.25rem;
-  padding: 0.8rem 1rem;
+  min-height: 2.6rem;
+  padding: 0.55rem 0.25rem 0.55rem 0.65rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
-  border: 1px solid rgba(var(--black-rgb), 0.08);
-  border-left: 4px solid var(--holcim-premium-blue);
-  border-radius: 10px;
-  background: var(--white);
+  border: 0;
+  border-bottom: 1px solid var(--app-border);
+  border-left: 3px solid var(--group-color, var(--holcim-premium-blue));
+  border-radius: 0;
+  background: transparent;
   color: var(--app-text);
   font-family: var(--app-font-headline) !important;
   font-weight: 800;
   text-align: left;
   cursor: pointer;
-  box-shadow: 0 1px 3px rgba(var(--black-rgb), 0.04);
-  transition: background 0.2s ease, border-color 0.2s ease;
+  box-shadow: none;
+  transition: border-color 0.2s ease, color 0.2s ease;
 
   &:hover {
-    background: #f8fafc;
+    color: var(--holcim-bright-blue);
   }
 
   &.completed-group {
     border-left-color: #4bb05b;
-    background: #fafcfb;
 
     .agenda-label-title {
       color: #244369;
     }
 
     &:hover {
-      background: #f3f8f4;
+      color: #244369;
     }
   }
 
@@ -379,17 +378,18 @@
   flex: 0 0 auto;
   font-size: 1.1rem;
   color: #64748b;
+  transform: rotate(180deg);
   transition: transform 0.2s ease;
 
   &.collapsed {
-    transform: rotate(-90deg);
+    transform: rotate(0deg);
   }
 }
 
 .agenda-label-sessions {
   display: grid;
-  gap: 0.75rem;
-  padding-top: 0.75rem;
+  gap: 0.65rem;
+  padding-top: 0.55rem;
 
   .session-card {
     margin-bottom: 0;
@@ -805,7 +805,7 @@ $holcim-green: var(--app-accent);
     border-left: 3px solid var(--session-accent);
     border-radius: 1rem;
     box-shadow: 0 5px 18px rgba(var(--holcim-dark-blue-rgb), 0.055);
-    margin-bottom: 0.9rem;
+    margin-bottom: 0.7rem;
     transition: box-shadow 160ms ease, transform 160ms ease;
   }
 
@@ -815,15 +815,20 @@ $holcim-green: var(--app-accent);
   }
 
   .session-content {
-    padding: 1rem 1.05rem;
+    padding: 0.85rem 0.95rem;
   }
 
   .session-card-topline {
     align-items: center;
     display: flex;
-    gap: 0.65rem;
-    justify-content: flex-start;
+    gap: 0.5rem;
+    justify-content: space-between;
     min-width: 0;
+    margin-bottom: 0.45rem;
+  }
+
+  .status-badge {
+    margin-left: auto;
   }
 
   .session-time {
@@ -836,7 +841,7 @@ $holcim-green: var(--app-accent);
     font-size: 0.72rem;
     font-weight: 700;
     gap: 0.35rem;
-    padding: 0.38rem 0.6rem;
+    padding: 0.32rem 0.55rem;
     white-space: nowrap;
   }
 
@@ -848,18 +853,18 @@ $holcim-green: var(--app-accent);
   .session-title {
     font-family: var(--app-font-family) !important;
     color: var(--app-text);
-    font-size: 1.08rem;
+    font-size: 1.03rem;
     font-weight: 700;
     letter-spacing: -0.01em;
-    line-height: 1.35;
-    margin: 0.65rem 0 0;
+    line-height: 1.3;
+    margin: 0.4rem 0 0;
     overflow-wrap: anywhere;
   }
 
   .speaker-info {
     align-items: center;
     cursor: default;
-    margin: 0.85rem 0 0;
+    margin: 0.65rem 0 0;
     min-width: 0;
   }
 
@@ -894,14 +899,14 @@ $holcim-green: var(--app-accent);
 
   .speaker-role {
     font-size: 0.72rem;
-    margin-top: 0.15rem;
+    margin-top: 0.1rem;
   }
 
   .session-meta.sleek {
-    border-top: 1px solid var(--background-color);
+    border-top: 1px solid var(--app-border);
     display: flex;
-    margin: 0.85rem 0 0;
-    padding: 0.75rem 0 0;
+    margin: 0.65rem 0 0;
+    padding: 0.55rem 0 0;
   }
 
   .session-meta .meta-item {
@@ -918,7 +923,7 @@ $holcim-green: var(--app-accent);
   }
 
   .session-meta .meta-value {
-    color: var(--dark-gray);
+    color: var(--holcim-dark-blue);
     font-weight: 500;
     overflow-wrap: anywhere;
   }
@@ -928,11 +933,11 @@ $holcim-green: var(--app-accent);
   }
 
   .session-meta .meta-item.clickable .meta-value {
-    color: var(--dark-gray);
+    color: var(--holcim-dark-blue);
   }
 
   .session-meta .meta-item.clickable:hover .meta-value {
-    color: var(--dark-gray);
+    color: var(--holcim-dark-blue);
   }
 
   @media (max-width: 480px) {
@@ -941,14 +946,14 @@ $holcim-green: var(--app-accent);
     }
 
     .session-content {
-      padding: 0.9rem;
+      padding: 0.8rem 0.85rem;
     }
 
 
 
     .session-time {
       font-size: 0.68rem;
-      padding: 0.34rem 0.5rem;
+      padding: 0.3rem 0.45rem;
     }
   }
 
