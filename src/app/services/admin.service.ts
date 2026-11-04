@@ -505,7 +505,7 @@ export class AdminService {
     const snapshot = await getDocs(collection(this.firestore, 'projects'));
     const projects = snapshot.docs
       .map((projectDocument) => this.toProject(projectDocument.id, projectDocument.data()))
-      .sort((a, b) => a.order - b.order || a.name.localeCompare(b.name));
+      .sort((a, b) => (a.order > 0 ? a.order : Number.MAX_SAFE_INTEGER) - (b.order > 0 ? b.order : Number.MAX_SAFE_INTEGER) || a.name.localeCompare(b.name));
     this.projectsCache = { loadedAt: Date.now(), projects };
     return projects;
   }
@@ -523,7 +523,7 @@ export class AdminService {
                 project as Record<string, unknown>
               )
             )
-            .sort((a, b) => a.order - b.order || a.name.localeCompare(b.name))
+            .sort((a, b) => (a.order > 0 ? a.order : Number.MAX_SAFE_INTEGER) - (b.order > 0 ? b.order : Number.MAX_SAFE_INTEGER) || a.name.localeCompare(b.name))
         )
       )
     );
@@ -1208,15 +1208,14 @@ export class AdminService {
     assetType: 'image' | 'model',
     projectName = 'project'
   ): Promise<string> {
-    const storage = getStorage(
-      getApp(),
-      `gs://${environment.hsefirebaseConfig.storageBucket}`
-    );
     const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '-');
     const projectId = this.createProjectId(projectName);
-    const assetRef = ref(storage, `projects/${projectId}/${assetType}-${Date.now()}-${safeName}`);
-    await uploadBytes(assetRef, file, { contentType: file.type || undefined });
-    return getDownloadURL(assetRef);
+    const objectPath = `projects/${projectId}/${assetType}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}-${safeName}`;
+    return this.uploadFileToBucket(
+      environment.hsefirebaseConfig.storageBucket,
+      objectPath,
+      file
+    );
   }
 
   async ensureProjectAssetStored(
@@ -1295,10 +1294,25 @@ export class AdminService {
   }
 
   private toProject(id: string, data: Record<string, unknown>): IconicProject {
+    const assetType = (data['assetType'] as 'image' | 'model' | undefined) ?? 'image';
+    const heroImage = typeof data['heroImage'] === 'string' ? data['heroImage'].trim() : '';
+    const assetUrl = typeof data['assetUrl'] === 'string' ? data['assetUrl'].trim() : '';
+    const primaryImage = assetType === 'image' ? (heroImage || assetUrl) : heroImage;
+    const rawImages = Array.isArray(data['images'])
+      ? data['images']
+          .map((item) => (typeof item === 'string' ? item.trim() : ''))
+          .filter(Boolean)
+      : [];
+    const images = Array.from(
+      new Set([primaryImage, ...rawImages].filter(Boolean))
+    );
+
     return {
       ...(data as Omit<IconicProject, 'id'>),
       id,
-      order: typeof data['order'] === 'number' ? data['order'] : 0,
+      heroImage: primaryImage || images[0] || heroImage,
+      images,
+      order: Number.isFinite(Number(data['order'])) ? Number(data['order']) : 0,
       tags: Array.isArray(data['tags']) ? data['tags'].map(String) : [],
       products: Array.isArray(data['products']) ? data['products'] as HolcimProduct[] : [],
       stats: typeof data['stats'] === 'object' && data['stats'] !== null

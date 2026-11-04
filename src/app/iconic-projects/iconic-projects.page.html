@@ -25,7 +25,6 @@
           role="button"
           tabindex="0"
           [attr.aria-label]="'Open ' + (featuredProject.title || featuredProject.name)"
-          (click)="openProjectAsset(featuredProject)"
           (keydown.enter)="openProjectAsset(featuredProject)"
           (keydown.space)="$event.preventDefault(); openProjectAsset(featuredProject)"
         >
@@ -33,21 +32,39 @@
             <span>{{ featuredProject.assetType === 'model' ? '3D MODEL' : featuredProject.country }}</span>
             <small>{{ featuredProject.assetType === 'model' ? 'Interactive model available' : 'Project image' }}</small>
           </div>
-          <img
-            [src]="featuredProject.heroImage"
-            [alt]="featuredProject.name + ', ' + featuredProject.subtitle"
-            class="portfolio-image"
-            fetchpriority="high"
-            (error)="onImageError($event)"
-          />
+          <div
+            class="project-gallery-scroll"
+            (scroll)="onProjectGalleryScroll($event, featuredProject)"
+          >
+            <img
+              *ngFor="let imgUrl of getProjectImages(featuredProject); let imgIdx = index"
+              [src]="imgUrl"
+              [alt]="featuredProject.name + ', ' + featuredProject.subtitle + ' (' + (imgIdx + 1) + ')'"
+              class="portfolio-image"
+              [attr.fetchpriority]="imgIdx === 0 ? 'high' : 'auto'"
+              (click)="openProjectAsset(featuredProject, imgIdx)"
+              (error)="onImageError($event)"
+            />
+          </div>
           <div class="feature-shade"></div>
-          <figcaption class="feature-caption">
+          <figcaption class="feature-caption" (click)="openProjectAsset(featuredProject)">
             <span class="feature-kicker">FEATURED LANDMARK · EGYPT</span>
             <h2>{{ featuredProject.name }}</h2>
             <p>{{ featuredProject.location || featuredProject.subtitle }} · {{ featuredProject.country }}</p>
             <span class="asset-badge" *ngIf="featuredProject.assetType === 'model'">VIEW 3D MODEL</span>
           </figcaption>
-          <span class="image-index">01</span>
+          <span class="image-index">
+            {{ getProjectImages(featuredProject).length > 1
+              ? (getActiveSlideIndex(featuredProject) + 1) + ' / ' + getProjectImages(featuredProject).length
+              : '01' }}
+          </span>
+          <div class="gallery-dots" *ngIf="getProjectImages(featuredProject).length > 1" aria-hidden="true">
+            <span
+              *ngFor="let _ of getProjectImages(featuredProject); let dotIdx = index"
+              class="gallery-dot"
+              [class.active]="dotIdx === getActiveSlideIndex(featuredProject)">
+            </span>
+          </div>
         </figure>
       </section>
 
@@ -67,7 +84,6 @@
               role="button"
               tabindex="0"
               [attr.aria-label]="'Open ' + (project.title || project.name)"
-              (click)="openProjectAsset(project)"
               (keydown.enter)="openProjectAsset(project)"
               (keydown.space)="$event.preventDefault(); openProjectAsset(project)"
             >
@@ -75,14 +91,31 @@
                 <span>{{ project.assetType === 'model' ? '3D MODEL' : project.country }}</span>
                 <small>{{ project.assetType === 'model' ? 'Interactive model available' : 'Project image' }}</small>
               </div>
-              <img
-                [src]="project.heroImage"
-                [alt]="project.name + ', ' + project.subtitle"
-                class="portfolio-image"
-                loading="lazy"
-                (error)="onImageError($event)"
-              />
+              <div
+                class="project-gallery-scroll"
+                (scroll)="onProjectGalleryScroll($event, project)"
+              >
+                <img
+                  *ngFor="let imgUrl of getProjectImages(project); let imgIdx = index"
+                  [src]="imgUrl"
+                  [alt]="project.name + ', ' + project.subtitle + ' (' + (imgIdx + 1) + ')'"
+                  class="portfolio-image"
+                  loading="lazy"
+                  (click)="openProjectAsset(project, imgIdx)"
+                  (error)="onImageError($event)"
+                />
+              </div>
               <span class="card-index">0{{ i + 2 }}</span>
+              <span class="gallery-count-pill" *ngIf="getProjectImages(project).length > 1">
+                {{ getActiveSlideIndex(project) + 1 }} / {{ getProjectImages(project).length }}
+              </span>
+              <div class="gallery-dots" *ngIf="getProjectImages(project).length > 1" aria-hidden="true">
+                <span
+                  *ngFor="let _ of getProjectImages(project); let dotIdx = index"
+                  class="gallery-dot"
+                  [class.active]="dotIdx === getActiveSlideIndex(project)">
+                </span>
+              </div>
             </figure>
             <div class="card-copy">
               <p class="project-location">{{ project.location || project.subtitle }} · {{ project.country }}</p>
@@ -115,7 +148,6 @@
               role="button"
               tabindex="0"
               [attr.aria-label]="'Open ' + (project.title || project.name)"
-              (click)="openProjectAsset(project)"
               (keydown.enter)="openProjectAsset(project)"
               (keydown.space)="$event.preventDefault(); openProjectAsset(project)"
             >
@@ -123,14 +155,31 @@
                 <span>{{ project.country }}</span>
                 <small>Photography unavailable</small>
               </div>
-              <img
-                [src]="project.heroImage"
-                [alt]="project.name + ', ' + project.subtitle"
-                class="portfolio-image"
-                loading="lazy"
-                (error)="onImageError($event)"
-              />
+              <div
+                class="project-gallery-scroll"
+                (scroll)="onProjectGalleryScroll($event, project)"
+              >
+                <img
+                  *ngFor="let imgUrl of getProjectImages(project); let imgIdx = index"
+                  [src]="imgUrl"
+                  [alt]="project.name + ', ' + project.subtitle + ' (' + (imgIdx + 1) + ')'"
+                  class="portfolio-image"
+                  loading="lazy"
+                  (click)="openProjectAsset(project, imgIdx)"
+                  (error)="onImageError($event)"
+                />
+              </div>
               <span class="card-index">0{{ i + 1 }}</span>
+              <span class="gallery-count-pill" *ngIf="getProjectImages(project).length > 1">
+                {{ getActiveSlideIndex(project) + 1 }} / {{ getProjectImages(project).length }}
+              </span>
+              <div class="gallery-dots" *ngIf="getProjectImages(project).length > 1" aria-hidden="true">
+                <span
+                  *ngFor="let _ of getProjectImages(project); let dotIdx = index"
+                  class="gallery-dot"
+                  [class.active]="dotIdx === getActiveSlideIndex(project)">
+                </span>
+              </div>
             </figure>
             <div class="card-copy">
               <p class="project-location">{{ project.location || project.subtitle }} · {{ project.country }}</p>
@@ -179,4 +228,16 @@
     [alt]="image.title"
     (click)="$event.stopPropagation()"
   />
+  <div *ngIf="image.urls.length > 1" class="asset-viewer-thumbs" (click)="$event.stopPropagation()">
+    <button
+      *ngFor="let thumbUrl of image.urls; let idx = index"
+      type="button"
+      class="asset-viewer-thumb"
+      [class.active]="idx === image.index"
+      (click)="selectViewerImage(idx, $event)"
+      [attr.aria-label]="'View photo ' + (idx + 1)"
+    >
+      <img [src]="thumbUrl" [alt]="image.title + ' thumbnail ' + (idx + 1)" />
+    </button>
+  </div>
 </div>

@@ -182,13 +182,116 @@
   position: relative;
   z-index: 1;
   display: block;
+  flex: 0 0 100%;
   width: 100%;
   height: 100%;
   object-fit: cover;
+  scroll-snap-align: start;
 }
 
-.feature-image > .portfolio-image {
+.project-gallery-scroll {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  width: 100%;
+  height: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.feature-image .project-gallery-scroll > .portfolio-image {
   object-position: center 42%;
+}
+
+.gallery-count-pill {
+  position: absolute;
+  z-index: 3;
+  top: 12px;
+  right: 12px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(var(--black-rgb), 0.55);
+  color: var(--white);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  pointer-events: none;
+}
+
+.gallery-dots {
+  position: absolute;
+  z-index: 3;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(var(--black-rgb), 0.42);
+  pointer-events: none;
+}
+
+.gallery-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(var(--white-rgb), 0.48);
+  transition: transform 0.16s ease, background-color 0.16s ease;
+
+  &.active {
+    background: var(--white);
+    transform: scale(1.25);
+  }
+}
+
+.asset-viewer-thumbs {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+  max-width: 92vw;
+  overflow-x: auto;
+  padding: 6px 10px;
+  border-radius: 12px;
+  background: rgba(var(--black-rgb), 0.58);
+  -webkit-overflow-scrolling: touch;
+}
+
+.asset-viewer-thumb {
+  flex: 0 0 56px;
+  width: 56px;
+  height: 40px;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 6px;
+  overflow: hidden;
+  background: transparent;
+  cursor: pointer;
+  opacity: 0.68;
+  transition: opacity 0.15s ease, border-color 0.15s ease;
+
+  &.active {
+    border-color: var(--accent);
+    opacity: 1;
+  }
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
 }
 
 .feature-shade {

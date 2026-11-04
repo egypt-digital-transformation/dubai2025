@@ -12,6 +12,7 @@ export interface IconicProject {
   /** Percentage-based position for rendering on the AMEA map (0–100) */
   mapPosition?: { x: number; y: number };
   heroImage: string;
+  images?: string[];
   assetType?: 'image' | 'model';
   assetUrl?: string;
   modelFormat?: 'glb' | 'gltf';

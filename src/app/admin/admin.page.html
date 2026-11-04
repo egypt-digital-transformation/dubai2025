@@ -367,6 +367,7 @@
         <div class="project-form-grid">
           <ion-input label="Title" labelPlacement="stacked" fill="outline" [(ngModel)]="projectForm.title" name="projectTitle" required></ion-input>
           <ion-input label="Location" labelPlacement="stacked" fill="outline" [(ngModel)]="projectForm.location" name="projectLocation" required></ion-input>
+          <ion-input label="Order" type="number" min="1" step="1" labelPlacement="stacked" fill="outline" [(ngModel)]="projectForm.order" name="projectOrder" placeholder="1" required></ion-input>
           <div class="country-picker">
             <label class="country-picker-label" for="project-country-search">Region / country</label>
             <button
@@ -447,21 +448,58 @@
           <ion-select-option value="image">Image</ion-select-option>
           <ion-select-option value="model">3D model (GLB / GLTF)</ion-select-option>
         </ion-select>
-        <div *ngIf="projectForm.assetType === 'image'" class="project-upload">
-          <img
-            *ngIf="projectForm.assetUrl"
-            class="project-asset-preview"
-            [src]="projectForm.assetUrl"
-            [alt]="projectForm.title + ' preview'"
-            (error)="$any($event.target).hidden = true"
-          />
-          <ion-icon name="cloud-upload-outline" aria-hidden="true"></ion-icon>
-          <label for="project-image-upload">
-            {{ projectForm.assetUrl ? 'Replace image' : 'Upload image' }}
-            <span *ngIf="!projectForm.assetUrl">(required)</span>
-          </label>
-          <input id="project-image-upload" type="file" accept="image/*" (change)="onProjectFileSelected($event)" />
-        </div>
+        <ng-container *ngIf="projectForm.assetType === 'image'">
+          <div *ngIf="projectImageItems.length" class="project-photos-manager">
+            <div class="project-photos-header">
+              <label>Project photos ({{ projectImageItems.length }})</label>
+              <span>Scroll horizontally · Tap the star to mark the primary photo</span>
+            </div>
+            <div class="project-photos-strip" role="list" aria-label="Uploaded project photos">
+              <article
+                class="project-photo-card"
+                *ngFor="let item of projectImageItems; let idx = index"
+                [class.is-primary]="item.id === primaryProjectImageId"
+                role="listitem">
+                <div class="project-photo-thumb">
+                  <img
+                    [src]="item.previewUrl"
+                    [alt]="projectForm.title + ' photo ' + (idx + 1)"
+                    (error)="$any($event.target).hidden = true" />
+                  <span *ngIf="item.id === primaryProjectImageId" class="project-photo-primary-badge">
+                    <ion-icon name="star"></ion-icon>
+                    Primary
+                  </span>
+                </div>
+                <div class="project-photo-actions">
+                  <button
+                    type="button"
+                    class="project-photo-primary-btn"
+                    [class.active]="item.id === primaryProjectImageId"
+                    (click)="setPrimaryProjectImage(item.id)"
+                    [attr.aria-label]="item.id === primaryProjectImageId ? 'Primary photo' : 'Mark as primary photo'">
+                    <ion-icon [name]="item.id === primaryProjectImageId ? 'star' : 'star-outline'"></ion-icon>
+                    <span>{{ item.id === primaryProjectImageId ? 'Primary' : 'Set primary' }}</span>
+                  </button>
+                  <button
+                    type="button"
+                    class="project-photo-remove-btn"
+                    (click)="removeProjectImage(item.id)"
+                    [attr.aria-label]="'Remove photo ' + (idx + 1)">
+                    <ion-icon name="trash-outline"></ion-icon>
+                  </button>
+                </div>
+              </article>
+            </div>
+          </div>
+          <div class="project-upload">
+            <ion-icon name="cloud-upload-outline" aria-hidden="true"></ion-icon>
+            <label for="project-image-upload">
+              {{ projectImageItems.length ? 'Add more photos' : 'Upload photos' }}
+              <span *ngIf="!projectImageItems.length">(required · multiple allowed)</span>
+            </label>
+            <input id="project-image-upload" type="file" accept="image/*" multiple (change)="onProjectFileSelected($event)" />
+          </div>
+        </ng-container>
         <ng-container *ngIf="projectForm.assetType === 'model'">
           <ion-select label="Model format" labelPlacement="stacked" fill="outline" [(ngModel)]="projectForm.modelFormat" name="projectModelFormat">
             <ion-select-option value="glb">GLB</ion-select-option>
@@ -478,7 +516,11 @@
           </div>
         </ng-container>
         <div class="send-row project-form-actions">
-          <p>{{ selectedProjectFile?.name || 'Choose the project asset before saving.' }}</p>
+          <p>
+            {{ projectForm.assetType === 'image'
+              ? (projectImageItems.length ? projectImageItems.length + ' photo(s) ready · primary photo will appear first' : 'Upload one or more photos before saving.')
+              : (selectedProjectFile?.name || 'Choose the project asset before saving.') }}
+          </p>
           <span>
             <ion-button type="button" fill="outline" class="project-cancel-button" (click)="cancelProjectEdit()">Cancel</ion-button>
             <ion-button type="submit" class="project-save-button" [disabled]="isSavingProject">
@@ -500,7 +542,7 @@
         <article class="admin-project-item" *ngFor="let project of projects">
           <img *ngIf="(project.assetType ?? 'image') === 'image'" [src]="project.assetUrl || project.heroImage" [alt]="project.title || project.name" (error)="$any($event.target).hidden = true" />
           <div>
-            <p class="eyebrow">{{ project.region | uppercase }} · {{ project.country }}</p>
+            <p class="eyebrow">{{ project.region | uppercase }} · {{ project.country }} · Order #{{ project.order }}</p>
             <h3>{{ project.title || project.name }}</h3>
             <p>{{ project.location || project.subtitle }}</p>
           </div>

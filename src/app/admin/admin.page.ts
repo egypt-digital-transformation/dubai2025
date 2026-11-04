@@ -19,6 +19,8 @@ import {
   refreshOutline,
   trashOutline,
   sendOutline,
+  star,
+  starOutline,
   statsChartOutline,
   cloudUploadOutline,
 } from 'ionicons/icons';
@@ -65,6 +67,14 @@ type AttendeeStatusFilter = 'all' | 'active' | 'loggedIn' | 'installed' | 'pushR
 interface ProjectCountry {
   name: string;
   code: string;
+}
+
+export interface ProjectImageItem {
+  id: string;
+  previewUrl: string;
+  storedUrl?: string;
+  file?: File;
+  name: string;
 }
 
 @Component({
@@ -149,6 +159,8 @@ export class AdminPage implements OnInit, OnDestroy {
   editingProjectId: string | null = null;
   isProjectFormOpen = false;
   selectedProjectFile: File | null = null;
+  projectImageItems: ProjectImageItem[] = [];
+  primaryProjectImageId = '';
   projectForm = this.emptyProjectForm();
   readonly projectCountries: ProjectCountry[] = countryData
     .filter((country) => country.iso)
@@ -208,6 +220,8 @@ export class AdminPage implements OnInit, OnDestroy {
       refreshOutline,
       trashOutline,
       sendOutline,
+      star,
+      starOutline,
       statsChartOutline,
       cloudUploadOutline,
       calendarOutline,
@@ -921,6 +935,9 @@ export class AdminPage implements OnInit, OnDestroy {
     this.isProjectFormOpen = true;
     this.projectForm = this.emptyProjectForm();
     this.selectedProjectFile = null;
+    this.clearProjectImageObjectUrls();
+    this.projectImageItems = [];
+    this.primaryProjectImageId = '';
     this.closeCountryPicker();
     this.projectError = '';
     this.projectNotice = '';
@@ -929,9 +946,34 @@ export class AdminPage implements OnInit, OnDestroy {
   editProject(project: IconicProject): void {
     this.editingProjectId = project.id;
     this.isProjectFormOpen = true;
+    const primaryUrl = (project.heroImage || project.assetUrl || '').trim();
+    const rawUrls = Array.from(
+      new Set(
+        [
+          primaryUrl,
+          ...(Array.isArray(project.images) ? project.images : []),
+          project.assetUrl ?? '',
+          project.heroImage ?? '',
+        ]
+          .map((url) => url.trim())
+          .filter(Boolean)
+      )
+    );
+    this.clearProjectImageObjectUrls();
+    this.projectImageItems =
+      (project.assetType ?? 'image') === 'image'
+        ? rawUrls.map((url, idx) => ({
+            id: `existing-${idx}-${Date.now()}`,
+            previewUrl: url,
+            storedUrl: url,
+            name: `Photo ${idx + 1}`,
+          }))
+        : [];
+    this.primaryProjectImageId = this.projectImageItems[0]?.id ?? '';
     this.projectForm = {
       title: project.title ?? project.name,
       location: project.location ?? project.subtitle,
+      order: Number.isFinite(Number(project.order)) && Number(project.order) > 0 ? Number(project.order) : 1,
       country: project.country || 'Egypt',
       assetType: project.assetType ?? 'image',
       assetUrl: project.assetUrl ?? project.heroImage,
@@ -950,8 +992,41 @@ export class AdminPage implements OnInit, OnDestroy {
   cancelProjectEdit(): void {
     this.editingProjectId = null;
     this.isProjectFormOpen = false;
+    this.selectedProjectFile = null;
+    this.clearProjectImageObjectUrls();
+    this.projectImageItems = [];
+    this.primaryProjectImageId = '';
     this.projectError = '';
     this.closeCountryPicker();
+  }
+
+  setPrimaryProjectImage(id: string): void {
+    this.primaryProjectImageId = id;
+    const item = this.projectImageItems.find((entry) => entry.id === id);
+    if (item) {
+      this.projectForm.assetUrl = item.storedUrl || item.previewUrl;
+    }
+  }
+
+  removeProjectImage(id: string): void {
+    const target = this.projectImageItems.find((entry) => entry.id === id);
+    if (target?.file && target.previewUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(target.previewUrl);
+    }
+    this.projectImageItems = this.projectImageItems.filter((entry) => entry.id !== id);
+    if (this.primaryProjectImageId === id) {
+      this.primaryProjectImageId = this.projectImageItems[0]?.id ?? '';
+    }
+    const primary = this.projectImageItems.find((entry) => entry.id === this.primaryProjectImageId);
+    this.projectForm.assetUrl = primary ? (primary.storedUrl || primary.previewUrl) : '';
+  }
+
+  private clearProjectImageObjectUrls(): void {
+    for (const item of this.projectImageItems) {
+      if (item.file && item.previewUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(item.previewUrl);
+      }
+    }
   }
 
   async saveProject(): Promise<void> {
@@ -960,8 +1035,13 @@ export class AdminPage implements OnInit, OnDestroy {
       this.projectError = 'Title, location, region, and description are required.';
       return;
     }
-    if (form.assetType === 'image' && !this.selectedProjectFile && !form.assetUrl) {
-      this.projectError = 'Upload an image before saving.';
+    const parsedOrder = Number(form.order);
+    if (!Number.isFinite(parsedOrder) || parsedOrder < 1) {
+      this.projectError = 'Order must be a valid number (1 or higher).';
+      return;
+    }
+    if (form.assetType === 'image' && !this.projectImageItems.length && !form.assetUrl) {
+      this.projectError = 'Upload at least one image before saving.';
       return;
     }
     if (form.assetType === 'model' && !this.selectedProjectFile && !form.assetUrl.trim()) {
@@ -971,17 +1051,65 @@ export class AdminPage implements OnInit, OnDestroy {
     this.isSavingProject = true;
     this.projectError = '';
     try {
-      const assetUrl = this.selectedProjectFile
-        ? await this.adminService.uploadProjectAsset(
-          this.selectedProjectFile,
-          form.assetType,
-          form.title.trim()
-        )
-        : await this.adminService.ensureProjectAssetStored(
-          form.assetUrl.trim(),
-          form.assetType,
-          form.title.trim()
-        );
+      let assetUrl = '';
+      let images: string[] = [];
+
+      if (form.assetType === 'image') {
+        const itemsToUpload = this.projectImageItems.length
+          ? [...this.projectImageItems]
+          : [
+              {
+                id: 'fallback-0',
+                previewUrl: form.assetUrl.trim(),
+                storedUrl: form.assetUrl.trim(),
+                name: 'Photo 1',
+              },
+            ];
+        // Put primary item first so images[0] and heroImage are always the marked primary photo
+        itemsToUpload.sort((a, b) => {
+          if (a.id === this.primaryProjectImageId) return -1;
+          if (b.id === this.primaryProjectImageId) return 1;
+          return 0;
+        });
+
+        const uploadedUrls: string[] = [];
+        for (const item of itemsToUpload) {
+          if (item.file) {
+            const uploaded = await this.adminService.uploadProjectAsset(
+              item.file,
+              'image',
+              form.title.trim()
+            );
+            uploadedUrls.push(uploaded);
+          } else if (item.storedUrl) {
+            const stored = await this.adminService.ensureProjectAssetStored(
+              item.storedUrl,
+              'image',
+              form.title.trim()
+            );
+            uploadedUrls.push(stored);
+          }
+        }
+        images = Array.from(new Set(uploadedUrls.filter(Boolean)));
+        assetUrl = images[0] ?? '';
+      } else {
+        assetUrl = this.selectedProjectFile
+          ? await this.adminService.uploadProjectAsset(
+              this.selectedProjectFile,
+              'model',
+              form.title.trim()
+            )
+          : await this.adminService.ensureProjectAssetStored(
+              form.assetUrl.trim(),
+              'model',
+              form.title.trim()
+            );
+      }
+
+      const existingProject = this.editingProjectId
+        ? this.projects.find((item) => item.id === this.editingProjectId)
+        : undefined;
+
       const project: ProjectInput = {
         id: this.editingProjectId ?? undefined,
         title: form.title.trim(),
@@ -991,17 +1119,18 @@ export class AdminPage implements OnInit, OnDestroy {
         region: form.country === 'Egypt' ? 'egypt' : 'amea',
         country: form.country,
         countryCode: this.countryCode(form.country),
-        coordinates: { lat: 0, lng: 0 },
-        heroImage: form.assetType === 'image' ? assetUrl : '',
+        coordinates: existingProject?.coordinates ?? { lat: 0, lng: 0 },
+        heroImage: form.assetType === 'image' ? assetUrl : (existingProject?.heroImage ?? ''),
+        images: form.assetType === 'image' ? images : (existingProject?.images ?? []),
         assetType: form.assetType,
         assetUrl,
         description: form.description.trim(),
         engineeringHighlight: form.highlights.map((highlight) => highlight.trim()).filter(Boolean)[0] ?? '',
         highlights: form.highlights.map((highlight) => highlight.trim()).filter(Boolean),
-        stats: {},
-        products: [],
-        tags: [],
-        order: this.projects.length + 1,
+        stats: existingProject?.stats ?? {},
+        products: existingProject?.products ?? [],
+        tags: existingProject?.tags ?? [],
+        order: parsedOrder,
       };
       if (form.assetType === 'model') {
         project.modelFormat = form.modelFormat;
@@ -1011,10 +1140,13 @@ export class AdminPage implements OnInit, OnDestroy {
       this.projects = existingIndex < 0
         ? [...this.projects, saved]
         : this.projects.map((project) => project.id === saved.id ? saved : project);
-      this.projects.sort((a, b) => a.order - b.order || a.name.localeCompare(b.name));
+      this.projects.sort((a, b) => (a.order > 0 ? a.order : Number.MAX_SAFE_INTEGER) - (b.order > 0 ? b.order : Number.MAX_SAFE_INTEGER) || a.name.localeCompare(b.name));
       this.editingProjectId = null;
       this.isProjectFormOpen = false;
       this.selectedProjectFile = null;
+      this.clearProjectImageObjectUrls();
+      this.projectImageItems = [];
+      this.primaryProjectImageId = '';
       this.projectNotice = `${saved.name} saved.`;
     } catch (error) {
       console.error('[AdminPage] Failed to save project:', error);
@@ -1058,10 +1190,14 @@ export class AdminPage implements OnInit, OnDestroy {
   }
 
   private emptyProjectForm() {
+    const nextOrder = this.projects?.length
+      ? Math.max(0, ...this.projects.map((p) => Number(p.order) || 0)) + 1
+      : 1;
     return {
       title: '',
       location: '',
       country: 'Egypt',
+      order: nextOrder as number | string,
       description: '',
       highlights: [''],
       assetType: 'image' as 'image' | 'model',
@@ -1107,19 +1243,42 @@ export class AdminPage implements OnInit, OnDestroy {
 
   onProjectFileSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
-    const file = input.files?.[0] ?? null;
-    if (!file) {
-      this.selectedProjectFile = null;
+    const files = input.files ? Array.from(input.files) : [];
+    if (!files.length) {
       return;
     }
 
-    const isImage = this.projectForm.assetType === 'image' && file.type.startsWith('image/');
-    const isModel = this.projectForm.assetType === 'model' && /\.(glb|gltf)$/i.test(file.name);
-    if (!isImage && !isModel) {
+    if (this.projectForm.assetType === 'image') {
+      const invalidFile = files.find((file) => !file.type.startsWith('image/'));
+      if (invalidFile) {
+        this.projectError = 'Choose valid image files only.';
+        input.value = '';
+        return;
+      }
+      const newItems: ProjectImageItem[] = files.map((file, idx) => ({
+        id: `new-${Date.now()}-${idx}-${Math.random().toString(36).slice(2, 6)}`,
+        previewUrl: URL.createObjectURL(file),
+        file,
+        name: file.name,
+      }));
+      this.projectImageItems = [...this.projectImageItems, ...newItems];
+      if (!this.primaryProjectImageId && this.projectImageItems.length) {
+        this.primaryProjectImageId = this.projectImageItems[0].id;
+      }
+      const primary = this.projectImageItems.find((entry) => entry.id === this.primaryProjectImageId);
+      if (primary) {
+        this.projectForm.assetUrl = primary.storedUrl || primary.previewUrl;
+      }
+      this.projectError = '';
+      input.value = '';
+      return;
+    }
+
+    const file = files[0];
+    const isModel = /\.(glb|gltf)$/i.test(file.name);
+    if (!isModel) {
       this.selectedProjectFile = null;
-      this.projectError = this.projectForm.assetType === 'image'
-        ? 'Choose a valid image file.'
-        : 'Choose a .glb or .gltf model file.';
+      this.projectError = 'Choose a .glb or .gltf model file.';
       input.value = '';
       return;
     }
