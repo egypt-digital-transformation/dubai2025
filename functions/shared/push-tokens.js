@@ -1,7 +1,22 @@
 import { FCM_PROJECT_ID } from "./firebase.js";
 import { tokenFingerprint } from "./notification-utils.js";
 
+function toDateOrNull(value) {
+  if (!value) {
+    return null;
+  }
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : value;
+  }
+  if (typeof value.toDate === "function") {
+    const date = value.toDate();
+    return date instanceof Date && !Number.isNaN(date.getTime()) ? date : null;
+  }
+  return null;
+}
+
 export function getRegisteredPushDevices(data = {}) {
+  const fallbackRegisteredAt = toDateOrNull(data.fcmTokenUpdatedAt);
   const devices = Array.isArray(data.devices)
     ? data.devices
         .filter(
@@ -18,6 +33,10 @@ export function getRegisteredPushDevices(data = {}) {
               : `legacy-${tokenFingerprint(device.token).slice(0, 16)}`,
           token: device.token,
           fcmProjectId: device.fcmProjectId,
+          registeredAt:
+            toDateOrNull(device.registeredAt) ||
+            toDateOrNull(device.updatedAt) ||
+            fallbackRegisteredAt,
           isLegacy: false,
         }))
     : [];
@@ -31,6 +50,7 @@ export function getRegisteredPushDevices(data = {}) {
       deviceId: `legacy-${tokenFingerprint(data.fcmToken).slice(0, 16)}`,
       token: data.fcmToken,
       fcmProjectId: data.fcmProjectId,
+      registeredAt: fallbackRegisteredAt,
       isLegacy: true,
     });
   }

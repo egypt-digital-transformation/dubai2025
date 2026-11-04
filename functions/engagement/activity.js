@@ -265,13 +265,16 @@ export const registerPushToken = onCall(
         ) {
           retainedDevices.push(migratedLegacyDevice);
         }
+        const now = Timestamp.now();
         const registeredDevice = {
           ...(existingDevice || {}),
           deviceId,
           token,
           fcmProjectId: FCM_PROJECT_ID,
           platform: "web",
-          updatedAt: Timestamp.now(),
+          registeredAt:
+            existingDevice?.registeredAt || existingDevice?.updatedAt || now,
+          updatedAt: now,
         };
         delete registeredDevice.invalidatedTokenHash;
         delete registeredDevice.invalidatedAt;

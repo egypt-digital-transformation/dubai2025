@@ -17,7 +17,6 @@ import {
 } from "./session-reminder-utils.js";
 
 const REMINDER_WINDOW_MS = 5 * 60 * 1000;
-const REMINDER_RETRY_LOOKBACK_MS = 30 * 60 * 1000;
 const CLAIM_TIMEOUT_MS = 10 * 60 * 1000;
 
 function getUserLabel(userDoc, user) {
@@ -32,7 +31,7 @@ function getUserLabel(userDoc, user) {
 
 function getReminderWindow(now = Timestamp.now()) {
   return {
-    start: new Date(now.toMillis() - REMINDER_RETRY_LOOKBACK_MS),
+    start: new Date(now.toMillis()),
     end: new Date(now.toMillis() + REMINDER_WINDOW_MS),
   };
 }
@@ -168,6 +167,14 @@ async function sendReminderForLabel(
   dayDoc,
   dueLabel
 ) {
+  const eligibleRecipients = recipients.filter(
+    (recipient) =>
+      !recipient.registeredAt || recipient.registeredAt <= dueLabel.startAt
+  );
+  if (!eligibleRecipients.length) {
+    return false;
+  }
+
   const claim = await claimReminder(dayDoc.ref, dueLabel);
   if (!claim) {
     return false;
@@ -193,10 +200,10 @@ async function sendReminderForLabel(
     }
     const link = getAgendaReminderLink(dueLabel, campaignId);
     let results = [];
-    if (recipients.length) {
+    if (eligibleRecipients.length) {
       const { title, body } = getAgendaReminderMessage(dueLabel.label);
       try {
-        results = await sendPushToRecipients(recipients, {
+        results = await sendPushToRecipients(eligibleRecipients, {
           title,
           body,
           data: {
@@ -212,13 +219,21 @@ async function sendReminderForLabel(
           `[SessionReminders] Push delivery failed for ${userLabel}; reminder remains in the in-app inbox:`,
           error
         );
-        await updateInAppNotificationPushSummary(campaignId, recipients, []);
+        await updateInAppNotificationPushSummary(
+          campaignId,
+          eligibleRecipients,
+          []
+        );
         throw error;
       }
     }
     const successfulResults = results.filter((result) => result.success);
     if (successfulResults.length === 0) {
-      await updateInAppNotificationPushSummary(campaignId, recipients, results);
+      await updateInAppNotificationPushSummary(
+        campaignId,
+        eligibleRecipients,
+        results
+      );
       console.warn(
         `[SessionReminders] No push device accepted the reminder for ${userLabel}; it remains pending for retry.`,
         results.map((result) => result.errorCode)
@@ -258,7 +273,11 @@ async function sendReminderForLabel(
     }
 
     try {
-      await updateInAppNotificationPushSummary(campaignId, recipients, results);
+      await updateInAppNotificationPushSummary(
+        campaignId,
+        eligibleRecipients,
+        results
+      );
     } catch (error) {
       console.error(
         `[SessionReminders] Push was accepted for ${userLabel}, but its campaign summary could not be updated:`,
@@ -343,14 +362,12 @@ export const sendSessionReminders = onSchedule(
         const userLabel = getUserLabel(userDoc, user);
         const userEmail = user.emailAddress || user.email || "";
         const recipients = getPushRecipientsForUser(userDoc);
+        if (!recipients.length) {
+          continue;
+        }
         const dueLabels = await findDueLabelsForUser(userDoc, window);
         if (!dueLabels.length) {
           continue;
-        }
-        if (!recipients.length) {
-          console.warn(
-            `No valid FCM device token for ${userLabel}; due reminders will be saved to the in-app inbox.`
-          );
         }
 
         console.log(
