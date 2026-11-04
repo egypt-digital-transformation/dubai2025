@@ -122,6 +122,8 @@ export class AgendaPage implements OnInit, OnDestroy {
   private previewSubscription?: Subscription;
   private sessionsSubscription?: Subscription;
   private userAgendaSubscription?: Subscription;
+  private resourcesSubscription?: Subscription;
+  private readonly sessionResourceUrls = new Map<string, string>();
   private agendaLoadId = 0;
   private hasUserAgenda = false;
   private readonly destroy$ = new Subject<void>();
@@ -175,6 +177,7 @@ export class AgendaPage implements OnInit, OnDestroy {
         this.applyRequestedAgendaDay();
       });
     void this.auth.authStateReady().then(() => {
+      this.subscribeToSessionResources();
       this.previewSubscription = this.adminPreview.selectedUser$.subscribe((previewUser) => {
         void this.initializeAgenda(previewUser?.email ?? this.auth.currentUser?.email ?? undefined);
       });
@@ -209,6 +212,7 @@ export class AgendaPage implements OnInit, OnDestroy {
     this.previewSubscription?.unsubscribe();
     this.sessionsSubscription?.unsubscribe();
     this.userAgendaSubscription?.unsubscribe();
+    this.resourcesSubscription?.unsubscribe();
     this.destroy$.next();
     this.destroy$.complete();
     window.removeEventListener('focus', this.onAppForeground);
@@ -416,8 +420,47 @@ export class AgendaPage implements OnInit, OnDestroy {
     return mapAgendaDaySessions(dayDocument);
   }
 
+  private subscribeToSessionResources(): void {
+    if (!this.auth.currentUser) return;
+    this.resourcesSubscription?.unsubscribe();
+    const resourcesRef = collection(this.firestore, 'resources');
+    const resources$ = this.runInContext(() =>
+      collectionData(resourcesRef, { idField: 'id' })
+    );
+    this.resourcesSubscription = resources$.subscribe({
+      next: (resources: any[]) => {
+        this.zone.run(() => {
+          this.sessionResourceUrls.clear();
+          for (const resource of resources || []) {
+            const sessionName = typeof resource?.sessionName === 'string'
+              ? resource.sessionName.trim().toLowerCase()
+              : '';
+            const url = typeof resource?.url === 'string' ? resource.url.trim() : '';
+            if (sessionName && url && !this.sessionResourceUrls.has(sessionName)) {
+              this.sessionResourceUrls.set(sessionName, url);
+            }
+          }
+          this.applyFilters();
+          this.cdr.detectChanges();
+        });
+      },
+      error: (err) => {
+        console.warn('[AgendaPage] Could not watch session resources:', err);
+      },
+    });
+  }
+
   private applyFilters() {
     if (!this.currentUser) return;
+
+    for (const session of this.sessions) {
+      if (!session.material?.trim() && session.title) {
+        const linkedUrl = this.sessionResourceUrls.get(session.title.trim().toLowerCase());
+        if (linkedUrl) {
+          session.material = linkedUrl;
+        }
+      }
+    }
 
     let filtered = this.sessions.filter((s) => s.day === this.selectedDay);
 

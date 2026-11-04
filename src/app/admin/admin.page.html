@@ -558,6 +558,108 @@
           </ion-button>
         </div>
         <div *ngIf="resourceError" class="project-editor-error" role="alert">{{ resourceError }}</div>
+        <div class="session-picker">
+          <label class="session-picker-label">Agenda session (content name)</label>
+          <div class="session-picker-control">
+            <button
+              type="button"
+              class="session-picker-trigger"
+              [class.is-open]="isSessionPickerOpen"
+              [class.has-selection]="!!resourceForm.sessionName"
+              (click)="toggleSessionPicker()"
+              [attr.aria-expanded]="isSessionPickerOpen">
+              <div class="session-picker-trigger-text">
+                <ng-container *ngIf="resourceForm.sessionName; else emptySessionPrompt">
+                  <span class="session-picker-selected-meta" *ngIf="selectedAgendaSessionOption?.day || selectedAgendaSessionOption?.category">
+                    <span class="session-day-badge" *ngIf="selectedAgendaSessionOption?.day">Day {{ selectedAgendaSessionOption?.day }}</span>
+                    <span class="session-category-label" *ngIf="selectedAgendaSessionOption?.category">{{ selectedAgendaSessionOption?.category }}</span>
+                  </span>
+                  <span class="session-picker-selected-title">{{ resourceForm.sessionName }}</span>
+                  <span class="session-picker-selected-speaker" *ngIf="resourceForm.speakerName">
+                    Speaker: {{ resourceForm.speakerName }}
+                  </span>
+                </ng-container>
+                <ng-template #emptySessionPrompt>
+                  <span class="session-picker-placeholder">Tap to search or choose an agenda session (optional)</span>
+                </ng-template>
+              </div>
+              <ion-icon [name]="isSessionPickerOpen ? 'chevron-up-outline' : 'chevron-down-outline'"></ion-icon>
+            </button>
+            <button
+              *ngIf="resourceForm.sessionName"
+              type="button"
+              class="session-picker-clear"
+              (click)="clearSelectedAgendaSession($event)"
+              aria-label="Clear selected agenda session">
+              <ion-icon name="close-circle"></ion-icon>
+            </button>
+          </div>
+          <div *ngIf="isSessionPickerOpen" class="session-picker-menu">
+            <div class="session-picker-toolbar">
+              <ion-searchbar
+                [(ngModel)]="sessionSearch"
+                [ngModelOptions]="{ standalone: true }"
+                (ionInput)="filterAgendaSessions()"
+                placeholder="Search session, speaker, or day..."
+                debounce="0">
+              </ion-searchbar>
+              <div *ngIf="agendaSessionDays.length > 2" class="session-picker-days" role="tablist" aria-label="Filter sessions by day">
+                <button
+                  *ngFor="let dayFilter of agendaSessionDays"
+                  type="button"
+                  class="session-day-chip"
+                  [class.active]="selectedSessionDayFilter === dayFilter"
+                  (click)="setSessionDayFilter(dayFilter)">
+                  {{ dayFilter }}
+                </button>
+              </div>
+            </div>
+            <div class="session-picker-options" role="listbox">
+              <button
+                type="button"
+                class="session-picker-option session-picker-option-none"
+                [class.selected]="!resourceForm.sessionName"
+                (click)="selectAgendaSession(null)">
+                <div class="session-option-main">
+                  <span class="session-option-title">None (General resource)</span>
+                  <span class="session-option-subtitle">Not linked to a specific agenda session</span>
+                </div>
+                <ion-icon *ngIf="!resourceForm.sessionName" name="checkmark-circle" class="session-option-check"></ion-icon>
+              </button>
+              <button
+                *ngFor="let option of filteredAgendaSessionOptions"
+                type="button"
+                class="session-picker-option"
+                [class.selected]="option.sessionName === resourceForm.sessionName"
+                (click)="selectAgendaSession(option)">
+                <div class="session-option-main">
+                  <div class="session-option-badges" *ngIf="option.day || option.category">
+                    <span *ngIf="option.day" class="session-day-badge">Day {{ option.day }}</span>
+                    <span *ngIf="option.category" class="session-category-label">{{ option.category }}</span>
+                  </div>
+                  <span class="session-option-title">{{ option.sessionName }}</span>
+                  <span *ngIf="option.speakerName" class="session-option-subtitle">
+                    <ion-icon name="person-outline"></ion-icon>
+                    {{ option.speakerName }}{{ option.speakerTitle ? ' · ' + option.speakerTitle : '' }}
+                  </span>
+                </div>
+                <ion-icon *ngIf="option.sessionName === resourceForm.sessionName" name="checkmark-circle" class="session-option-check"></ion-icon>
+              </button>
+              <div *ngIf="!filteredAgendaSessionOptions.length" class="session-picker-empty">
+                No agenda sessions match "{{ sessionSearch }}".
+              </div>
+            </div>
+          </div>
+        </div>
+        <ion-input
+          *ngIf="resourceForm.sessionName || resourceForm.speakerName"
+          label="Speaker"
+          labelPlacement="stacked"
+          fill="outline"
+          [(ngModel)]="resourceForm.speakerName"
+          name="resourceSpeakerName"
+          placeholder="Speaker name (auto-filled from session)">
+        </ion-input>
         <ion-input label="Title" labelPlacement="stacked" fill="outline" [(ngModel)]="resourceForm.title" name="resourceTitle" required></ion-input>
         <ion-select label="Type" labelPlacement="stacked" fill="outline" [(ngModel)]="resourceForm.type" name="resourceType" required>
           <ion-select-option *ngFor="let type of resourceTypes" [value]="type">{{ type }}</ion-select-option>
@@ -608,6 +710,11 @@
           <div>
             <p class="eyebrow">{{ resource.type }}</p>
             <h3>{{ resource.title }}</h3>
+            <p *ngIf="resource.sessionName || resource.speakerName" class="subtitle">
+              <span *ngIf="resource.sessionName">Session: <strong>{{ resource.sessionName }}</strong></span>
+              <span *ngIf="resource.sessionName && resource.speakerName"> · </span>
+              <span *ngIf="resource.speakerName">Speaker: <strong>{{ resource.speakerName }}</strong></span>
+            </p>
             <p>{{ resource.description || resource.url }}</p>
           </div>
           <div class="activity-actions">

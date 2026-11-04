@@ -25,7 +25,8 @@ export class ResourcesPage implements OnDestroy {
   private readonly adminService = inject(AdminService);
   private resourcesSubscription?: Subscription;
   private resourceTypesSubscription?: Subscription;
-  resourceFilters: ResourceFilter[] = ['All', ...DEFAULT_RESOURCE_TYPES];
+  private configuredResourceTypes: ResourceType[] = [...DEFAULT_RESOURCE_TYPES];
+  resourceFilters: ResourceFilter[] = ['All'];
   activeFilter: ResourceFilter = 'All';
   resourceSearch = '';
   resources: AdminResource[] = [];
@@ -46,6 +47,7 @@ export class ResourcesPage implements OnDestroy {
     this.resourcesSubscription = this.adminService.watchResources().subscribe({
       next: (resources) => {
         this.resources = resources;
+        this.updateResourceFilters();
         this.isLoading = false;
       },
       error: (error: unknown) => {
@@ -55,7 +57,8 @@ export class ResourcesPage implements OnDestroy {
     });
     this.resourceTypesSubscription = this.adminService.watchResourceTypes().subscribe({
       next: (resourceTypes) => {
-        this.resourceFilters = ['All', ...resourceTypes];
+        this.configuredResourceTypes = resourceTypes;
+        this.updateResourceFilters();
       },
       error: (error: unknown) => {
         console.error('[ResourcesPage] Failed to watch resource types:', error);
@@ -78,14 +81,40 @@ export class ResourcesPage implements OnDestroy {
     this.activeFilter = filter;
   }
 
+  private updateResourceFilters(): void {
+    const availableTypes = new Set(
+      this.resources
+        .map((resource) => resource.type?.trim())
+        .filter((type): type is ResourceType => Boolean(type))
+    );
+
+    const orderedTypes = this.configuredResourceTypes.filter((type) =>
+      availableTypes.has(type)
+    );
+    for (const type of availableTypes) {
+      if (!orderedTypes.includes(type)) {
+        orderedTypes.push(type);
+      }
+    }
+
+    this.resourceFilters = ['All', ...orderedTypes];
+    if (this.activeFilter !== 'All' && !availableTypes.has(this.activeFilter)) {
+      this.activeFilter = 'All';
+    }
+  }
+
   get filteredResources(): AdminResource[] {
     const query = this.resourceSearch.trim().toLowerCase();
     return this.resources.filter((resource) => {
       const matchesType = this.activeFilter === 'All' || resource.type === this.activeFilter;
       const matchesSearch = !query ||
-        [resource.title, resource.description, resource.type].some((value) =>
-          value.toLowerCase().includes(query)
-        );
+        [
+          resource.title,
+          resource.description,
+          resource.type,
+          resource.sessionName ?? '',
+          resource.speakerName ?? '',
+        ].some((value) => value.toLowerCase().includes(query));
       return matchesType && matchesSearch;
     });
   }

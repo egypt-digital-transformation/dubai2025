@@ -37,6 +37,7 @@ import { environment } from '../../environments/environment';
 import { IconicProject, HolcimProduct, ProjectStats } from '../iconic-projects/models/project.model';
 import { PreviewUser } from './admin-preview.service';
 import { FirebaseInjectionContext } from './firebase-injection-context.service';
+import { mapAgendaDaySessions } from '../shared/agenda-day';
 
 export interface AdminAttendee {
   id: string;
@@ -170,12 +171,23 @@ export const DEFAULT_RESOURCE_TYPES: ResourceType[] = [
   'Photo',
 ];
 
+export interface AgendaSessionOption {
+  sessionName: string;
+  speakerName: string;
+  speakerTitle?: string;
+  day?: string;
+  category?: string;
+}
+
 export interface AdminResource {
   id: string;
   title: string;
   type: ResourceType;
   description: string;
   url: string;
+  sessionName?: string;
+  speakerName?: string;
+  speakerTitle?: string;
   createdAt?: string;
 }
 
@@ -902,6 +914,108 @@ export class AdminService {
     const savedResource: AdminResource = { ...resource, id };
     await setDoc(firestoreDoc(this.firestore, 'resources', id), savedResource);
     return savedResource;
+  }
+
+  async loadAgendaSessionOptions(): Promise<AgendaSessionOption[]> {
+    const optionsByKey = new Map<string, AgendaSessionOption>();
+    const addOption = (
+      sessionNameRaw: unknown,
+      speakerNameRaw: unknown,
+      speakerTitleRaw?: unknown,
+      dayRaw?: unknown,
+      categoryRaw?: unknown
+    ) => {
+      const sessionName = typeof sessionNameRaw === 'string' ? sessionNameRaw.trim() : '';
+      if (!sessionName) {
+        return;
+      }
+      const rawSpeaker = typeof speakerNameRaw === 'string' ? speakerNameRaw.trim() : '';
+      const speakerName = rawSpeaker.toLowerCase() === 'all' ? '' : rawSpeaker;
+      const speakerTitle = typeof speakerTitleRaw === 'string' ? speakerTitleRaw.trim() : '';
+      const day = typeof dayRaw === 'string' || typeof dayRaw === 'number' ? String(dayRaw).trim() : '';
+      const category = typeof categoryRaw === 'string' ? categoryRaw.trim() : '';
+      const key = sessionName.toLowerCase();
+      const existing = optionsByKey.get(key);
+      if (!existing || (!existing.speakerName && speakerName)) {
+        optionsByKey.set(key, {
+          sessionName,
+          speakerName: speakerName || existing?.speakerName || '',
+          speakerTitle: speakerTitle || existing?.speakerTitle || undefined,
+          day: day || existing?.day || undefined,
+          category: category || existing?.category || undefined,
+        });
+      }
+    };
+
+    try {
+      const usersSnapshot = await this.loadUsersSnapshot();
+      const sampleUsers: QueryDocumentSnapshot<DocumentData>[] = [];
+      const seenProfiles = new Set<string>();
+      for (const userDoc of usersSnapshot.docs) {
+        const data = userDoc.data();
+        const profileKey = `${Boolean(data['plantVisit'])}:${String(data['group'] ?? '')}:${Boolean(data['rebrandingEvent'])}`;
+        if (!seenProfiles.has(profileKey) && sampleUsers.length < 8) {
+          seenProfiles.add(profileKey);
+          sampleUsers.push(userDoc);
+        }
+      }
+      if (!sampleUsers.length && usersSnapshot.docs.length) {
+        sampleUsers.push(usersSnapshot.docs[0]);
+      }
+
+      const agendaSnapshots = await Promise.all(
+        sampleUsers.map((userDoc) =>
+          getDocs(collection(this.firestore, 'users', userDoc.id, 'agenda')).catch(() => null)
+        )
+      );
+      for (const agendaSnapshot of agendaSnapshots) {
+        if (!agendaSnapshot) continue;
+        for (const dayDoc of agendaSnapshot.docs) {
+          const mappedSessions = mapAgendaDaySessions(dayDoc.data());
+          for (const session of mappedSessions) {
+            addOption(
+              session.title,
+              session.speaker?.name,
+              session.speaker?.title,
+              session.day,
+              session.category
+            );
+          }
+        }
+      }
+    } catch (error) {
+      console.warn('[AdminService] Could not load user agenda sessions for options:', error);
+    }
+
+    try {
+      const sharedSessionsSnapshot = await getDocs(collection(this.firestore, 'sessions'));
+      for (const sessionDoc of sharedSessionsSnapshot.docs) {
+        const data = sessionDoc.data();
+        const speakerRecord =
+          data['speaker'] && typeof data['speaker'] === 'object'
+            ? (data['speaker'] as Record<string, unknown>)
+            : null;
+        const speakerName = speakerRecord
+          ? speakerRecord['name']
+          : data['speaker'];
+        const speakerTitle = speakerRecord ? speakerRecord['title'] : '';
+        addOption(
+          data['content'] ?? data['title'] ?? data['label'],
+          speakerName,
+          speakerTitle,
+          data['day'],
+          data['label'] ?? data['category']
+        );
+      }
+    } catch (error) {
+      console.warn('[AdminService] Could not load shared sessions for options:', error);
+    }
+
+    return [...optionsByKey.values()].sort((a, b) => {
+      const dayDiff = Number(a.day || 99) - Number(b.day || 99);
+      if (dayDiff !== 0) return dayDiff;
+      return a.sessionName.localeCompare(b.sessionName);
+    });
   }
 
   async loadEventEndAt(): Promise<Date | null> {

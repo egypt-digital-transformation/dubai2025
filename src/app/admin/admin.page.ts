@@ -33,6 +33,7 @@ import {
   AdminRequest,
   AdminResource,
   AdminService,
+  AgendaSessionOption,
   DEFAULT_RESOURCE_TYPES,
   NotificationSendResult,
   NotificationTarget,
@@ -168,6 +169,11 @@ export class AdminPage implements OnInit, OnDestroy {
   selectedResourceFile: File | null = null;
   resourceForm = this.emptyResourceForm();
   resourceTypes: ResourceType[] = [...DEFAULT_RESOURCE_TYPES];
+  agendaSessionOptions: AgendaSessionOption[] = [];
+  filteredAgendaSessionOptions: AgendaSessionOption[] = [];
+  isSessionPickerOpen = false;
+  sessionSearch = '';
+  selectedSessionDayFilter = 'All';
   newResourceType = '';
   isSavingResourceType = false;
   eventEndDateTime = '';
@@ -565,12 +571,15 @@ export class AdminPage implements OnInit, OnDestroy {
     this.isLoadingResources = true;
     this.resourceLoadError = '';
     try {
-      const [resources, resourceTypes] = await Promise.all([
+      const [resources, resourceTypes, agendaSessionOptions] = await Promise.all([
         this.adminService.loadResources(),
         this.adminService.loadResourceTypes(),
+        this.adminService.loadAgendaSessionOptions(),
       ]);
       this.resources = resources;
       this.resourceTypes = resourceTypes;
+      this.agendaSessionOptions = agendaSessionOptions;
+      this.filterAgendaSessions();
     } catch (error) {
       console.error('[AdminPage] Failed to load resources:', error);
       this.resourceLoadError = 'Could not load resources. Check your connection and try again.';
@@ -613,6 +622,7 @@ export class AdminPage implements OnInit, OnDestroy {
     this.resourceForm = this.emptyResourceForm();
     this.selectedResourceFile = null;
     this.resourceError = '';
+    this.closeSessionPicker();
   }
 
   editResource(resource: AdminResource): void {
@@ -623,9 +633,113 @@ export class AdminPage implements OnInit, OnDestroy {
       type: resource.type,
       description: resource.description,
       url: resource.url,
+      sessionName: resource.sessionName ?? '',
+      speakerName: resource.speakerName ?? '',
+      speakerTitle: resource.speakerTitle ?? '',
     };
     this.selectedResourceFile = null;
     this.resourceError = '';
+    this.closeSessionPicker();
+  }
+
+  get agendaSessionDays(): string[] {
+    const days = Array.from(
+      new Set(
+        this.agendaSessionOptions
+          .map((option) => option.day)
+          .filter((day): day is number => typeof day === 'number')
+      )
+    ).sort((a, b) => a - b);
+    return ['All', ...days.map((day) => `Day ${day}`)];
+  }
+
+  get selectedAgendaSessionOption(): AgendaSessionOption | null {
+    if (!this.resourceForm.sessionName) {
+      return null;
+    }
+    return (
+      this.agendaSessionOptions.find(
+        (option) => option.sessionName === this.resourceForm.sessionName
+      ) ?? null
+    );
+  }
+
+  toggleSessionPicker(): void {
+    this.isSessionPickerOpen = !this.isSessionPickerOpen;
+    if (this.isSessionPickerOpen) {
+      this.sessionSearch = '';
+      this.selectedSessionDayFilter = 'All';
+      this.filterAgendaSessions();
+    }
+  }
+
+  closeSessionPicker(): void {
+    this.isSessionPickerOpen = false;
+    this.sessionSearch = '';
+    this.selectedSessionDayFilter = 'All';
+    this.filterAgendaSessions();
+  }
+
+  setSessionDayFilter(dayFilter: string): void {
+    this.selectedSessionDayFilter = dayFilter;
+    this.filterAgendaSessions();
+  }
+
+  filterAgendaSessions(): void {
+    const query = this.sessionSearch.trim().toLowerCase();
+    this.filteredAgendaSessionOptions = this.agendaSessionOptions.filter((option) => {
+      const dayLabel = option.day ? `Day ${option.day}` : '';
+      if (
+        this.selectedSessionDayFilter !== 'All' &&
+        dayLabel !== this.selectedSessionDayFilter
+      ) {
+        return false;
+      }
+      if (!query) {
+        return true;
+      }
+      const searchable = [
+        option.sessionName,
+        option.speakerName,
+        option.speakerTitle,
+        option.category,
+        dayLabel,
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+      return searchable.includes(query);
+    });
+  }
+
+  selectAgendaSession(option: AgendaSessionOption | null): void {
+    this.onResourceSessionChange(option?.sessionName ?? '');
+    this.closeSessionPicker();
+  }
+
+  clearSelectedAgendaSession(event: Event): void {
+    event.stopPropagation();
+    this.selectAgendaSession(null);
+  }
+
+  onResourceSessionChange(sessionName: string): void {
+    const normalized = (sessionName || '').trim();
+    this.resourceForm.sessionName = normalized;
+    if (!normalized) {
+      this.resourceForm.speakerName = '';
+      this.resourceForm.speakerTitle = '';
+      return;
+    }
+    const matched = this.agendaSessionOptions.find(
+      (option) => option.sessionName === normalized
+    );
+    if (matched) {
+      this.resourceForm.speakerName = matched.speakerName || '';
+      this.resourceForm.speakerTitle = matched.speakerTitle || '';
+      if (!this.resourceForm.title.trim()) {
+        this.resourceForm.title = matched.sessionName;
+      }
+    }
   }
 
   cancelResourceEdit(): void {
@@ -633,6 +747,7 @@ export class AdminPage implements OnInit, OnDestroy {
     this.isResourceFormOpen = false;
     this.selectedResourceFile = null;
     this.resourceError = '';
+    this.closeSessionPicker();
   }
 
   onResourceFileSelected(event: Event): void {
@@ -663,12 +778,18 @@ export class AdminPage implements OnInit, OnDestroy {
       const url = this.selectedResourceFile
         ? await this.adminService.uploadResource(this.selectedResourceFile, form.title.trim())
         : form.url.trim();
+      const sessionName = form.sessionName.trim();
+      const speakerName = form.speakerName.trim();
+      const speakerTitle = form.speakerTitle.trim();
       const saved = await this.adminService.saveResource({
         id: this.editingResourceId ?? undefined,
         title: form.title.trim(),
         type: form.type,
         description: form.description.trim(),
         url,
+        ...(sessionName ? { sessionName } : {}),
+        ...(speakerName ? { speakerName } : {}),
+        ...(speakerTitle ? { speakerTitle } : {}),
       });
       const index = this.resources.findIndex((resource) => resource.id === saved.id);
       this.resources = index < 0
@@ -711,7 +832,15 @@ export class AdminPage implements OnInit, OnDestroy {
   }
 
   private emptyResourceForm() {
-    return { title: '', type: 'Presentation' as ResourceType, description: '', url: '' };
+    return {
+      title: '',
+      type: 'Presentation' as ResourceType,
+      description: '',
+      url: '',
+      sessionName: '',
+      speakerName: '',
+      speakerTitle: '',
+    };
   }
 
   async importCurrentPortfolio(): Promise<void> {
