@@ -4,6 +4,7 @@ import { IonicModule } from '@ionic/angular';
 import { Router } from '@angular/router';
 import { NotificationService } from '../services/notification.service';
 import { AuthService } from '../services/auth.service';
+import { PwaService } from '../services/pwa.service';
 
 @Component({
   selector: 'app-sso',
@@ -16,11 +17,17 @@ export class SsoPage implements OnInit, OnDestroy {
   private router = inject(Router);
   private notify = inject(NotificationService);
   private authService = inject(AuthService);
+  private pwaService = inject(PwaService);
 
   isLoading = false;
   loadingMessage = '';
   private signInTimeout?: number;
   private readonly TIMEOUT_MS = 30000;
+
+  /** Mobile browsers must install the app before signing in. */
+  get installRequired(): boolean {
+    return this.pwaService.isInstallRequired();
+  }
 
   async ngOnInit() {
     // Wait for Firebase auth to initialize
@@ -47,7 +54,7 @@ export class SsoPage implements OnInit, OnDestroy {
   }
 
   async signInWithGoogle() {
-    if (this.isLoading) return;
+    if (this.isLoading || this.installRequired) return;
 
     this.isLoading = true;
     this.loadingMessage = 'Signing in...';

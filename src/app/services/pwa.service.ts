@@ -6,18 +6,26 @@ import { Injectable } from '@angular/core';
 })
 export class PwaService {
   private deferredPrompt: any = null;
-  private isIos = false;
-  private isInStandaloneMode = false;
+  private readonly isIos: boolean;
+  private readonly isAndroid: boolean;
+  private installed = false;
 
   constructor() {
-    // Detect iOS Safari
     const userAgent = window.navigator.userAgent.toLowerCase();
-    this.isIos = /iphone|ipad|ipod/.test(userAgent);
+    // iPadOS 13+ reports itself as "Macintosh", so also check for touch support.
+    this.isIos =
+      /iphone|ipad|ipod/.test(userAgent) ||
+      (/macintosh/.test(userAgent) && window.navigator.maxTouchPoints > 1);
+    this.isAndroid = /android/.test(userAgent);
 
-    // Detect if already installed
-    this.isInStandaloneMode = ('standalone' in window.navigator) && (window.navigator as any).standalone;
+    // The prompt often fires before Angular boots; index.html stashes it here.
+    const earlyPrompt = (window as Window & { __pwaInstallPrompt?: Event | null })
+      .__pwaInstallPrompt;
+    if (earlyPrompt) {
+      this.deferredPrompt = earlyPrompt;
+    }
 
-    // Capture install event for Android/Chrome
+    // Capture install event for Android/Chrome (fires again after a dismissed prompt)
     window.addEventListener('beforeinstallprompt', (event: Event) => {
       event.preventDefault();
       this.deferredPrompt = event;
@@ -27,7 +35,36 @@ export class PwaService {
     window.addEventListener('appinstalled', () => {
       console.log('PWA installed successfully');
       this.deferredPrompt = null;
+      this.installed = true;
     });
+  }
+
+  /** True when the app is running from the home screen (standalone mode). */
+  isStandalone(): boolean {
+    return (
+      (window.navigator as Navigator & { standalone?: boolean }).standalone === true ||
+      window.matchMedia('(display-mode: standalone)').matches
+    );
+  }
+
+  isIosDevice(): boolean {
+    return this.isIos;
+  }
+
+  isMobileDevice(): boolean {
+    return this.isIos || this.isAndroid;
+  }
+
+  /**
+   * Mobile attendees must use the home-screen app: when this is true the
+   * install banner cannot be dismissed and browser sign-in is hidden.
+   */
+  isInstallRequired(): boolean {
+    return this.isMobileDevice() && !this.isStandalone() && !this.installed;
+  }
+
+  canPromptInstall(): boolean {
+    return !!this.deferredPrompt;
   }
 
   canInstall(): boolean {
@@ -35,22 +72,22 @@ export class PwaService {
     if (this.deferredPrompt) return true;
 
     // iOS case: show instruction if not standalone
-    if (this.isIos && !this.isInStandaloneMode) return true;
+    if (this.isIos && !this.isStandalone()) return true;
 
     return false;
-  }
-
-  isIosDevice(): boolean {
-    return this.isIos;
   }
 
   async promptInstall(): Promise<void> {
     // Android install
     if (this.deferredPrompt) {
-      this.deferredPrompt.prompt();
-      const { outcome } = await this.deferredPrompt.userChoice;
-      console.log(`User response: ${outcome}`);
+      const prompt = this.deferredPrompt;
+      // A prompt can only be shown once; clear it so the banner falls back
+      // to manual instructions if the user dismisses the dialog.
       this.deferredPrompt = null;
+      (window as Window & { __pwaInstallPrompt?: Event | null }).__pwaInstallPrompt = null;
+      prompt.prompt();
+      const { outcome } = await prompt.userChoice;
+      console.log(`User response: ${outcome}`);
     } else {
       console.log('No install prompt available');
     }

@@ -49,6 +49,17 @@
   <link rel="apple-touch-icon" sizes="180x180" href="assets/app-icon-180.png"/>
   <link rel="apple-touch-icon" sizes="192x192" href="assets/app-icon-192.png"/>
   
+  <!-- PWA: capture Android's install prompt before Angular boots (it fires only once per page load) -->
+  <script>
+    window.addEventListener('beforeinstallprompt', function (event) {
+      event.preventDefault();
+      window.__pwaInstallPrompt = event;
+    });
+    window.addEventListener('appinstalled', function () {
+      window.__pwaInstallPrompt = null;
+    });
+  </script>
+
   <!-- Manifest -->
   <link rel="manifest" href="manifest.webmanifest">
   

@@ -2,30 +2,42 @@
   <ion-router-outlet id="main-content"></ion-router-outlet>
 
   <!-- iOS Install Banner -->
-  <div *ngIf="isIos && showInstallBanner" class="install-banner ios">
+  <div *ngIf="isIos && showInstallBanner" class="install-banner ios" [class.required]="installRequired">
     <div class="banner-content">
       <img src="assets/logo-192.png" alt="App Logo" class="logo" />
       <div class="text">
         <h3>Install AMEA 2026</h3>
-        <p>Tap the <strong>Share</strong> icon in Safari, then <strong>Add to Home Screen</strong>.</p>
+        <div class="install-steps">
+          <p>1. Tap the <strong>Share</strong> icon in Safari</p>
+          <p>2. Tap <strong>Add to Home Screen</strong></p>
+          <p *ngIf="installRequired">3. Open <strong>AHLAN!</strong> from your home screen</p>
+        </div>
       </div>
-      <div class="actions">
-        <button (click)="dismissIosBanner()" class="close">×</button>
+      <div class="actions" *ngIf="!installRequired">
+        <button (click)="dismissIosBanner()" class="close" aria-label="Dismiss">×</button>
       </div>
     </div>
   </div>
 
   <!-- Android Install Banner -->
-  <div *ngIf="!isIos && showInstallBanner" class="install-banner">
+  <div *ngIf="!isIos && showInstallBanner" class="install-banner" [class.required]="installRequired">
     <div class="banner-content">
       <img src="assets/logo-192.png" alt="App Logo" class="logo" />
       <div class="text">
         <h3>Install AMEA 2026</h3>
-        <p>Add this app to your home screen for a better experience.</p>
+        <div class="install-steps" *ngIf="canPromptInstall">
+          <p>1. Tap <strong>Install</strong> to add the app</p>
+          <p *ngIf="installRequired">2. Open <strong>AHLAN!</strong> from your home screen</p>
+        </div>
+        <div class="install-steps" *ngIf="!canPromptInstall">
+          <p>1. Tap your browser menu <strong>⋮</strong></p>
+          <p>2. Tap <strong>Install app</strong> or <strong>Add to Home screen</strong></p>
+          <p *ngIf="installRequired">3. Open <strong>AHLAN!</strong> from your home screen</p>
+        </div>
       </div>
       <div class="actions">
-        <button (click)="installPwa()">Install</button>
-        <button (click)="dismissIosBanner()" class="close">×</button>
+        <button *ngIf="canPromptInstall" class="install" (click)="installPwa()">Install</button>
+        <button *ngIf="!installRequired" (click)="dismissIosBanner()" class="close" aria-label="Dismiss">×</button>
       </div>
     </div>
   </div>

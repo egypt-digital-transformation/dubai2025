@@ -37,7 +37,6 @@ export class AppComponent implements OnInit {
   notificationPermissionDenied = false;
   isEnablingNotifications = false;
   notificationSetupMessage = '';
-  deferredPrompt: any;
   private installedApp = false;
   private readonly openedCampaigns = new Set<string>();
   private notificationPromptDismissed = false;
@@ -85,6 +84,7 @@ export class AppComponent implements OnInit {
     this.handleBeforeInstallPrompt();
     window.addEventListener('appinstalled', () => {
       this.installedApp = true;
+      this.showInstallBanner = false;
       this.recordAppActivity();
       void this.updateNotificationPrompt(!!this.authService.currentUser?.email);
     });
@@ -129,36 +129,41 @@ export class AppComponent implements OnInit {
 
   /** ✅ Detect iOS and standalone mode */
   checkInstallSupport() {
-    const ua = window.navigator.userAgent.toLowerCase();
-    this.isIos = /iphone|ipad|ipod/.test(ua);
-    const isStandalone =
-      (window.navigator as any).standalone ||
-      window.matchMedia('(display-mode: standalone)').matches;
+    this.isIos = this.pwaService.isIosDevice();
+    if (this.pwaService.isStandalone()) {
+      this.showInstallBanner = false;
+      return;
+    }
 
+    // Mobile attendees must install the app, so a previous dismissal is ignored.
     const dismissed = localStorage.getItem('installBannerDismissed') === 'true';
-    if (!isStandalone && !dismissed) {
+    if (this.installRequired || !dismissed) {
       this.showInstallBanner = true;
     }
   }
 
-  /** ✅ Handle Android install prompt */
+  /** ✅ Handle Android install prompt (captured by PwaService) */
   handleBeforeInstallPrompt() {
-    window.addEventListener('beforeinstallprompt', (event: any) => {
+    window.addEventListener('beforeinstallprompt', () => {
       console.log('[PWA] beforeinstallprompt fired');
-      event.preventDefault();
-      this.deferredPrompt = event;
-      this.showInstallBanner = true;
+      if (!this.pwaService.isStandalone()) {
+        this.showInstallBanner = true;
+      }
     });
   }
 
+  /** Mobile browsers must install the app; the banner cannot be dismissed. */
+  get installRequired(): boolean {
+    return this.pwaService.isInstallRequired();
+  }
+
+  /** Android/Chrome exposes a native install prompt we can trigger. */
+  get canPromptInstall(): boolean {
+    return this.pwaService.canPromptInstall();
+  }
+
   private isInstalledExperience(): boolean {
-    const navigatorWithStandalone = window.navigator as Navigator & {
-      standalone?: boolean;
-    };
-    return (
-      navigatorWithStandalone.standalone === true ||
-      window.matchMedia('(display-mode: standalone)').matches
-    );
+    return this.pwaService.isStandalone();
   }
 
   private async updateNotificationPrompt(isAuthenticated: boolean): Promise<void> {
@@ -270,18 +275,19 @@ export class AppComponent implements OnInit {
   }
 
   /** ✅ Trigger PWA install prompt */
-  installPwa() {
-    if (this.deferredPrompt) {
-      this.deferredPrompt.prompt();
-      this.deferredPrompt.userChoice.finally(() => {
-        this.deferredPrompt = null;
-        this.showInstallBanner = false;
-      });
+  async installPwa() {
+    await this.pwaService.promptInstall();
+    // Keep the banner on mobile until the app is actually installed.
+    if (!this.installRequired) {
+      this.showInstallBanner = false;
     }
   }
 
-  /** ✅ Dismiss iOS banner */
+  /** ✅ Dismiss install banner (desktop only — mobile must install) */
   dismissIosBanner() {
+    if (this.installRequired) {
+      return;
+    }
     this.showInstallBanner = false;
     localStorage.setItem('installBannerDismissed', 'true');
   }

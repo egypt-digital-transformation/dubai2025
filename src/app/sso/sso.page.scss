@@ -35,6 +35,10 @@ $holcim-bright-green: var(--holcim-bright-green);
     pointer-events: none;
   }
 
+  &.install-required {
+    padding-bottom: calc(15rem + env(safe-area-inset-bottom));
+  }
+
   // Animated background pattern (optimized for mobile)
   &::before {
     content: '';

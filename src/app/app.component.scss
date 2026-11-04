@@ -1,16 +1,20 @@
 .install-banner {
   position: fixed;
-  right: max(12px, env(safe-area-inset-right));
-  bottom: calc(5.5rem + env(safe-area-inset-bottom));
-  left: max(12px, env(safe-area-inset-left));
+  right: max(16px, env(safe-area-inset-right));
+  bottom: calc(12.5rem + env(safe-area-inset-bottom));
+  left: max(16px, env(safe-area-inset-left));
   z-index: 1000;
   display: flex;
   justify-content: center;
-  padding: 1rem;
-  border-radius: 12px;
-  background: var(--holcim-premium-blue);
+  padding: 1.1rem 1.15rem;
+  border: 1.5px solid var(--holcim-bright-blue, #04bbf1);
+  border-radius: 16px;
+  background: linear-gradient(135deg, #0b2659 0%, var(--holcim-premium-blue) 100%);
   color: var(--white);
-  box-shadow: 0 -2px 10px rgba(var(--black-rgb), 0.3);
+  box-shadow:
+    0 0 0 1px rgba(var(--white-rgb), 0.16),
+    0 12px 32px rgba(var(--black-rgb), 0.45),
+    0 0 18px rgba(4, 187, 241, 0.25);
 
   .banner-content {
     display: flex;
@@ -22,20 +26,28 @@
       width: 48px;
       height: 48px;
       margin-right: 1rem;
+      flex-shrink: 0;
     }
 
     .text {
       flex-grow: 1;
 
       h3 {
-        margin: 0;
-        font-size: 1.2rem;
+        margin: 0 0 6px;
+        font-size: 1.15rem;
+      }
+
+      .install-steps {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
       }
 
       p {
         margin: 0;
         color: var(--border-color);
-        font-size: 0.9rem;
+        font-size: 0.88rem;
+        line-height: 1.35;
       }
     }
 
@@ -51,9 +63,10 @@
         font-size: 0.9rem;
         cursor: pointer;
 
-        &:first-child {
+        &.install {
           background-color: var(--white);
           color: var(--holcim-premium-blue);
+          font-weight: 600;
         }
 
         &.close {

@@ -1,5 +1,5 @@
 <ion-content class="sso-content">
-  <div class="sso-container" [class.hidden]="isLoading">
+  <div class="sso-container" [class.hidden]="isLoading" [class.install-required]="installRequired">
     <div class="background-overlay"></div>
 
     <div class="login-wrapper">
@@ -15,7 +15,7 @@
         <p class="subtitle">Sign in to access your personalized experience.</p>
       </div>
 
-      <ion-button id="google-signin-btn" expand="block" class="google-btn" (click)="signInWithGoogle()"
+      <ion-button *ngIf="!installRequired" id="google-signin-btn" expand="block" class="google-btn" (click)="signInWithGoogle()"
         [disabled]="isLoading">
         <img src="assets\google.png" alt="google" class="google" />
         Continue with Google
