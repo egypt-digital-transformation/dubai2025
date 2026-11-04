@@ -409,7 +409,8 @@
           label="Description"
           labelPlacement="stacked"
           fill="outline"
-          rows="6"
+          rows="3"
+          autoGrow="true"
           [(ngModel)]="projectForm.description"
           name="projectDescription"
           required
@@ -495,7 +496,7 @@
             <ion-icon name="cloud-upload-outline" aria-hidden="true"></ion-icon>
             <label for="project-image-upload">
               {{ projectImageItems.length ? 'Add more photos' : 'Upload photos' }}
-              <span *ngIf="!projectImageItems.length">(required · multiple allowed)</span>
+              <span *ngIf="!projectImageItems.length">(multiple allowed)</span>
             </label>
             <input id="project-image-upload" type="file" accept="image/*" multiple (change)="onProjectFileSelected($event)" />
           </div>
@@ -1402,8 +1403,8 @@
               <tr *ngFor="let request of requests">
                 <td>{{ request.createdAt | date:'short' }}</td>
                 <td>
-                  <strong>{{ request.userName }}</strong>
-                  <small>{{ request.userEmail }}</small>
+                  <strong>{{ request.userName || request.userEmail }}</strong>
+
                 </td>
                 <td>{{ request.type }}</td>
                 <td class="request-details-cell">{{ request.details }}</td>

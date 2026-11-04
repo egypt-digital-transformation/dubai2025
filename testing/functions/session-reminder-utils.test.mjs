@@ -122,6 +122,7 @@ describe("getAgendaReminderMessage", () => {
     const allLabels = [
       "Welcome Cocktail Dinner",
       "Welcome & Strategic Alignment",
+      "HEALTH & SAFETY: Challenge the Green and Embrace the Red",
       "Growth in Attractive Markets: Unlocking AMEA’s Growth Potential",
       "Break",
       "Beyond Cement: Expanding AMEA’s Building Solutions",
@@ -132,6 +133,7 @@ describe("getAgendaReminderMessage", () => {
       "OUR GROWTH AGENDA",
       "AMEA FINANCE",
       "Ask the Group Leadership Team",
+      "Leadership Dialogue: Strategic Priorities to Deliver Growth Across AMEA",
       "Closing Remarks and Wrap up",
       "Gala Dinner",
       "Move from Four Seasons to SOK Plant",

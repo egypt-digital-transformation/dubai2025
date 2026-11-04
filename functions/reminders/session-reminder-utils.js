@@ -173,6 +173,13 @@ const CUSTOM_AGENDA_REMINDERS = new Map(
       },
     ],
     [
+      "HEALTH & SAFETY: Challenge the Green and Embrace the Red",
+      {
+        title: "Health & Safety in Focus",
+        body: "\"Challenge the Green and Embrace the Red\" starts shortly — join us as we reinforce our commitment to safety leadership across AMEA.",
+      },
+    ],
+    [
       "Growth in Attractive Markets: Unlocking AMEA's Growth Potential",
       {
         title: "Unlocking AMEA’s Growth Potential",
@@ -233,6 +240,13 @@ const CUSTOM_AGENDA_REMINDERS = new Map(
       {
         title: "Live Q&A: Ask the Leadership Team!",
         body: "\"Ask the Group Leadership Team\" starts shortly. Bring your questions for an open, candid discussion!",
+      },
+    ],
+    [
+      "Leadership Dialogue: Strategic Priorities to Deliver Growth Across AMEA",
+      {
+        title: "Leadership Dialogue: Strategic Priorities",
+        body: "Join our Leadership Dialogue shortly as we discuss the strategic priorities driving growth across AMEA!",
       },
     ],
     [

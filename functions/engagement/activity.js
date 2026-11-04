@@ -1,4 +1,5 @@
 import { HttpsError, onCall } from "firebase-functions/v2/https";
+import { getAuth } from "firebase-admin/auth";
 import {
   APP_ANALYTICS_COLLECTION,
   db,
@@ -114,9 +115,33 @@ export const listSharedContactCards = onCall(
           email: value("emailAddress") || value("email"),
           mobile: mobileFields.map(value).find(Boolean) || "",
           position: value("currentPosition"),
+          photoURL: value("photoURL") || value("avatarUrl") || value("picture") || "",
         };
       })
       .filter((contact) => contact.email);
+
+    const missingPhotoEmails = contacts
+      .filter((c) => !c.photoURL && c.email)
+      .map((c) => ({ email: c.email.trim().toLowerCase() }))
+      .slice(0, 100);
+    if (missingPhotoEmails.length) {
+      try {
+        const authUsers = await getAuth().getUsers(missingPhotoEmails);
+        const photoByEmail = new Map(
+          authUsers.users
+            .filter((u) => u.email && u.photoURL)
+            .map((u) => [u.email.toLowerCase(), u.photoURL])
+        );
+        for (const contact of contacts) {
+          if (!contact.photoURL) {
+            contact.photoURL =
+              photoByEmail.get(contact.email.trim().toLowerCase()) || "";
+          }
+        }
+      } catch {
+        // Ignore Auth lookup errors
+      }
+    }
 
     return { contacts };
   }
@@ -127,6 +152,12 @@ export const recordAppActivity = onCall(
   async (request) => {
     const user = requireAuthenticatedUser(request);
     const installed = request.data?.installed === true;
+    const rawPhotoUrl =
+      typeof request.data?.photoURL === "string" && request.data.photoURL.trim()
+        ? request.data.photoURL.trim()
+        : typeof request.auth?.token?.picture === "string"
+          ? request.auth.token.picture.trim()
+          : "";
     const activityRef = db.collection(APP_ANALYTICS_COLLECTION).doc(user.uid);
     const profiles = await findDelegateProfiles(user.email);
     if (profiles.length > 1) {
@@ -144,6 +175,7 @@ export const recordAppActivity = onCall(
         email: user.email,
         lastActiveAt: FieldValue.serverTimestamp(),
         ...(profileId ? { profileId } : {}),
+        ...(rawPhotoUrl ? { photoURL: rawPhotoUrl } : {}),
       };
 
       if (!snapshot.exists) {
@@ -154,6 +186,13 @@ export const recordAppActivity = onCall(
       }
 
       transaction.set(activityRef, activity, { merge: true });
+      if (profileId && rawPhotoUrl) {
+        transaction.set(
+          db.collection("users").doc(profileId),
+          { photoURL: rawPhotoUrl },
+          { merge: true }
+        );
+      }
     });
 
     return { recorded: true };

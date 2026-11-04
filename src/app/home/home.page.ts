@@ -364,6 +364,7 @@ export class HomePage implements OnInit, OnDestroy {
     try {
       await this.firebaseContext.run(() => updateDoc(doc(this.firestore, 'users', this.profileDocumentId), {
         shareContactCard: nextValue,
+        ...(this.auth.currentUser?.photoURL?.trim() ? { photoURL: this.auth.currentUser.photoURL.trim() } : {}),
       }));
     } catch (error) {
       console.error('[HomePage] Failed to update contact-card sharing:', error);

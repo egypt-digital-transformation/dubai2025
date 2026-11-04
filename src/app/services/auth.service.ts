@@ -15,6 +15,7 @@ import {
   getDocs,
   doc,
   getDoc,
+  updateDoc,
 } from '@angular/fire/firestore';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { BehaviorSubject } from 'rxjs';
@@ -45,6 +46,7 @@ export class AuthService {
           this._user.next(user);
 
           if (user) {
+            void this.cacheAndSyncUserPhoto(user);
             await Preferences.set({
               key: 'user',
               value: JSON.stringify({
@@ -176,6 +178,7 @@ export class AuthService {
         throw error;
       }
 
+      await this.cacheAndSyncUserPhoto(result.user);
       return result.user;
     } catch (error: any) {
       console.error('[AuthService] Google Sign-In Error:', error);
@@ -199,5 +202,79 @@ export class AuthService {
   async hasStoredSession(): Promise<boolean> {
     const { value } = await Preferences.get({ key: 'user' });
     return !!value;
+  }
+
+  /** Cache the user's Google photo locally and sync it to their Firestore profile */
+  async cacheAndSyncUserPhoto(user: User | null | undefined): Promise<string> {
+    const email = user?.email?.trim().toLowerCase() ?? '';
+    const rawPhotoUrl = user?.photoURL?.trim() ?? '';
+    if (!email || !rawPhotoUrl) {
+      return '';
+    }
+
+    let cachedPhoto = rawPhotoUrl;
+    try {
+      const response = await fetch(rawPhotoUrl, { referrerPolicy: 'no-referrer' });
+      if (response.ok) {
+        const blob = await response.blob();
+        if (blob.size > 0 && blob.size <= 250_000) {
+          cachedPhoto = await new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () =>
+              resolve(typeof reader.result === 'string' ? reader.result : rawPhotoUrl);
+            reader.onerror = () => resolve(rawPhotoUrl);
+            reader.readAsDataURL(blob);
+          });
+        }
+      }
+    } catch {
+      cachedPhoto = rawPhotoUrl;
+    }
+
+    try {
+      const rawMap = localStorage.getItem('colleague_photos_cache_v1');
+      const map: Record<string, string> = rawMap ? JSON.parse(rawMap) : {};
+      map[email] = cachedPhoto;
+      localStorage.setItem('colleague_photos_cache_v1', JSON.stringify(map));
+    } catch {
+      // Ignore localStorage quota errors
+    }
+
+    try {
+      const usersRef = collection(this.firestore, 'users');
+      const [byEmailAddress, byEmail, byDocId] = await Promise.all([
+        this.firebaseContext.run(() =>
+          getDocs(query(usersRef, where('emailAddress', '==', email)))
+        ).catch(() => null),
+        this.firebaseContext.run(() =>
+          getDocs(query(usersRef, where('email', '==', email)))
+        ).catch(() => null),
+        this.firebaseContext.run(() =>
+          getDoc(doc(this.firestore, 'users', email))
+        ).catch(() => null),
+      ]);
+      const matchedDocs = [
+        ...(byEmailAddress?.docs ?? []),
+        ...(byEmail?.docs ?? []),
+        ...(byDocId?.exists() ? [byDocId] : []),
+      ];
+      const seenIds = new Set<string>();
+      for (const userDoc of matchedDocs) {
+        if (seenIds.has(userDoc.id)) continue;
+        seenIds.add(userDoc.id);
+        const existingPhoto = String(userDoc.data()?.['photoURL'] ?? '').trim();
+        if (existingPhoto !== rawPhotoUrl) {
+          await this.firebaseContext.run(() =>
+            updateDoc(doc(this.firestore, 'users', userDoc.id), {
+              photoURL: rawPhotoUrl,
+            })
+          ).catch(() => undefined);
+        }
+      }
+    } catch {
+      // Non-fatal if rules haven't been deployed yet; recordAppActivity also syncs photoURL
+    }
+
+    return cachedPhoto;
   }
 }

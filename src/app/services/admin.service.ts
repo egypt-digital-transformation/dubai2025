@@ -308,7 +308,8 @@ export class AdminService {
   }
 
   async recordAppActivity(installed: boolean): Promise<void> {
-    await this.call<void>('recordAppActivity', { installed });
+    const photoURL = this.auth.currentUser?.photoURL?.trim() || undefined;
+    await this.call<void>('recordAppActivity', { installed, ...(photoURL ? { photoURL } : {}) });
   }
 
   async registerPushToken(
@@ -327,9 +328,66 @@ export class AdminService {
       email: string;
       mobile: string;
       position: string;
+      photoURL?: string;
     }>;
   }> {
-    return this.call('listSharedContactCards', {});
+    const result = await this.call<{
+      contacts: Array<{
+        name: string;
+        email: string;
+        mobile: string;
+        position: string;
+        photoURL?: string;
+      }>;
+    }>('listSharedContactCards', {});
+    let cachedMap: Record<string, string> = {};
+    try {
+      const raw = localStorage.getItem('colleague_photos_cache_v1');
+      if (raw) {
+        cachedMap = JSON.parse(raw);
+      }
+    } catch {
+      cachedMap = {};
+    }
+    const firestorePhotoByEmail = new Map<string, string>();
+    if (result.contacts.some((c) => !c.photoURL)) {
+      try {
+        const snapshot = await this.firebaseContext.run(() =>
+          getDocs(
+            query(
+              collection(this.firestore, 'users'),
+              where('shareContactCard', '==', true)
+            )
+          )
+        );
+        for (const userDoc of snapshot.docs) {
+          const data = userDoc.data();
+          const email = String(data['emailAddress'] ?? data['email'] ?? userDoc.id)
+            .trim()
+            .toLowerCase();
+          const photo = String(data['photoURL'] ?? data['avatarUrl'] ?? data['picture'] ?? '').trim();
+          if (email && photo) {
+            firestorePhotoByEmail.set(email, photo);
+          }
+        }
+      } catch {
+        // Non-admin users may not have full users list read access
+      }
+    }
+    return {
+      contacts: result.contacts.map((contact) => {
+        const emailKey = contact.email.trim().toLowerCase();
+        const photoURL =
+          cachedMap[emailKey] ||
+          contact.photoURL?.trim() ||
+          firestorePhotoByEmail.get(emailKey) ||
+          '';
+        return {
+          ...contact,
+          photoURL,
+        };
+      }),
+    };
   }
 
   async loadDashboard(): Promise<AdminDashboard> {

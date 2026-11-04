@@ -27,18 +27,41 @@
       </p>
 
       <article class="directory-contact" *ngFor="let colleague of directoryContacts">
-        <div class="directory-contact-heading">
-          <div>
-            <h3>{{ colleague.name }}</h3>
-            <p>{{ colleague.position || 'AMEA attendee' }}</p>
-          </div>
-          <span class="directory-initials" aria-hidden="true">
+        <div class="directory-avatar" aria-hidden="true">
+          <img
+            *ngIf="colleague.photoURL && !failedPhotos[colleague.email]"
+            [src]="colleague.photoURL"
+            [alt]="colleague.name"
+            referrerpolicy="no-referrer"
+            (error)="onPhotoError(colleague.email)"
+            class="directory-avatar-img"
+          />
+          <span
+            *ngIf="!colleague.photoURL || failedPhotos[colleague.email]"
+            class="directory-initials"
+          >
             {{ colleague.name.charAt(0) }}
           </span>
         </div>
+
+        <div class="directory-contact-main">
+          <h3 [title]="colleague.name">{{ colleague.name }}</h3>
+          <p [title]="colleague.position || 'AMEA attendee'">{{ colleague.position || 'AMEA attendee' }}</p>
+        </div>
+
+        <button
+          type="button"
+          class="directory-add-btn"
+          (click)="saveColleagueContact(colleague)"
+          [attr.aria-label]="'Save ' + colleague.name + ' to contacts'"
+        >
+          <ion-icon name="person-add-outline" aria-hidden="true"></ion-icon>
+          <span>Add</span>
+        </button>
+
         <div class="directory-contact-details">
-          <a *ngIf="colleague.email" [href]="'mailto:' + colleague.email">{{ colleague.email }}</a>
-          <a *ngIf="colleague.mobile" [href]="'tel:' + colleague.mobile">{{ colleague.mobile }}</a>
+          <a *ngIf="colleague.email" [href]="'mailto:' + colleague.email" [title]="colleague.email">{{ colleague.email }}</a>
+          <a *ngIf="colleague.mobile" [href]="'tel:' + colleague.mobile" [title]="colleague.mobile">{{ colleague.mobile }}</a>
         </div>
       </article>
     </section>
