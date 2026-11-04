@@ -24,17 +24,17 @@ interface Room {
   templateUrl: './venue.page.html',
   styleUrls: ['./venue.page.scss'],
   standalone: true,
-imports: [
-  CommonModule,
-  IonContent,
-  IonButton,
-  IonCard,
-  IonCardContent,
-  IonIcon,
-  IonGrid,
-  IonRow,
-  IonCol,
-]
+  imports: [
+    CommonModule,
+    IonContent,
+    IonButton,
+    IonCard,
+    IonCardContent,
+    IonIcon,
+    IonGrid,
+    IonRow,
+    IonCol,
+  ]
 })
 export class VenuePage {
   halls: Room[] = [
@@ -50,14 +50,14 @@ export class VenuePage {
 
   locations: Location[] = [
     { icon: '🎤', name: 'Hall A - Main Stage', desc: 'Keynotes & plenary sessions' },
-    { icon: '💼', name: 'Breakout Rooms 1-6', desc: 'Second floor' },
+    { icon: '💼', name: 'The Foyer - Outside Versailless 1-6', desc: 'Second floor' },
     { icon: '☕', name: 'Networking Lounge', desc: 'Refreshments & casual meetings' },
     { icon: '🎪', name: 'Exhibition Area', desc: 'Sponsor booths & demos' }
   ];
 
-constructor(private router: Router) {
-  addIcons({ mapOutline, chevronForwardOutline, closeOutline });
-}
+  constructor(private router: Router) {
+    addIcons({ mapOutline, chevronForwardOutline, closeOutline });
+  }
 
 
   onRoomClick(room: Room): void {
@@ -71,7 +71,7 @@ constructor(private router: Router) {
   }
 
   closeVenue() {
-  this.router.navigate(['tabs/home']);
-}
+    this.router.navigate(['tabs/home']);
+  }
 
 }
