@@ -7,9 +7,16 @@ import { AdminResource, AdminService, DEFAULT_RESOURCE_TYPES, ResourceType } fro
 import { addIcons } from 'ionicons';
 import { Subscription } from 'rxjs';
 import {
+  calendarOutline,
   closeCircleOutline,
+  documentTextOutline,
+  easelOutline,
   folderOpenOutline,
+  imageOutline,
+  openOutline,
+  personOutline,
   searchOutline,
+  videocamOutline,
 } from 'ionicons/icons';
 
 type ResourceFilter = 'All' | ResourceType;
@@ -34,9 +41,16 @@ export class ResourcesPage implements OnDestroy {
 
   constructor() {
     addIcons({
+      calendarOutline,
       closeCircleOutline,
+      documentTextOutline,
+      easelOutline,
       folderOpenOutline,
+      imageOutline,
+      openOutline,
+      personOutline,
       searchOutline,
+      videocamOutline,
     });
   }
 
@@ -79,6 +93,48 @@ export class ResourcesPage implements OnDestroy {
 
   setFilter(filter: ResourceFilter): void {
     this.activeFilter = filter;
+  }
+
+  getResourceIcon(type: string): string {
+    const normalized = (type || '').toLowerCase();
+    if (normalized.includes('presentation') || normalized.includes('slide')) {
+      return 'easel-outline';
+    }
+    if (normalized.includes('photo') || normalized.includes('image') || normalized.includes('gallery')) {
+      return 'image-outline';
+    }
+    if (normalized.includes('video') || normalized.includes('recording')) {
+      return 'videocam-outline';
+    }
+    return 'document-text-outline';
+  }
+
+  getResourceAccentClass(type: string): string {
+    const normalized = (type || '').toLowerCase();
+    if (normalized.includes('presentation') || normalized.includes('slide')) {
+      return 'accent-presentation';
+    }
+    if (normalized.includes('photo') || normalized.includes('image') || normalized.includes('gallery')) {
+      return 'accent-photo';
+    }
+    if (normalized.includes('video') || normalized.includes('recording')) {
+      return 'accent-video';
+    }
+    return 'accent-document';
+  }
+
+  getResourceActionLabel(type: string): string {
+    const normalized = (type || '').toLowerCase();
+    if (normalized.includes('presentation')) {
+      return 'View presentation';
+    }
+    if (normalized.includes('photo') || normalized.includes('image')) {
+      return 'Open photo';
+    }
+    if (normalized.includes('video')) {
+      return 'Watch video';
+    }
+    return 'Open resource';
   }
 
   private updateResourceFilters(): void {

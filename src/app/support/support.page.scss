@@ -63,6 +63,52 @@
 
 .support-contact-copy {
   min-width: 0;
+  flex: 1;
+}
+
+.support-phone-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-top: 0.45rem;
+}
+
+.support-contact-copy .support-phone-number {
+  margin-top: 0;
+}
+
+.support-phone-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.support-contact-copy .support-action-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.05rem;
+  height: 2.05rem;
+  margin-top: 0;
+  border-radius: 999px;
+  border: 1px solid rgba(var(--holcim-bright-turquoise-rgb, 0, 182, 214), 0.28);
+  background: rgba(0, 182, 214, 0.09);
+  color: var(--holcim-bright-turquoise);
+  font-size: 1rem;
+  transition: transform 0.15s ease, background-color 0.15s ease;
+
+  &:hover,
+  &:active {
+    transform: scale(1.05);
+  }
+
+  &.whatsapp-action {
+    border-color: rgba(37, 211, 102, 0.35);
+    background: rgba(37, 211, 102, 0.12);
+    color: #1da851;
+  }
 }
 
 .support-contact-label {

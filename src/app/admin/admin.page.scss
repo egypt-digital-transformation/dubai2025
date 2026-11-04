@@ -501,6 +501,50 @@
   text-align: center;
 }
 
+.resource-upload-progress {
+  display: grid;
+  gap: 6px;
+  border: 1px solid rgba(var(--holcim-bright-blue-rgb), 0.35);
+  border-radius: 9px;
+  padding: 10px 12px;
+  background: rgba(var(--holcim-bright-blue-rgb), 0.05);
+}
+
+.resource-upload-progress-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--holcim-dark-blue);
+  font-size: 0.78rem;
+  font-weight: 600;
+
+  strong {
+    color: var(--holcim-bright-blue);
+    font-weight: 700;
+  }
+}
+
+.resource-upload-progress-track {
+  height: 7px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(var(--holcim-dark-blue-rgb), 0.12);
+}
+
+.resource-upload-progress-bar {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--holcim-bright-blue);
+  transition: width 0.2s ease;
+}
+
+.save-progress-label {
+  margin-left: 6px;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
 .project-editor-header {
   display: flex;
   align-items: flex-start;

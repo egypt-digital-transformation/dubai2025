@@ -31,7 +31,13 @@ import {
 } from 'firebase/firestore';
 import { getApp, getApps, initializeApp } from 'firebase/app';
 import { getFunctions, httpsCallable } from 'firebase/functions';
-import { getDownloadURL, getStorage, ref, uploadBytes } from 'firebase/storage';
+import {
+  getDownloadURL,
+  getStorage,
+  ref,
+  uploadBytes,
+  uploadBytesResumable,
+} from 'firebase/storage';
 import { Observable, combineLatest, from, map, of, switchMap } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { IconicProject, HolcimProduct, ProjectStats } from '../iconic-projects/models/project.model';
@@ -189,6 +195,7 @@ export interface AdminResource {
   speakerName?: string;
   speakerTitle?: string;
   createdAt?: string;
+  updatedAt?: string;
 }
 
 export type ProjectInput = Omit<IconicProject, 'id'> & { id?: string };
@@ -504,18 +511,20 @@ export class AdminService {
   }
 
   watchProjects(): Observable<IconicProject[]> {
-    return collectionData(angularCollection(this.firestore, 'projects'), {
-      idField: 'id',
-    }).pipe(
-      map((documents) =>
-        documents
-          .map((project) =>
-            this.toProject(
-              String(project['id'] ?? ''),
-              project as Record<string, unknown>
+    return this.firebaseContext.run(() =>
+      collectionData(angularCollection(this.firestore, 'projects'), {
+        idField: 'id',
+      }).pipe(
+        map((documents) =>
+          documents
+            .map((project) =>
+              this.toProject(
+                String(project['id'] ?? ''),
+                project as Record<string, unknown>
+              )
             )
-          )
-          .sort((a, b) => a.order - b.order || a.name.localeCompare(b.name))
+            .sort((a, b) => a.order - b.order || a.name.localeCompare(b.name))
+        )
       )
     );
   }
@@ -613,17 +622,19 @@ export class AdminService {
   }
 
   watchUserRequests(email: string): Observable<AdminRequest[]> {
-    const requestsQuery = angularQuery(
-      angularCollection(this.firestore, 'requests'),
-      angularWhere('userEmail', '==', email.trim().toLowerCase())
-    );
-    return collectionData(requestsQuery, { idField: 'id' }).pipe(
-      map((requests) =>
-        requests.map((request) =>
-          this.toAdminRequest(String(request['id'] ?? ''), request as Record<string, unknown>)
+    return this.firebaseContext.run(() => {
+      const requestsQuery = angularQuery(
+        angularCollection(this.firestore, 'requests'),
+        angularWhere('userEmail', '==', email.trim().toLowerCase())
+      );
+      return collectionData(requestsQuery, { idField: 'id' }).pipe(
+        map((requests) =>
+          requests.map((request) =>
+            this.toAdminRequest(String(request['id'] ?? ''), request as Record<string, unknown>)
+          )
         )
-      )
-    );
+      );
+    });
   }
 
   async loadAdminRequests(): Promise<AdminRequest[]> {
@@ -734,55 +745,57 @@ export class AdminService {
       switchMap((userId) => {
         if (!userId) return of(emptyDetails);
         const userPath = ['users', userId];
-        return combineLatest({
-          flightDetails: docData(
-            doc(this.firestore, ...userPath, 'flightDetails', 'flightInfo')
-          ).pipe(
-            map((data) =>
-              data
-                ? this.toFlightDetails(data as Record<string, unknown>)
-                : null
-            )
-          ),
-          accommodationDetails: docData(
-            doc(this.firestore, ...userPath, 'accommodation', 'details')
-          ).pipe(
-            map((data) =>
-              data
-                ? this.toAccommodationDetails(data as Record<string, unknown>)
-                : null
-            )
-          ),
-          carDetails: docData(
-            doc(this.firestore, ...userPath, 'cardata', 'details')
-          ).pipe(
-            map((data) =>
-              data
-                ? {
-                    carModel: String(data['carModel'] ?? '').trim(),
-                    licensePlate: String(data['licensePlate'] ?? '').trim(),
-                  }
-                : null
-            )
-          ),
-          meetAndGreetRepresentative: docData(
-            doc(
-              this.firestore,
-              ...userPath,
-              'meet&greetrepresentative',
-              'details'
-            )
-          ).pipe(
-            map((data) =>
-              data
-                ? {
-                    name: String(data['name'] ?? '').trim(),
-                    phoneNumber: String(data['phoneNumber'] ?? '').trim(),
-                  }
-                : null
-            )
-          ),
-        });
+        return this.firebaseContext.run(() =>
+          combineLatest({
+            flightDetails: docData(
+              doc(this.firestore, ...userPath, 'flightDetails', 'flightInfo')
+            ).pipe(
+              map((data) =>
+                data
+                  ? this.toFlightDetails(data as Record<string, unknown>)
+                  : null
+              )
+            ),
+            accommodationDetails: docData(
+              doc(this.firestore, ...userPath, 'accommodation', 'details')
+            ).pipe(
+              map((data) =>
+                data
+                  ? this.toAccommodationDetails(data as Record<string, unknown>)
+                  : null
+              )
+            ),
+            carDetails: docData(
+              doc(this.firestore, ...userPath, 'cardata', 'details')
+            ).pipe(
+              map((data) =>
+                data
+                  ? {
+                      carModel: String(data['carModel'] ?? '').trim(),
+                      licensePlate: String(data['licensePlate'] ?? '').trim(),
+                    }
+                  : null
+              )
+            ),
+            meetAndGreetRepresentative: docData(
+              doc(
+                this.firestore,
+                ...userPath,
+                'meet&greetrepresentative',
+                'details'
+              )
+            ).pipe(
+              map((data) =>
+                data
+                  ? {
+                      name: String(data['name'] ?? '').trim(),
+                      phoneNumber: String(data['phoneNumber'] ?? '').trim(),
+                    }
+                  : null
+              )
+            ),
+          })
+        );
       })
     );
   }
@@ -833,25 +846,27 @@ export class AdminService {
 
   async loadResources(): Promise<AdminResource[]> {
     const snapshot = await getDocs(collection(this.firestore, 'resources'));
-    return snapshot.docs
-      .map((resourceDocument) => ({
+    return this.sortResourcesNewestFirst(
+      snapshot.docs.map((resourceDocument) => ({
         id: resourceDocument.id,
         ...(resourceDocument.data() as Omit<AdminResource, 'id'>),
       }))
-      .sort((a, b) => a.title.localeCompare(b.title));
+    );
   }
 
   watchResources(): Observable<AdminResource[]> {
-    return collectionData(angularCollection(this.firestore, 'resources'), {
-      idField: 'id',
-    }).pipe(
-      map((documents) =>
-        documents
-          .map((resource) => ({
-            id: String(resource['id'] ?? ''),
-            ...(resource as Omit<AdminResource, 'id'>),
-          }))
-          .sort((a, b) => a.title.localeCompare(b.title))
+    return this.firebaseContext.run(() =>
+      collectionData(angularCollection(this.firestore, 'resources'), {
+        idField: 'id',
+      }).pipe(
+        map((documents) =>
+          this.sortResourcesNewestFirst(
+            documents.map((resource) => ({
+              id: String(resource['id'] ?? ''),
+              ...(resource as Omit<AdminResource, 'id'>),
+            }))
+          )
+        )
       )
     );
   }
@@ -872,28 +887,30 @@ export class AdminService {
   }
 
   watchResourceTypes(): Observable<ResourceType[]> {
-    return combineLatest([
-      collectionData(angularCollection(this.firestore, 'resourceTypes'), {
-        idField: 'id',
-      }),
-      collectionData(angularCollection(this.firestore, 'resources'), {
-        idField: 'id',
-      }),
-    ]).pipe(
-      map(([typeDocuments, resourceDocuments]) => {
-        const types = typeDocuments.map((typeDocument) => {
-          const name = String(typeDocument['name'] ?? '').trim();
-          return name || String(typeDocument['id'] ?? '');
-        });
-        const usedTypes = resourceDocuments.map((resource) =>
-          typeof resource['type'] === 'string' ? resource['type'] : undefined
-        );
-        return this.uniqueResourceTypes([
-          ...DEFAULT_RESOURCE_TYPES,
-          ...types,
-          ...usedTypes,
-        ]);
-      })
+    return this.firebaseContext.run(() =>
+      combineLatest([
+        collectionData(angularCollection(this.firestore, 'resourceTypes'), {
+          idField: 'id',
+        }),
+        collectionData(angularCollection(this.firestore, 'resources'), {
+          idField: 'id',
+        }),
+      ]).pipe(
+        map(([typeDocuments, resourceDocuments]) => {
+          const types = typeDocuments.map((typeDocument) => {
+            const name = String(typeDocument['name'] ?? '').trim();
+            return name || String(typeDocument['id'] ?? '');
+          });
+          const usedTypes = resourceDocuments.map((resource) =>
+            typeof resource['type'] === 'string' ? resource['type'] : undefined
+          );
+          return this.uniqueResourceTypes([
+            ...DEFAULT_RESOURCE_TYPES,
+            ...types,
+            ...usedTypes,
+          ]);
+        })
+      )
     );
   }
 
@@ -911,9 +928,41 @@ export class AdminService {
 
   async saveResource(resource: Omit<AdminResource, 'id'> & { id?: string }): Promise<AdminResource> {
     const id = resource.id?.trim() || this.createProjectId(resource.title);
-    const savedResource: AdminResource = { ...resource, id };
+    const nowIso = new Date().toISOString();
+    const savedResource: AdminResource = {
+      ...resource,
+      id,
+      createdAt: resource.createdAt || nowIso,
+      updatedAt: nowIso,
+    };
     await setDoc(firestoreDoc(this.firestore, 'resources', id), savedResource);
     return savedResource;
+  }
+
+  sortResourcesNewestFirst(resources: AdminResource[]): AdminResource[] {
+    return [...resources].sort((a, b) => {
+      const timeDiff = this.getResourceTimestamp(b) - this.getResourceTimestamp(a);
+      if (timeDiff !== 0) {
+        return timeDiff;
+      }
+      return a.title.localeCompare(b.title);
+    });
+  }
+
+  private getResourceTimestamp(resource: AdminResource): number {
+    const rawTime = resource.updatedAt ?? resource.createdAt;
+    const parsed = this.requestTime(rawTime);
+    if (parsed > 0) {
+      return parsed;
+    }
+    const urlMatch = typeof resource.url === 'string' ? resource.url.match(/-(\d{13})-/) : null;
+    if (urlMatch) {
+      const urlTimestamp = Number(urlMatch[1]);
+      if (Number.isFinite(urlTimestamp) && urlTimestamp > 0) {
+        return urlTimestamp;
+      }
+    }
+    return 0;
   }
 
   async loadAgendaSessionOptions(): Promise<AgendaSessionOption[]> {
@@ -1038,16 +1087,120 @@ export class AdminService {
     await deleteDoc(firestoreDoc(this.firestore, 'resources', resourceId));
   }
 
-  async uploadResource(file: File, resourceTitle: string): Promise<string> {
-    const storage = getStorage(
-      getApp(),
-      `gs://${environment.hsefirebaseConfig.storageBucket}`
-    );
+  async uploadResource(
+    file: File,
+    resourceTitle: string,
+    options?: {
+      onProgress?: (progress: { percent: number; bytesTransferred: number; totalBytes: number }) => void;
+      signal?: AbortSignal;
+    }
+  ): Promise<string> {
     const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '-');
     const resourceId = this.createProjectId(resourceTitle);
-    const resourceRef = ref(storage, `resources/${resourceId}-${Date.now()}-${safeName}`);
-    await uploadBytes(resourceRef, file, { contentType: file.type || undefined });
-    return getDownloadURL(resourceRef);
+    const objectPath = `resources/${resourceId}-${Date.now()}-${safeName}`;
+    const bucket = environment.hsefirebaseConfig.storageBucket;
+    return this.uploadFileToBucket(bucket, objectPath, file, options);
+  }
+
+  private uploadFileToBucket(
+    bucket: string,
+    objectPath: string,
+    file: File,
+    options?: {
+      onProgress?: (progress: { percent: number; bytesTransferred: number; totalBytes: number }) => void;
+      signal?: AbortSignal;
+    }
+  ): Promise<string> {
+    const storage = getStorage(getApp(), `gs://${bucket}`);
+    storage.maxUploadRetryTime = 30_000;
+    storage.maxOperationRetryTime = 20_000;
+    const resourceRef = ref(storage, objectPath);
+    const uploadTask = uploadBytesResumable(resourceRef, file, {
+      contentType: file.type || 'application/octet-stream',
+    });
+
+    return new Promise<string>((resolve, reject) => {
+      let settled = false;
+      let lastBytes = -1;
+      let stallTimer: ReturnType<typeof setTimeout> | undefined;
+
+      const cleanup = () => {
+        if (stallTimer) {
+          clearTimeout(stallTimer);
+          stallTimer = undefined;
+        }
+        options?.signal?.removeEventListener('abort', onAbort);
+      };
+
+      const resetStallTimer = (timeoutMs: number) => {
+        if (stallTimer) {
+          clearTimeout(stallTimer);
+        }
+        stallTimer = setTimeout(() => {
+          if (settled) return;
+          settled = true;
+          uploadTask.cancel();
+          cleanup();
+          reject(
+            new Error(
+              lastBytes <= 0
+                ? `Upload could not start on bucket ${bucket} (connection or CORS blocked).`
+                : 'Upload connection stalled with no progress for 45 seconds.'
+            )
+          );
+        }, timeoutMs);
+      };
+
+      const onAbort = () => {
+        if (settled) return;
+        settled = true;
+        uploadTask.cancel();
+        cleanup();
+        reject(new Error('Upload cancelled.'));
+      };
+
+      if (options?.signal?.aborted) {
+        onAbort();
+        return;
+      }
+      options?.signal?.addEventListener('abort', onAbort, { once: true });
+
+      // Fail fast (20s) if 0 bytes can be sent to this bucket; allow 45s between active chunks
+      resetStallTimer(20_000);
+
+      uploadTask.on(
+        'state_changed',
+        (snapshot) => {
+          const totalBytes = snapshot.totalBytes || file.size || 1;
+          const bytesTransferred = snapshot.bytesTransferred;
+          const percent = Math.min(100, Math.round((bytesTransferred / totalBytes) * 100));
+          options?.onProgress?.({ percent, bytesTransferred, totalBytes });
+          if (bytesTransferred > lastBytes) {
+            lastBytes = bytesTransferred;
+            resetStallTimer(45_000);
+          }
+        },
+        (error) => {
+          if (settled) return;
+          settled = true;
+          cleanup();
+          reject(error);
+        },
+        async () => {
+          if (settled) return;
+          try {
+            const downloadUrl = await getDownloadURL(uploadTask.snapshot.ref);
+            settled = true;
+            cleanup();
+            resolve(downloadUrl);
+          } catch (error) {
+            settled = true;
+            cleanup();
+            reject(error);
+          }
+        }
+      );
+    });
   }
 
   async uploadProjectAsset(

@@ -687,14 +687,26 @@
         <ion-input label="URL (optional if uploading)" labelPlacement="stacked" fill="outline" [(ngModel)]="resourceForm.url" name="resourceUrl" type="url"></ion-input>
         <div class="project-upload">
           <ion-icon name="cloud-upload-outline" aria-hidden="true"></ion-icon>
-          <label for="resource-file-upload">{{ selectedResourceFile ? selectedResourceFile.name : 'Upload file' }}</label>
+          <label for="resource-file-upload">
+            {{ selectedResourceFile ? selectedResourceFile.name + ' (' + formatFileSize(selectedResourceFile.size) + ')' : 'Upload file' }}
+          </label>
           <input id="resource-file-upload" type="file" (change)="onResourceFileSelected($event)" />
+        </div>
+        <div *ngIf="isSavingResource && resourceUploadStatusText" class="resource-upload-progress" aria-live="polite">
+          <div class="resource-upload-progress-header">
+            <span>{{ resourceUploadStatusText }}</span>
+            <strong *ngIf="resourceUploadPercent !== null">{{ resourceUploadPercent }}%</strong>
+          </div>
+          <div *ngIf="resourceUploadPercent !== null" class="resource-upload-progress-track">
+            <div class="resource-upload-progress-bar" [style.width.%]="resourceUploadPercent"></div>
+          </div>
         </div>
         <div class="send-row project-form-actions">
           <span>
             <ion-button type="button" fill="outline" class="project-cancel-button" (click)="cancelResourceEdit()">Cancel</ion-button>
             <ion-button type="submit" class="project-save-button" [disabled]="isSavingResource">
               <ion-spinner *ngIf="isSavingResource" name="crescent"></ion-spinner>
+              <span *ngIf="isSavingResource && resourceUploadPercent !== null" class="save-progress-label">{{ resourceUploadPercent }}%</span>
               <span *ngIf="!isSavingResource">Save changes</span>
             </ion-button>
           </span>

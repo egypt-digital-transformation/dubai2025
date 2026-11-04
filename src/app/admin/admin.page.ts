@@ -167,6 +167,9 @@ export class AdminPage implements OnInit, OnDestroy {
   editingResourceId: string | null = null;
   isResourceFormOpen = false;
   selectedResourceFile: File | null = null;
+  resourceUploadPercent: number | null = null;
+  resourceUploadStatusText = '';
+  private resourceUploadAbortController?: AbortController;
   resourceForm = this.emptyResourceForm();
   resourceTypes: ResourceType[] = [...DEFAULT_RESOURCE_TYPES];
   agendaSessionOptions: AgendaSessionOption[] = [];
@@ -743,6 +746,10 @@ export class AdminPage implements OnInit, OnDestroy {
   }
 
   cancelResourceEdit(): void {
+    this.resourceUploadAbortController?.abort();
+    this.resourceUploadAbortController = undefined;
+    this.resourceUploadPercent = null;
+    this.resourceUploadStatusText = '';
     this.editingResourceId = null;
     this.isResourceFormOpen = false;
     this.selectedResourceFile = null;
@@ -753,9 +760,24 @@ export class AdminPage implements OnInit, OnDestroy {
   onResourceFileSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
     this.selectedResourceFile = input.files?.[0] ?? null;
+    this.resourceUploadPercent = null;
+    this.resourceUploadStatusText = '';
     if (this.selectedResourceFile) {
       this.resourceForm.url = '';
     }
+  }
+
+  formatFileSize(bytes: number): string {
+    if (!Number.isFinite(bytes) || bytes <= 0) {
+      return '0 B';
+    }
+    if (bytes < 1024) {
+      return `${bytes} B`;
+    }
+    if (bytes < 1024 * 1024) {
+      return `${(bytes / 1024).toFixed(1)} KB`;
+    }
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   }
 
   async saveResource(): Promise<void> {
@@ -774,35 +796,69 @@ export class AdminPage implements OnInit, OnDestroy {
     }
     this.isSavingResource = true;
     this.resourceError = '';
+    this.resourceUploadPercent = this.selectedResourceFile ? 0 : null;
+    this.resourceUploadStatusText = this.selectedResourceFile
+      ? `Starting upload (${this.formatFileSize(this.selectedResourceFile.size)})...`
+      : 'Saving resource...';
+    const abortController = new AbortController();
+    this.resourceUploadAbortController = abortController;
     try {
       const url = this.selectedResourceFile
-        ? await this.adminService.uploadResource(this.selectedResourceFile, form.title.trim())
+        ? await this.adminService.uploadResource(
+            this.selectedResourceFile,
+            form.title.trim(),
+            {
+              signal: abortController.signal,
+              onProgress: ({ percent, bytesTransferred, totalBytes }) => {
+                this.resourceUploadPercent = percent;
+                this.resourceUploadStatusText = `Uploading ${percent}% (${this.formatFileSize(
+                  bytesTransferred
+                )} / ${this.formatFileSize(totalBytes)})`;
+              },
+            }
+          )
         : form.url.trim();
+      this.resourceUploadStatusText = 'Saving resource metadata...';
       const sessionName = form.sessionName.trim();
       const speakerName = form.speakerName.trim();
       const speakerTitle = form.speakerTitle.trim();
+      const existingResource = this.editingResourceId
+        ? this.resources.find((resource) => resource.id === this.editingResourceId)
+        : undefined;
       const saved = await this.adminService.saveResource({
         id: this.editingResourceId ?? undefined,
         title: form.title.trim(),
         type: form.type,
         description: form.description.trim(),
         url,
+        ...(existingResource?.createdAt ? { createdAt: existingResource.createdAt } : {}),
         ...(sessionName ? { sessionName } : {}),
         ...(speakerName ? { speakerName } : {}),
         ...(speakerTitle ? { speakerTitle } : {}),
       });
       const index = this.resources.findIndex((resource) => resource.id === saved.id);
-      this.resources = index < 0
-        ? [...this.resources, saved]
+      const updatedList = index < 0
+        ? [saved, ...this.resources]
         : this.resources.map((resource) => resource.id === saved.id ? saved : resource);
-      this.resources.sort((a, b) => a.title.localeCompare(b.title));
+      this.resources = this.adminService.sortResourcesNewestFirst(updatedList);
       this.resourceNotice = `${saved.title} saved.`;
       this.cancelResourceEdit();
     } catch (error) {
+      if (abortController.signal.aborted) {
+        return;
+      }
       console.error('[AdminPage] Failed to save resource:', error);
-      this.resourceError = 'Could not save this resource. Please try again.';
+      const detail = error instanceof Error && error.message ? ` (${error.message})` : '';
+      this.resourceError = this.selectedResourceFile
+        ? `Could not upload "${this.selectedResourceFile.name}"${detail}. For large presentation files, you can also upload to Google Drive / OneDrive and paste the HTTPS link above.`
+        : 'Could not save this resource. Please try again.';
     } finally {
+      if (this.resourceUploadAbortController === abortController) {
+        this.resourceUploadAbortController = undefined;
+      }
       this.isSavingResource = false;
+      this.resourceUploadPercent = null;
+      this.resourceUploadStatusText = '';
     }
   }
 

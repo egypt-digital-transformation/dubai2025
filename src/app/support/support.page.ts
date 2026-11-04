@@ -1,5 +1,7 @@
 import { Component } from '@angular/core';
 import { IonicModule } from '@ionic/angular';
+import { addIcons } from 'ionicons';
+import { callOutline, logoWhatsapp } from 'ionicons/icons';
 
 @Component({
   selector: 'app-support',
@@ -8,4 +10,11 @@ import { IonicModule } from '@ionic/angular';
   styleUrls: ['../more/more-module.page.scss', './support.page.scss'],
   imports: [IonicModule],
 })
-export class SupportPage {}
+export class SupportPage {
+  constructor() {
+    addIcons({
+      callOutline,
+      logoWhatsapp,
+    });
+  }
+}

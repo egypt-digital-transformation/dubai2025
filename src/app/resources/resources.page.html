@@ -47,19 +47,37 @@
       </p>
     </section>
     <section *ngIf="!isLoading && filteredResources.length" class="resource-grid" aria-label="Published resources">
-      <article class="resource-card" *ngFor="let resource of filteredResources">
-        <p class="resource-card-type">{{ resource.type }}</p>
-        <h2>{{ resource.title }}</h2>
-        <div class="resource-card-session" *ngIf="resource.sessionName || resource.speakerName">
-          <p class="resource-session-meta" *ngIf="resource.sessionName && resource.sessionName !== resource.title">
-            <span>Session:</span> {{ resource.sessionName }}
-          </p>
-          <p class="resource-session-meta" *ngIf="resource.speakerName">
-            <span>Speaker:</span> {{ resource.speakerName }}{{ resource.speakerTitle ? ' (' + resource.speakerTitle + ')' : '' }}
-          </p>
+      <article
+        class="resource-card"
+        [ngClass]="getResourceAccentClass(resource.type)"
+        *ngFor="let resource of filteredResources">
+        <h2 class="resource-card-title">{{ resource.title }}</h2>
+
+        <div class="resource-card-session" *ngIf="(resource.sessionName && resource.sessionName !== resource.title) || resource.speakerName">
+          <div class="resource-session-row" *ngIf="resource.sessionName && resource.sessionName !== resource.title">
+            <ion-icon name="calendar-outline" aria-hidden="true"></ion-icon>
+            <div class="resource-session-text">
+              <span class="resource-session-label">Session</span>
+              <strong>{{ resource.sessionName }}</strong>
+            </div>
+          </div>
+          <div class="resource-session-row" *ngIf="resource.speakerName">
+            <ion-icon name="person-outline" aria-hidden="true"></ion-icon>
+            <div class="resource-session-text">
+              <span class="resource-session-label">Speaker</span>
+              <strong>{{ resource.speakerName }}<span *ngIf="resource.speakerTitle" class="resource-speaker-role"> · {{ resource.speakerTitle }}</span></strong>
+            </div>
+          </div>
         </div>
-        <p *ngIf="resource.description">{{ resource.description }}</p>
-        <a [href]="resource.url" target="_blank" rel="noopener noreferrer">Open resource</a>
+
+        <p *ngIf="resource.description" class="resource-card-description">{{ resource.description }}</p>
+
+        <div class="resource-card-footer">
+          <a class="resource-open-btn" [href]="resource.url" target="_blank" rel="noopener noreferrer">
+            <span>{{ getResourceActionLabel(resource.type) }}</span>
+            <ion-icon name="open-outline" aria-hidden="true"></ion-icon>
+          </a>
+        </div>
       </article>
     </section>
   </main>
