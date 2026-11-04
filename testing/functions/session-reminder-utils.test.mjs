@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { getDueAgendaLabels } from "../../functions/reminders/session-reminder-utils.js";
+import {
+  getAgendaReminderMessage,
+  getDueAgendaLabels,
+} from "../../functions/reminders/session-reminder-utils.js";
 
 describe("getDueAgendaLabels", () => {
   it("parses agenda dates as year-day-month for reminders", () => {
@@ -111,5 +114,72 @@ describe("getDueAgendaLabels", () => {
     );
 
     assert.equal(labels.length, 1);
+  });
+});
+
+describe("getAgendaReminderMessage", () => {
+  it("returns customized engaging messages for all known event labels", () => {
+    const allLabels = [
+      "Welcome Cocktail Dinner",
+      "Welcome & Strategic Alignment",
+      "Growth in Attractive Markets: Unlocking AMEA’s Growth Potential",
+      "Break",
+      "Beyond Cement: Expanding AMEA’s Building Solutions",
+      "Group Photo",
+      "Lunch Break",
+      "WORKSHOPS: From Strategy to Execution- Driving Growth Across AMEA",
+      "PEOPLE PANEL",
+      "OUR GROWTH AGENDA",
+      "AMEA FINANCE",
+      "Ask the Group Leadership Team",
+      "Closing Remarks and Wrap up",
+      "Gala Dinner",
+      "Move from Four Seasons to SOK Plant",
+      "Lounge",
+      "Sokhna Plant Line 5 Inauguration",
+      "Lunch",
+      "Leadership Team will depart SOK Plant to the Hotel",
+      " Sokhna Plant Tour",
+      "Depart from Sokhna Plant to Four Seasons Hotel",
+      "Move from Hotel to Grand Egyptian Museum (GEM)",
+      "GEM Experience",
+      "Leave GEM to the Great Pyramids of Giza",
+      "Touring Great Pyramids of Giza",
+      "Arrive at Laduree by the Pyramids for Lunch with a Historic View",
+      "Move from Four Seasons to the Grand Egyptian Museum (GEM)",
+      "Start of A New Era of Excellence (Holcim Egypt Rebranding Event)",
+      "Leave GEM to Four Seasons",
+    ];
+
+    for (const label of allLabels) {
+      const message = getAgendaReminderMessage(label);
+      assert.ok(message.title, `Missing title for ${label}`);
+      assert.ok(message.body, `Missing body for ${label}`);
+      assert.notEqual(
+        message.title,
+        "Up Next on Your Agenda",
+        `Expected custom title for "${label}", got fallback`
+      );
+      assert.notEqual(
+        message.title,
+        "Departure Reminder",
+        `Expected custom title for "${label}", got generic departure fallback`
+      );
+    }
+  });
+
+  it("uses sensible fallbacks for unknown labels", () => {
+    const transferFallback = getAgendaReminderMessage(
+      "Move from Lobby to Conference Hall"
+    );
+    assert.equal(transferFallback.title, "Departure Reminder");
+    assert.equal(
+      transferFallback.body,
+      "Up next on your agenda: Move from Lobby to Conference Hall."
+    );
+
+    const sessionFallback = getAgendaReminderMessage("Special Keynote");
+    assert.equal(sessionFallback.title, "Up Next on Your Agenda");
+    assert.equal(sessionFallback.body, "\"Special Keynote\" is starting shortly.");
   });
 });

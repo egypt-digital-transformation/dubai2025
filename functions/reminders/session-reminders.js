@@ -11,7 +11,10 @@ import {
   updateInAppNotificationPushSummary,
 } from "../shared/push-delivery.js";
 import { emailDocumentId } from "../shared/notification-utils.js";
-import { getDueAgendaLabels } from "./session-reminder-utils.js";
+import {
+  getAgendaReminderMessage,
+  getDueAgendaLabels,
+} from "./session-reminder-utils.js";
 
 const REMINDER_WINDOW_MS = 5 * 60 * 1000;
 const REMINDER_RETRY_LOOKBACK_MS = 30 * 60 * 1000;
@@ -124,8 +127,7 @@ async function recordInAppReminder(userEmail, dueLabel, dayDoc) {
     throw new Error("Cannot save a session reminder without the attendee email.");
   }
 
-  const title = "Session Starting Soon!";
-  const body = `Your "${dueLabel.label}" is starting soon.`;
+  const { title, body } = getAgendaReminderMessage(dueLabel.label);
   const campaignId = getReminderCampaignId(normalizedEmail, dayDoc, dueLabel);
   const link = getAgendaReminderLink(dueLabel, campaignId);
   await recordInAppNotification({
@@ -192,10 +194,11 @@ async function sendReminderForLabel(
     const link = getAgendaReminderLink(dueLabel, campaignId);
     let results = [];
     if (recipients.length) {
+      const { title, body } = getAgendaReminderMessage(dueLabel.label);
       try {
         results = await sendPushToRecipients(recipients, {
-          title: "Session Starting Soon!",
-          body: `Your "${dueLabel.label}" is starting soon.`,
+          title,
+          body,
           data: {
             campaignId,
             dayNumber: String(dueLabel.dayNumber ?? ""),
