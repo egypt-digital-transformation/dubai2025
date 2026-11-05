@@ -115,7 +115,12 @@
               </span>
               <span class="action-title">Safety induction</span>
               <span class="action-desc">
-                {{ completedInductionsCount }} of {{ totalInductionsRequired }} completed
+                <ng-container *ngIf="safetyInductionStatusLoaded; else safetyInductionStatusPending">
+                  {{ completedInductionsCount }} of {{ totalInductionsRequired }} completed
+                </ng-container>
+                <ng-template #safetyInductionStatusPending>
+                  {{ safetyInductionStatusMessage }}
+                </ng-template>
               </span>
             </span>
           </button>

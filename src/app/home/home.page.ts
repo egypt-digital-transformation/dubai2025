@@ -10,13 +10,21 @@ import {
 } from '@ionic/angular/standalone';
 import { Auth, signOut, onAuthStateChanged } from '@angular/fire/auth';
 import { ModalController } from '@ionic/angular/standalone';
-import { getFunctions, httpsCallable } from 'firebase/functions';
+import {
+  GoogleAuthProvider,
+  User as FirebaseUser,
+  getAuth,
+  onAuthStateChanged as onFirebaseAuthStateChanged,
+  signInWithPopup,
+} from 'firebase/auth';
 import { DataService } from '../services/data.service';
 import { environment } from '../../environments/environment';
 import { getApps, initializeApp } from 'firebase/app';
 import {
   collection as firebaseCollection,
   DocumentData,
+  doc as firebaseDoc,
+  getDoc as firebaseGetDoc,
   getFirestore,
   onSnapshot,
   Unsubscribe,
@@ -126,9 +134,11 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 })
 export class HomePage implements OnInit, OnDestroy {
   private readonly firebaseContext = inject(FirebaseInjectionContext);
-  private get functions() {
-    return getFunctions(undefined, 'europe-west1');
-  }
+  private readonly hseApp =
+    getApps().find((app) => app.name === 'HSEApp') ??
+    initializeApp(environment.hsefirebaseConfig, 'HSEApp');
+  private readonly hseAuth = getAuth(this.hseApp);
+  private readonly hseFirestore = getFirestore(this.hseApp);
   public primarySession: Session | null = null;
   public secondarySession: Session | null = null;
   public isLoadingSessions = true;
@@ -164,6 +174,8 @@ export class HomePage implements OnInit, OnDestroy {
   rmxRequired = false;
   totalInductionsRequired = 1;
   completedInductionsCount = 0;
+  safetyInductionStatusLoaded = false;
+  safetyInductionStatusMessage = 'Tap to sync status';
   isPlantVisitRequired = false;
   public unseenActivitiesCount = 0;
   public isEventArchived = false;
@@ -177,7 +189,7 @@ export class HomePage implements OnInit, OnDestroy {
   private readonly activitiesService = inject(ActivitiesService);
   private readonly eventArchiveService = inject(EventArchiveService);
   private readonly TICK_MS = 1000;
-  private safetyInductionUnsubscribe?: Unsubscribe;
+  private hseAuthUnsubscribe?: Unsubscribe;
   private agendaUnsubscribe?: Unsubscribe;
   private profileUnsubscribe?: Unsubscribe;
   private viewGeneration = 0;
@@ -224,6 +236,12 @@ export class HomePage implements OnInit, OnDestroy {
   ngOnInit() {
 
     this.showQR = false;
+    this.hseAuthUnsubscribe = onFirebaseAuthStateChanged(this.hseAuth, (user) => {
+      const email = this.auth.currentUser?.email ?? '';
+      if (user && this.isSameEmail(user.email, email) && !this.isPreviewingUser) {
+        void this.readSafetyInductionStatus(user, this.viewGeneration);
+      }
+    });
 
     this.eventArchiveService.start();
     this.eventArchiveService.state$
@@ -408,6 +426,8 @@ export class HomePage implements OnInit, OnDestroy {
     this.agendaDayDates = [];
     this.agendaSessions$.next(null);
     this.isPlantVisitRequired = false;
+    this.safetyInductionStatusLoaded = false;
+    this.safetyInductionStatusMessage = 'Tap to sync status';
     this.profileUnsubscribe?.();
     this.profileUnsubscribe = undefined;
     if (!email) {
@@ -643,6 +663,7 @@ export class HomePage implements OnInit, OnDestroy {
   ngOnDestroy() {
     this.ionViewWillLeave();
     this.profileUnsubscribe?.();
+    this.hseAuthUnsubscribe?.();
     this.agendaUnsubscribe?.();
     if (this.wifiCopyResetTimer) clearTimeout(this.wifiCopyResetTimer);
     this.destroy$.next();
@@ -670,41 +691,95 @@ export class HomePage implements OnInit, OnDestroy {
   }
 
   private async loadSafetyInductionStatus(email: string, generation: number): Promise<void> {
-    if (!email) {
-      this.updateSafetyInductionStatus();
+    const hseUser = this.hseAuth.currentUser;
+    if (!hseUser || !this.isSameEmail(hseUser.email, email) || this.isPreviewingUser) {
+      this.safetyInductionStatusLoaded = false;
+      this.safetyInductionStatusMessage = 'Tap to sync status';
       return;
     }
 
     try {
-      const getStatus = httpsCallable<
-        object,
-        {
-          found: boolean;
-          sokhnaplant?: { completed?: boolean; lastWatchedIndex?: number };
-          rmx?: { completed?: boolean; required?: boolean };
-        }
-      >(this.functions, 'getMySafetyInductionStatus');
-
-      const result = await getStatus({ email });
-      if (this.viewGeneration === generation) {
-        this.zone.run(() => {
-          const data = result.data;
-          this.safetyInductions.sokhnaplant.completed = data?.sokhnaplant?.completed === true;
-          this.safetyInductions.rmx.completed = data?.rmx?.completed === true;
-          this.rmxRequired = data?.rmx?.required === true;
-          this.totalInductionsRequired = this.rmxRequired ? 2 : 1;
-          this.completedInductionsCount = [
-            this.safetyInductions.sokhnaplant.completed,
-            this.rmxRequired && this.safetyInductions.rmx.completed,
-          ].filter(Boolean).length;
-        });
-      }
+      await this.readSafetyInductionStatus(hseUser, generation);
     } catch (error) {
-      console.error('[SafetyInduction] Failed to load induction progress via Cloud Function:', error);
-      if (this.viewGeneration === generation) {
-        this.zone.run(() => this.updateSafetyInductionStatus());
-      }
+      this.handleSafetyInductionReadError(error, generation);
     }
+  }
+
+  private async readSafetyInductionStatus(
+    user: FirebaseUser,
+    generation: number
+  ): Promise<void> {
+    try {
+      const progress = await firebaseGetDoc(
+        firebaseDoc(this.hseFirestore, 'userProgress', user.uid)
+      );
+      if (
+        this.viewGeneration !== generation ||
+        this.hseAuth.currentUser?.uid !== user.uid ||
+        !this.isSameEmail(user.email, this.auth.currentUser?.email ?? '') ||
+        this.isPreviewingUser
+      ) {
+        return;
+      }
+
+      this.zone.run(() => {
+        this.updateSafetyInductionStatus(progress.exists() ? progress.data() : undefined);
+        this.safetyInductionStatusLoaded = true;
+        this.safetyInductionStatusMessage = '';
+      });
+    } catch (error) {
+      this.handleSafetyInductionReadError(error, generation);
+    }
+  }
+
+  private async authenticateHseUser(): Promise<FirebaseUser> {
+    const ahlanEmail = this.auth.currentUser?.email?.trim().toLowerCase();
+    if (!ahlanEmail) {
+      throw new Error('Sign in to Ahlan before syncing your safety induction.');
+    }
+
+    const currentUser = this.hseAuth.currentUser;
+    if (currentUser && this.isSameEmail(currentUser.email, ahlanEmail)) {
+      return currentUser;
+    }
+
+    const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({
+      prompt: 'select_account',
+      login_hint: ahlanEmail,
+    });
+    const credential = await signInWithPopup(this.hseAuth, provider);
+    if (!this.isSameEmail(credential.user.email, ahlanEmail)) {
+      throw new Error('Please choose the same Google account you use to sign in to Ahlan.');
+    }
+    return credential.user;
+  }
+
+  private isSameEmail(first: string | null, second: string | null): boolean {
+    return !!first && !!second &&
+      first.trim().toLowerCase() === second.trim().toLowerCase();
+  }
+
+  private handleSafetyInductionReadError(
+    error: unknown,
+    generation: number
+  ): void {
+    console.error('[SafetyInduction] Failed to load induction progress from HSE:', error);
+    if (this.viewGeneration !== generation) {
+      return;
+    }
+    const code = typeof error === 'object' && error !== null && 'code' in error
+      ? String(error.code)
+      : '';
+    const message = error instanceof Error ? error.message : '';
+    this.zone.run(() => {
+      this.safetyInductionStatusLoaded = false;
+      this.safetyInductionStatusMessage = code === 'auth/unauthorized-domain'
+        ? 'HSE sign-in is not enabled for this app domain'
+        : message === 'Please choose the same Google account you use to sign in to Ahlan.'
+          ? message
+          : 'Could not sync status. Tap to try again';
+    });
   }
 
   private updateSafetyInductionStatus(docData?: DocumentData): void {
@@ -725,6 +800,20 @@ export class HomePage implements OnInit, OnDestroy {
 
   async openSafetyInductionModal(): Promise<void> {
     if (this.isPreviewingUser) {
+      return;
+    }
+
+    this.safetyInductionStatusLoaded = false;
+    this.safetyInductionStatusMessage = 'Connecting to HSE…';
+    let hseUser: FirebaseUser;
+    try {
+      hseUser = await this.authenticateHseUser();
+      await this.readSafetyInductionStatus(hseUser, this.viewGeneration);
+    } catch (error) {
+      this.handleSafetyInductionReadError(error, this.viewGeneration);
+      return;
+    }
+    if (!this.safetyInductionStatusLoaded) {
       return;
     }
 

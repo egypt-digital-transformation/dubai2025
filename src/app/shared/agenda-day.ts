@@ -69,8 +69,34 @@ export function parseAgendaDate(value: unknown): Date | null {
   if (!match) return null;
 
   const year = Number(match[1]);
-  const day = Number(match[2]);
-  const month = Number(match[3]);
+  const first = Number(match[2]);
+  const second = Number(match[3]);
+
+  // Support both standard ISO YYYY-MM-DD and legacy/local YYYY-DD-MM.
+  // In the context of the AMEA 2026 event (November 2026, month 11):
+  let month: number;
+  let day: number;
+
+  if (first > 12) {
+    day = first;
+    month = second;
+  } else if (second > 12) {
+    month = first;
+    day = second;
+  } else if (first === 11) {
+    // Standard ISO format: 2026-11-DD
+    month = first;
+    day = second;
+  } else if (second === 11) {
+    // Legacy YYYY-DD-MM format: 2026-DD-11
+    month = second;
+    day = first;
+  } else {
+    // Default ISO format YYYY-MM-DD
+    month = first;
+    day = second;
+  }
+
   const date = new Date(year, month - 1, day);
   return date.getFullYear() === year &&
     date.getMonth() === month - 1 &&
