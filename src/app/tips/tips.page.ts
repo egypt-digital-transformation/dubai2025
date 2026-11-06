@@ -21,6 +21,7 @@ import {
   informationCircleOutline,
   calendarOutline,
   layersOutline,
+  carOutline,
 } from 'ionicons/icons';
 
 @Component({
@@ -54,6 +55,7 @@ export class TipsPage implements OnInit {
       sparklesOutline,
       informationCircleOutline,
       calendarOutline,
+      carOutline,
     });
   }
 
