@@ -60,6 +60,7 @@ import {
   sparklesOutline,
   peopleOutline,
   restaurantOutline,
+  gridOutline,
 } from 'ionicons/icons';
 
 import {
@@ -274,7 +275,7 @@ export class HomePage implements OnInit, OnDestroy {
     private zone: NgZone,
     private readonly adminPreview: AdminPreviewService
   ) {
-    addIcons({ qrCodeOutline, mapOutline, airplaneOutline, bulbOutline, cameraOutline, statsChartOutline, chevronForward, locationOutline, hourglassOutline, calendarOutline, radioOutline, keyOutline, closeOutline, personOutline, briefcaseOutline, callOutline, mailOutline, copyOutline, checkmarkOutline, notificationsOutline, timeOutline, checkmarkCircle, trophy, easelOutline, wineOutline, sparklesOutline, peopleOutline, restaurantOutline });
+    addIcons({ qrCodeOutline, mapOutline, airplaneOutline, bulbOutline, cameraOutline, statsChartOutline, chevronForward, locationOutline, hourglassOutline, calendarOutline, radioOutline, keyOutline, closeOutline, personOutline, briefcaseOutline, callOutline, mailOutline, copyOutline, checkmarkOutline, notificationsOutline, timeOutline, checkmarkCircle, trophy, easelOutline, wineOutline, sparklesOutline, peopleOutline, restaurantOutline, gridOutline });
   }
 
   ionViewWillEnter() {

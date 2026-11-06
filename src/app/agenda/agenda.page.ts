@@ -872,7 +872,20 @@ export class AgendaPage implements OnInit, OnDestroy {
 
   getSessionActivity(session: Session): InteractiveActivity | undefined {
     if (!session?.title) return undefined;
-    const act = this.sessionActivitiesMap.get(session.title.trim().toLowerCase());
+    const sessionTitle = session.title.trim().toLowerCase();
+    const normalize = (str: string) => str.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const normSession = normalize(sessionTitle);
+
+    let act = this.sessionActivitiesMap.get(sessionTitle);
+    if (!act) {
+      for (const [key, a] of this.sessionActivitiesMap.entries()) {
+        const normKey = normalize(key);
+        if (normKey === normSession || normKey.includes(normSession) || normSession.includes(normKey)) {
+          act = a;
+          break;
+        }
+      }
+    }
     if (!act) return undefined;
 
     // The activity card only appears on the session when it is live now for him,

@@ -1,8 +1,12 @@
 import { Injectable, inject } from '@angular/core';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { BehaviorSubject, Observable, firstValueFrom, of } from 'rxjs';
+import { catchError, timeout } from 'rxjs/operators';
 import { Auth } from '@angular/fire/auth';
-import { Firestore, collection, getDocs } from '@angular/fire/firestore';
+import { Firestore, collection, doc, getDoc, getDocs, query, where } from '@angular/fire/firestore';
+import { Timestamp } from 'firebase/firestore';
 import { AdminService, InteractiveActivity } from './admin.service';
+import { AdminPreviewService } from './admin-preview.service';
+import { DataService } from './data.service';
 import { FirebaseInjectionContext } from './firebase-injection-context.service';
 import { mapAgendaDaySessions } from '../shared/agenda-day';
 
@@ -23,12 +27,22 @@ export class ActivitiesService {
   private readonly auth = inject(Auth);
   private readonly firestore = inject(Firestore);
   private readonly firebaseContext = inject(FirebaseInjectionContext);
+  private readonly adminPreview = inject(AdminPreviewService);
+  private readonly dataService = inject(DataService);
 
   private readonly unseenCountSubject = new BehaviorSubject<number>(0);
   public readonly unseenCount$: Observable<number> = this.unseenCountSubject.asObservable();
 
   private userSessionTimings: UserSessionTiming[] | null = null;
   private userSessionTimingsUid = '';
+
+  private toDate(val: any): Date {
+    if (!val) return new Date(NaN);
+    if (val instanceof Timestamp) return val.toDate();
+    if (val?.toDate && typeof val.toDate === 'function') return val.toDate();
+    if (val instanceof Date) return val;
+    return new Date(val);
+  }
 
   private getSeenIds(): Set<string> {
     try {
@@ -48,46 +62,186 @@ export class ActivitiesService {
   }
 
   /**
-   * Loads attendee's personal session timings from their personal agenda
+   * Loads attendee's personal session timings from their personal agenda or shared sessions.
    */
-  async getUserSessionTimings(uid?: string): Promise<UserSessionTiming[]> {
-    const targetUid = uid || this.auth.currentUser?.uid;
-    if (!targetUid) return [];
+  async getUserSessionTimings(userEmailOrUid?: string): Promise<UserSessionTiming[]> {
+    const previewUser = this.adminPreview?.selectedUser;
+    const authUser = this.auth.currentUser;
+    const email = (previewUser?.email || userEmailOrUid || authUser?.email || '').trim().toLowerCase();
+    const uid = previewUser?.id || authUser?.uid || '';
 
-    if (this.userSessionTimings && this.userSessionTimingsUid === targetUid) {
+    const cacheKey = `${email}:${uid}`;
+    if (this.userSessionTimings && this.userSessionTimings.length > 0 && this.userSessionTimingsUid === cacheKey) {
       return this.userSessionTimings;
     }
 
+    const timings: UserSessionTiming[] = [];
+    let userDocId: string | null = null;
+    let userDocData: Record<string, any> | null = null;
+
     try {
-      const agendaRef = collection(this.firestore, 'users', targetUid, 'agenda');
-      const agendaSnap = await this.firebaseContext.run(() => getDocs(agendaRef));
-      const timings: UserSessionTiming[] = [];
-      for (const dayDoc of agendaSnap.docs) {
-        const mapped = mapAgendaDaySessions(dayDoc.data());
-        for (const s of mapped) {
+      const usersRef = collection(this.firestore, 'users');
+      if (email) {
+        const directDoc = await this.firebaseContext.run(() =>
+          getDoc(doc(this.firestore, 'users', email))
+        ).catch(() => null);
+
+        if (directDoc && directDoc.exists()) {
+          userDocId = directDoc.id;
+          userDocData = directDoc.data();
+        } else {
+          const [byEmailAddress, byEmail] = await Promise.all([
+            this.firebaseContext.run(() =>
+              getDocs(query(usersRef, where('emailAddress', '==', email)))
+            ).catch(() => null),
+            this.firebaseContext.run(() =>
+              getDocs(query(usersRef, where('email', '==', email)))
+            ).catch(() => null),
+          ]);
+          const found = byEmailAddress?.docs[0] || byEmail?.docs[0];
+          if (found) {
+            userDocId = found.id;
+            userDocData = found.data();
+          }
+        }
+      }
+
+      if (!userDocId && uid) {
+        const directUidDoc = await this.firebaseContext.run(() =>
+          getDoc(doc(this.firestore, 'users', uid))
+        ).catch(() => null);
+        if (directUidDoc && directUidDoc.exists()) {
+          userDocId = directUidDoc.id;
+          userDocData = directUidDoc.data();
+        }
+      }
+
+      if (userDocId) {
+        const agendaRef = collection(this.firestore, 'users', userDocId, 'agenda');
+        const agendaSnap = await this.firebaseContext.run(() => getDocs(agendaRef)).catch(() => null);
+        if (agendaSnap && !agendaSnap.empty) {
+          for (const dayDoc of agendaSnap.docs) {
+            const mapped = mapAgendaDaySessions(dayDoc.data());
+            for (const s of mapped) {
+              if (s.title && s.startTime) {
+                timings.push({
+                  sessionTitle: s.title.trim().toLowerCase(),
+                  startTime: s.startTime,
+                  endTime: s.endTime,
+                  day: s.day,
+                });
+              }
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('[ActivitiesService] Error querying user agenda:', e);
+    }
+
+    // Always merge or fallback to shared sessions from DataService or Firestore
+    try {
+      let sharedSessions: any[] = [];
+      try {
+        sharedSessions = await firstValueFrom(
+          this.dataService.sessions$.pipe(timeout(3000), catchError(() => of([])))
+        );
+      } catch {}
+
+      if (!sharedSessions || sharedSessions.length === 0) {
+        const sSnap = await this.firebaseContext.run(() =>
+          getDocs(collection(this.firestore, 'sessions'))
+        ).catch(() => null);
+        if (sSnap && !sSnap.empty) {
+          sharedSessions = sSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        }
+      }
+
+      const userGroup =
+        previewUser?.group ||
+        userDocData?.day2?.group ||
+        userDocData?.group ||
+        userDocData?.participantsGroup ||
+        '';
+      const groupNum = typeof userGroup === 'string'
+        ? userGroup.replace(/\D/g, '')
+        : typeof userGroup === 'number'
+        ? String(userGroup)
+        : '';
+
+      const day3 = userDocData?.day3;
+      const groupAM = day3?.groupAM && day3.groupAM !== 'SV' ? String(day3.groupAM).replace(/\D/g, '') : '';
+      const groupPM = day3?.groupPM && day3.groupPM !== 'SV' ? String(day3.groupPM).replace(/\D/g, '') : '';
+
+      for (const s of sharedSessions) {
+        if (!s.title) continue;
+        const titleLower = s.title.trim().toLowerCase();
+
+        // If personal agenda already populated this session with start and end times, keep the personal one
+        if (timings.some((t) => t.sessionTitle === titleLower)) {
+          continue;
+        }
+
+        let start = this.toDate(s.startTime);
+        let end = this.toDate(s.endTime);
+
+        // If workshop with rotational schedule for user's group, apply group-specific rotation
+        if ((s as any).rotationalSchedule) {
+          const rot = (s as any).rotationalSchedule;
+          let matchedRotation: any = null;
+          const sessionDay = String(s.day || '').trim();
+
+          if (sessionDay === '2' || !sessionDay) {
+            if (groupNum && rot[`group${groupNum}`]) {
+              matchedRotation = rot[`group${groupNum}`];
+            }
+          }
+          if (sessionDay === '3') {
+            if (groupAM && rot[`group${groupAM}`]) {
+              matchedRotation = rot[`group${groupAM}`];
+            } else if (groupPM && rot[`group${groupPM}`]) {
+              matchedRotation = rot[`group${groupPM}`];
+            } else if (groupNum && rot[`group${groupNum}`]) {
+              matchedRotation = rot[`group${groupNum}`];
+            }
+          }
+          if (!matchedRotation && groupNum && rot[`group${groupNum}`]) {
+            matchedRotation = rot[`group${groupNum}`];
+          }
+
+          if (matchedRotation) {
+            const rotStart = this.toDate(matchedRotation.startTime);
+            const rotEnd = this.toDate(matchedRotation.endTime);
+            if (!isNaN(rotStart.getTime())) start = rotStart;
+            if (!isNaN(rotEnd.getTime())) end = rotEnd;
+          }
+        }
+
+        if (!isNaN(start.getTime())) {
           timings.push({
-            sessionTitle: (s.title || '').trim().toLowerCase(),
-            startTime: s.startTime,
-            endTime: s.endTime,
+            sessionTitle: titleLower,
+            startTime: start,
+            endTime: isNaN(end.getTime()) ? null : end,
             day: s.day,
           });
         }
       }
-      this.userSessionTimings = timings;
-      this.userSessionTimingsUid = targetUid;
-      return timings;
     } catch (e) {
-      console.warn('[ActivitiesService] Could not load user session timings:', e);
-      return [];
+      console.warn('[ActivitiesService] Error loading shared sessions fallback:', e);
     }
+
+    if (timings.length > 0) {
+      this.userSessionTimings = timings;
+      this.userSessionTimingsUid = cacheKey;
+    }
+    return timings;
   }
 
   /**
    * Determines if a session-locked activity is currently visible for this attendee:
    * - If not linked to a session or not schedule-locked: always visible.
    * - If already submitted by user: always visible (so they can review their answer/score).
-   * - If linked to a session: only appears when the session is live now for him
-   *   (from session start time until session end + 10 min grace period).
+   * - If linked to a session: only appears when the session is live now for him.
    */
   isActivityVisibleForUser(
     activity: InteractiveActivity,
@@ -103,28 +257,33 @@ export class ActivitiesService {
       return true;
     }
 
-    if (!timings || !timings.length) {
-      return false;
-    }
-
     const sessionKey = activity.sessionName.trim().toLowerCase();
-    const matched = timings.find(
-      (t) =>
+    const normalize = (str: string) => str.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const normalizedKey = normalize(sessionKey);
+
+    const matched = (timings || []).find((t) => {
+      if (!t.sessionTitle) return false;
+      const normalizedTitle = normalize(t.sessionTitle);
+      return (
         t.sessionTitle === sessionKey ||
+        normalizedTitle === normalizedKey ||
         t.sessionTitle.includes(sessionKey) ||
-        sessionKey.includes(t.sessionTitle)
-    );
+        sessionKey.includes(t.sessionTitle) ||
+        normalizedTitle.includes(normalizedKey) ||
+        normalizedKey.includes(normalizedTitle)
+      );
+    });
 
     if (!matched || !matched.startTime) {
       return false;
     }
 
     // "The poll/quiz should appear for the user on the session is live now for him"
-    // Active from session start time (with 3-minute grace buffer for early room entry)
-    // until session end time (with 10-minute grace buffer for final votes).
-    const startThreshold = new Date(matched.startTime.getTime() - 3 * 60 * 1000);
+    // Active from session start time (with 10-minute buffer for early entry)
+    // until session end time (with 15-minute grace period for concluding votes).
+    const startThreshold = new Date(matched.startTime.getTime() - 10 * 60 * 1000);
     const endThreshold = matched.endTime
-      ? new Date(matched.endTime.getTime() + 10 * 60 * 1000)
+      ? new Date(matched.endTime.getTime() + 15 * 60 * 1000)
       : null;
 
     const hasStarted = now.getTime() >= startThreshold.getTime();
@@ -133,7 +292,7 @@ export class ActivitiesService {
     }
 
     if (endThreshold && now.getTime() > endThreshold.getTime()) {
-      return false; // Session rotation has passed and attendee did not participate
+      return false; // Session rotation has passed
     }
 
     return true;

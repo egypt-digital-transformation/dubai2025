@@ -96,7 +96,7 @@
           >
             <span class="action-content">
               <span class="action-icon seating">
-                <ion-icon name="restaurant-outline"></ion-icon>
+                <ion-icon name="grid-outline"></ion-icon>
               </span>
               <span class="action-title">My Seating</span>
               <span class="action-desc">{{ seatingQuickSummary }}</span>
@@ -544,10 +544,7 @@
         </div>
 
         <div class="seating-modal-body">
-          <div class="seating-group-banner" *ngIf="userGroupLabel">
-            <ion-icon name="people-outline" aria-hidden="true"></ion-icon>
-            <span>Assigned to <strong>{{ userGroupLabel }}</strong></span>
-          </div>
+
 
           <div class="seating-grid" [ngClass]="{ 'single-item': !plenarySeating || !galaDinner }">
             <!-- Plenary Seating Card -->
