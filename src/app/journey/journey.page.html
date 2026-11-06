@@ -145,24 +145,24 @@
           <dl>
             <div class="logistics-detail">
               <dt>Arrival time</dt>
-              <dd>{{ carDetails?.arrivalTime || 'To be confirmed' }}</dd>
+              <dd>{{ carDetails.arrivalTime || 'To be confirmed' }}</dd>
             </div>
             <div class="logistics-detail">
               <dt>Car</dt>
-              <dd>{{ carDetails?.carModel || 'To be confirmed' }}</dd>
+              <dd>{{ carDetails.carModel || 'To be confirmed' }}</dd>
             </div>
             <div class="logistics-detail">
               <dt>Driver</dt>
-              <dd>{{ carDetails?.driverName || 'To be confirmed' }}</dd>
+              <dd>{{ carDetails.driverName || 'To be confirmed' }}</dd>
             </div>
             <div class="logistics-detail">
               <dt>License plate</dt>
-              <dd>{{ carDetails?.licensePlate || 'To be confirmed' }}</dd>
+              <dd>{{ carDetails.licensePlate || 'To be confirmed' }}</dd>
             </div>
             <div class="logistics-detail">
               <dt>Mobile number</dt>
               <dd>
-                <ng-container *ngIf="carDetails?.mobileNumber as carMobileNumber; else pendingCarMobile">
+                <ng-container *ngIf="carDetails.mobileNumber as carMobileNumber; else pendingCarMobile">
                   <a [href]="'tel:' + carMobileNumber">{{ carMobileNumber }}</a>
                   <a
                     class="whatsapp-link"
@@ -185,21 +185,21 @@
           <dl>
             <div class="logistics-detail">
               <dt>Name</dt>
-              <dd>{{ meetAndGreetRepresentative?.name || 'To be confirmed' }}</dd>
+              <dd>{{ meetAndGreetRepresentative.name || 'To be confirmed' }}</dd>
             </div>
             <div class="logistics-detail">
               <dt>Phone</dt>
               <dd>
                 <a
-                  *ngIf="meetAndGreetRepresentative?.phoneNumber; else pendingRepresentativePhone"
-                  [href]="'tel:' + meetAndGreetRepresentative?.phoneNumber"
+                  *ngIf="meetAndGreetRepresentative.phoneNumber; else pendingRepresentativePhone"
+                  [href]="'tel:' + meetAndGreetRepresentative.phoneNumber"
                 >
-                  {{ meetAndGreetRepresentative?.phoneNumber }}
+                  {{ meetAndGreetRepresentative.phoneNumber }}
                 </a>
                 <a
-                  *ngIf="meetAndGreetRepresentative?.phoneNumber"
+                  *ngIf="meetAndGreetRepresentative.phoneNumber"
                   class="whatsapp-link"
-                  [href]="whatsappUrl(meetAndGreetRepresentative?.phoneNumber)"
+                  [href]="whatsappUrl(meetAndGreetRepresentative.phoneNumber)"
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label="Message the Meet and Greet representative on WhatsApp"
