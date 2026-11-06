@@ -231,21 +231,21 @@
                     (!primarySession.speaker.photoURL ||
                       primarySession.speaker.photoURL === 'null')
                   ">
-                    {{ primarySession.speaker?.name?.[0] }}{{ primarySession.speaker?.name?.split(' ')[1]?.[0] || '' }}
+                    {{ primarySession.speaker.name[0] }}{{ primarySession.speaker.name.split(' ')[1]?.[0] || '' }}
                   </div>
 
                   <img *ngIf="
-                    primarySession.speaker?.photoURL &&
-                    primarySession.speaker?.photoURL !== 'null'
-                  " [src]="primarySession.speaker?.photoURL" alt="{{ primarySession.speaker?.name }}"
+                    primarySession.speaker.photoURL &&
+                    primarySession.speaker.photoURL !== 'null'
+                  " [src]="primarySession.speaker.photoURL" alt="{{ primarySession.speaker.name }}"
                     class="avatar-img" />
 
                   <div class="speaker-details">
                     <div class="speaker-name">
-                      {{ primarySession.speaker?.name }}
+                      {{ primarySession.speaker.name }}
                     </div>
-                    <div class="speaker-role" *ngIf="primarySession.speaker?.title">
-                      {{ primarySession.speaker?.title }}
+                    <div class="speaker-role" *ngIf="primarySession.speaker.title">
+                      {{ primarySession.speaker.title }}
                     </div>
                   </div>
                 </div>
@@ -280,21 +280,21 @@
                     (!secondarySession.speaker.photoURL ||
                       secondarySession.speaker.photoURL === 'null')
                   ">
-                    {{ secondarySession.speaker?.name?.[0] }}{{ secondarySession.speaker?.name?.split(' ')[1]?.[0] || '' }}
+                    {{ secondarySession.speaker.name[0] }}{{ secondarySession.speaker.name.split(' ')[1]?.[0] || '' }}
                   </div>
 
                   <img *ngIf="
-                    secondarySession.speaker?.photoURL &&
-                    secondarySession.speaker?.photoURL !== 'null'
-                  " [src]="secondarySession.speaker?.photoURL" alt="{{ secondarySession.speaker?.name }}"
+                    secondarySession.speaker.photoURL &&
+                    secondarySession.speaker.photoURL !== 'null'
+                  " [src]="secondarySession.speaker.photoURL" alt="{{ secondarySession.speaker.name }}"
                     class="avatar-img" />
 
                   <div class="speaker-details">
                     <div class="speaker-name">
-                      {{ secondarySession.speaker?.name }}
+                      {{ secondarySession.speaker.name }}
                     </div>
-                    <div class="speaker-role" *ngIf="secondarySession.speaker?.title">
-                      {{ secondarySession.speaker?.title }}
+                    <div class="speaker-role" *ngIf="secondarySession.speaker.title">
+                      {{ secondarySession.speaker.title }}
                     </div>
                   </div>
                 </div>

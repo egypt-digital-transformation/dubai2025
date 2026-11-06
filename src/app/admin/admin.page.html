@@ -615,10 +615,12 @@
               [attr.aria-expanded]="isSessionPickerOpen">
               <div class="session-picker-trigger-text">
                 <ng-container *ngIf="resourceForm.sessionName; else emptySessionPrompt">
-                  <span class="session-picker-selected-meta" *ngIf="selectedAgendaSessionOption?.day || selectedAgendaSessionOption?.category">
-                    <span class="session-day-badge" *ngIf="selectedAgendaSessionOption?.day">Day {{ selectedAgendaSessionOption?.day }}</span>
-                    <span class="session-category-label" *ngIf="selectedAgendaSessionOption?.category">{{ selectedAgendaSessionOption?.category }}</span>
-                  </span>
+                  <ng-container *ngIf="selectedAgendaSessionOption !== null">
+                    <span class="session-picker-selected-meta" *ngIf="selectedAgendaSessionOption.day || selectedAgendaSessionOption.category">
+                      <span class="session-day-badge" *ngIf="selectedAgendaSessionOption.day">Day {{ selectedAgendaSessionOption.day }}</span>
+                      <span class="session-category-label" *ngIf="selectedAgendaSessionOption.category">{{ selectedAgendaSessionOption.category }}</span>
+                    </span>
+                  </ng-container>
                   <span class="session-picker-selected-title">{{ resourceForm.sessionName }}</span>
                   <span class="session-picker-selected-speaker" *ngIf="resourceForm.speakerName">
                     Speaker: {{ resourceForm.speakerName }}
@@ -1583,10 +1585,12 @@
               [attr.aria-expanded]="isActivitySessionPickerOpen">
               <div class="session-picker-trigger-text">
                 <ng-container *ngIf="activitySessionName; else emptyActivitySessionPrompt">
-                  <span class="session-picker-selected-meta" *ngIf="selectedActivityAgendaSessionOption?.day || selectedActivityAgendaSessionOption?.category">
-                    <span class="session-day-badge" *ngIf="selectedActivityAgendaSessionOption?.day">Day {{ selectedActivityAgendaSessionOption?.day }}</span>
-                    <span class="session-category-label" *ngIf="selectedActivityAgendaSessionOption?.category">{{ selectedActivityAgendaSessionOption?.category }}</span>
-                  </span>
+                  <ng-container *ngIf="selectedActivityAgendaSessionOption !== null">
+                    <span class="session-picker-selected-meta" *ngIf="selectedActivityAgendaSessionOption.day || selectedActivityAgendaSessionOption.category">
+                      <span class="session-day-badge" *ngIf="selectedActivityAgendaSessionOption.day">Day {{ selectedActivityAgendaSessionOption.day }}</span>
+                      <span class="session-category-label" *ngIf="selectedActivityAgendaSessionOption.category">{{ selectedActivityAgendaSessionOption.category }}</span>
+                    </span>
+                  </ng-container>
                   <span class="session-picker-selected-title">{{ activitySessionName }}</span>
                   <span class="session-picker-selected-speaker" *ngIf="activitySpeakerName">
                     Speaker: {{ activitySpeakerName }}

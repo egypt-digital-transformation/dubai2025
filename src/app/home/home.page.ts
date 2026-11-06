@@ -1227,7 +1227,9 @@ export class HomePage implements OnInit, OnDestroy {
     return start <= now && now < end;
   }
 
-  shouldDisplaySpeaker(session: Session | undefined | null): boolean {
+  shouldDisplaySpeaker(
+    session: Session | undefined | null
+  ): session is Session & { speaker: NonNullable<Session['speaker']> } {
     const name = session?.speaker?.name?.trim?.() ?? '';
     if (!name) return false;
     const lc = name.toLowerCase();
