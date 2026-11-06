@@ -97,11 +97,12 @@
 ::ng-deep .safety-induction-modal {
   --width: 90%;
   --max-width: 400px;
-  --max-height: 330px;
+  --height: auto;
+  --max-height: 85vh;
   --border-radius: 16px;
 
   &.single-site {
-    --max-height: 245px;
+    --max-height: 80vh;
   }
 
   ion-toolbar {

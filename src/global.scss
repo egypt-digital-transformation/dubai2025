@@ -72,6 +72,14 @@
 }
 
 html,
+body {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html,
 body,
 ion-app,
 ion-content {
@@ -449,8 +457,10 @@ ion-tab-bar {
   --background: var(--app-surface);
   --border: 1px solid var(--app-border);
   box-shadow: 0 -2px 6px rgba(var(--black-rgb), 0.05);
-  height: 68px; // ⬆️ slightly taller for mobile touch targets
-  padding-bottom: env(safe-area-inset-bottom);
+  min-height: 60px;
+  height: auto; // Flexible height to accommodate larger accessibility font
+  padding-top: 4px;
+  padding-bottom: max(6px, env(safe-area-inset-bottom));
 }
 
 ion-tab-button {
@@ -462,29 +472,29 @@ ion-tab-button {
   align-items: center;
   font-weight: 600;
   transition: all 0.2s ease;
+  padding: 4px 2px;
 
   ion-icon {
-    font-size: 1.5rem; // ⬆️ larger default icon size for mobile
-    margin-bottom: 0.2rem;
+    display: inline-block;
+    font-size: clamp(20px, 5vw, 24px);
+    vertical-align: middle;
+    color: inherit;
+    margin-bottom: 0.15rem;
     transition: transform 0.2s ease;
   }
 
-  ion-icon {
-  display: inline-block;
-  font-size: 22px;
-  vertical-align: middle;
-  color: inherit;
-}
-
-
   ion-label {
-    font-size: 0.85rem; // ⬆️ slightly larger text
+    font-size: clamp(0.68rem, 2.5vw, 0.8rem);
     letter-spacing: 0.01rem;
+    line-height: 1.2;
+    text-align: center;
+    max-width: 100%;
+    word-break: break-word;
   }
 
   &.tab-selected {
     ion-icon {
-      transform: scale(1.1);
+      transform: scale(1.08);
       color: var(--app-primary);
     }
 
@@ -495,7 +505,7 @@ ion-tab-button {
 
   @media (min-width: 480px) {
     ion-icon {
-      font-size: 1.6rem;
+      font-size: 1.5rem;
     }
     ion-label {
       font-size: 0.8rem;
@@ -509,7 +519,7 @@ ion-tab-button {
     ion-label {
       font-size: 0.75rem;
     }
-    height: 60px; // slightly shorter for desktop
+    min-height: 56px;
   }
 }
 

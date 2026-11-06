@@ -102,12 +102,14 @@
 
 .directory-contact-main h3 {
   color: var(--app-text);
-  font-size: 0.86rem;
+  font-size: 0.88rem;
   line-height: 1.25;
   margin: 0;
+  word-break: break-word;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .directory-contact-main p {
@@ -115,15 +117,17 @@
   font-size: 0.76rem;
   line-height: 1.3;
   margin: 0.15rem 0 0;
+  word-break: break-word;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .directory-contact-details {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.15rem 0.75rem;
+  gap: 0.25rem 0.75rem;
   grid-column: 2 / -1;
   min-width: 0;
 }
@@ -133,10 +137,9 @@
   display: block;
   font-size: 0.78rem;
   max-width: 100%;
-  overflow: hidden;
+  word-break: break-all;
+  overflow-wrap: anywhere;
   text-decoration: none;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .directory-add-btn {
