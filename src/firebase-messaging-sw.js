@@ -28,6 +28,7 @@ messaging.onBackgroundMessage((payload) => {
     body: payload.notification?.body || payload.data?.body || '',
     icon: payload.notification?.icon || '/assets/app-icon-192.png',
     badge: '/assets/app-icon-48.png',
+    requireInteraction: true,
     data: payload.data || {},
   };
 

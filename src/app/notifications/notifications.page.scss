@@ -150,15 +150,12 @@ h1 {
 .notification-title {
   margin: 0;
   font-family: var(--app-font-headline) !important;
-  font-size: 0.9rem;
+  font-size: 0.92rem;
   font-weight: 700;
   letter-spacing: -0.015em;
-  line-height: 1.25;
+  line-height: 1.3;
   color: var(--holcim-dark-blue);
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+  word-break: break-word;
 }
 
 .notification-time {
@@ -171,15 +168,12 @@ h1 {
 }
 
 .notification-body {
-  margin: 0.2rem 0 0;
-  font-size: 0.78rem;
+  margin: 0.35rem 0 0;
+  font-size: 0.82rem;
   color: var(--holcim-premium-blue);
-  line-height: 1.38;
+  line-height: 1.45;
   white-space: pre-line;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+  word-break: break-word;
 }
 
 // Skeleton Loading

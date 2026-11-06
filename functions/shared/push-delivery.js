@@ -227,8 +227,32 @@ export async function sendPushToRecipients(
     const message = {
       tokens: batch.map((recipient) => recipient.token),
       data: messageData,
-      ...(android ? { android } : {}),
-      ...(webpush ? { webpush } : {}),
+      notification: {
+        title,
+        body,
+      },
+      android: {
+        priority: "high",
+        notification: {
+          title,
+          body,
+          defaultSound: true,
+          priority: "max",
+          visibility: "public",
+        },
+        ...(android || {}),
+      },
+      webpush: {
+        headers: { Urgency: "high" },
+        notification: {
+          title,
+          body,
+          icon: "/assets/app-icon-192.png",
+          badge: "/assets/app-icon-48.png",
+          requireInteraction: true,
+        },
+        ...(webpush || {}),
+      },
     };
     const response = await getMessaging().sendEachForMulticast(message);
     const batchResults = response.responses.map((result, recipientIndex) => {
