@@ -50,7 +50,7 @@
           <figcaption class="feature-caption" (click)="openProjectAsset(featuredProject)">
             <span class="feature-kicker">FEATURED LANDMARK · EGYPT</span>
             <h2>{{ featuredProject.name }}</h2>
-            <p>{{ featuredProject.location || featuredProject.subtitle }} · {{ featuredProject.country }}</p>
+            <p>{{ (featuredProject.location || featuredProject.subtitle) ? (featuredProject.location || featuredProject.subtitle) + ' · ' + featuredProject.country : featuredProject.country }}</p>
             <span class="asset-badge" *ngIf="featuredProject.assetType === 'model'">VIEW 3D MODEL</span>
           </figcaption>
           <span class="image-index">
@@ -66,6 +66,21 @@
             </span>
           </div>
         </figure>
+        <div class="featured-project-details" *ngIf="getProjectDescription(featuredProject) || getStructuredHighlights(featuredProject).length">
+          <p class="featured-project-description" *ngIf="getProjectDescription(featuredProject)">{{ getProjectDescription(featuredProject) }}</p>
+          <div class="featured-project-highlights" *ngIf="getStructuredHighlights(featuredProject).length">
+            <div class="highlights-grid">
+              <div
+                class="highlight-card"
+                *ngFor="let item of getStructuredHighlights(featuredProject)"
+                [class.is-wide]="item.isWide"
+              >
+                <strong class="highlight-stat" *ngIf="item.stat">{{ item.stat }}</strong>
+                <p class="highlight-text">{{ item.text }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
       </section>
 
       <section class="portfolio-section egypt-section">
@@ -118,14 +133,23 @@
               </div>
             </figure>
             <div class="card-copy">
-              <p class="project-location">{{ project.location || project.subtitle }} · {{ project.country }}</p>
+              <p class="project-location">{{ (project.location || project.subtitle) ? (project.location || project.subtitle) + ' · ' + project.country : project.country }}</p>
               <div class="card-title-row">
                 <h3>{{ project.title || project.name }}</h3>
                 <span class="asset-badge dark" *ngIf="project.assetType === 'model'">3D</span>
               </div>
-              <p class="project-description">{{ project.description }}</p>
-              <div class="project-highlight" *ngIf="project.highlights?.length">
-                <p *ngFor="let highlight of project.highlights">{{ highlight }}</p>
+              <p class="project-description" *ngIf="getProjectDescription(project)">{{ getProjectDescription(project) }}</p>
+              <div class="project-highlight" *ngIf="getStructuredHighlights(project).length">
+                <div class="highlights-grid">
+                  <div
+                    class="highlight-card"
+                    *ngFor="let item of getStructuredHighlights(project)"
+                    [class.is-wide]="item.isWide"
+                  >
+                    <strong class="highlight-stat" *ngIf="item.stat">{{ item.stat }}</strong>
+                    <p class="highlight-text">{{ item.text }}</p>
+                  </div>
+                </div>
               </div>
             </div>
           </article>
@@ -182,14 +206,23 @@
               </div>
             </figure>
             <div class="card-copy">
-              <p class="project-location">{{ project.location || project.subtitle }} · {{ project.country }}</p>
+              <p class="project-location">{{ (project.location || project.subtitle) ? (project.location || project.subtitle) + ' · ' + project.country : project.country }}</p>
               <div class="card-title-row">
                 <h3>{{ project.title || project.name }}</h3>
                 <span class="asset-badge dark" *ngIf="project.assetType === 'model'">3D</span>
               </div>
-              <p class="project-description">{{ project.description }}</p>
-              <div class="project-highlight" *ngIf="project.highlights?.length">
-                <p *ngFor="let highlight of project.highlights">{{ highlight }}</p>
+              <p class="project-description" *ngIf="getProjectDescription(project)">{{ getProjectDescription(project) }}</p>
+              <div class="project-highlight" *ngIf="getStructuredHighlights(project).length">
+                <div class="highlights-grid">
+                  <div
+                    class="highlight-card"
+                    *ngFor="let item of getStructuredHighlights(project)"
+                    [class.is-wide]="item.isWide"
+                  >
+                    <strong class="highlight-stat" *ngIf="item.stat">{{ item.stat }}</strong>
+                    <p class="highlight-text">{{ item.text }}</p>
+                  </div>
+                </div>
               </div>
             </div>
           </article>

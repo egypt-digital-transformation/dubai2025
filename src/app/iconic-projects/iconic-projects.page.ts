@@ -5,6 +5,12 @@ import { IconicProject } from './models/project.model';
 import { AdminService } from '../services/admin.service';
 import { Subscription } from 'rxjs';
 
+export interface StructuredHighlight {
+  stat: string | null;
+  text: string;
+  isWide: boolean;
+}
+
 @Component({
   selector: 'app-iconic-projects',
   standalone: true,
@@ -60,6 +66,99 @@ export class IconicProjectsPage implements OnDestroy {
       new Set([primary, ...list].map((url) => (url || '').trim()).filter(Boolean))
     );
     return urls.length ? urls : [''];
+  }
+
+  getProjectDescription(project: IconicProject): string {
+    const raw = (project.description || '').trim();
+    if (!raw) {
+      return '';
+    }
+    const splitIndex = raw.search(/\n\s*(?:key\s*highlights?|highlights?):?/i);
+    if (splitIndex !== -1) {
+      return raw.slice(0, splitIndex).trim();
+    }
+    return raw;
+  }
+
+  getProjectHighlights(project: IconicProject): string[] {
+    const raw = Array.isArray(project.highlights) && project.highlights.length
+      ? project.highlights
+      : project.engineeringHighlight
+        ? [project.engineeringHighlight]
+        : [];
+    const list = raw
+      .flatMap((entry) => String(entry || '').split(/\r?\n/))
+      .map((line) => line.replace(/^[\s•\-–*]+/, '').trim())
+      .filter((line) => line.length > 0 && !/^key\s*highlights:?$/i.test(line));
+
+    if (list.length > 0) {
+      return list;
+    }
+
+    const desc = (project.description || '').trim();
+    const match = desc.match(/(?:key\s*highlights?|highlights?):?\s*\n([\s\S]+)$/i);
+    if (match && match[1]) {
+      return match[1]
+        .split(/\r?\n/)
+        .map((line) => line.replace(/^[\s•\-–*]+/, '').trim())
+        .filter((line) => line.length > 0);
+    }
+
+    return [];
+  }
+
+  getStructuredHighlights(project: IconicProject): StructuredHighlight[] {
+    const lines = this.getProjectHighlights(project);
+    return lines.map((rawLine, idx) => {
+      const line = rawLine.replace(/[.]+$/, '').trim();
+
+      // 1. Superlatives: "World-first use of..."
+      const superlativeMatch = line.match(
+        /^(world-first|first-ever|record-breaking|largest|tallest|longest|#1|1st)\s+(?:use\s+of\s+)?(.+)$/i
+      );
+      if (superlativeMatch) {
+        const rawStat = superlativeMatch[1].trim();
+        const stat = rawStat.charAt(0).toUpperCase() + rawStat.slice(1);
+        const rawText = superlativeMatch[2].trim();
+        const text = rawText.charAt(0).toUpperCase() + rawText.slice(1);
+        return {
+          stat,
+          text,
+          isWide: true,
+        };
+      }
+
+      // 2. Metrics with Unit: e.g. "150,000 ton of CO2..." or "52% reduction..." or "45 specialized..."
+      const metricMatch = line.match(
+        /^((?:over\s+|more\s+than\s+|up\s+to\s+|~\s*)?\d[\d,.]*(?:\s*%|\s*x|\s*\+)?)\s*(ton(?:ne)?s?|m³|m²|km|mm|cm|m|mixes)?\s*(?:of\s+)?(.+)$/i
+      );
+      if (metricMatch) {
+        const num = metricMatch[1].trim();
+        const unit = (metricMatch[2] || '').trim();
+        let rawText = metricMatch[3].trim();
+
+        let stat = num;
+        if (unit) {
+          stat = `${num} ${unit}`;
+        } else if (rawText.toLowerCase().includes('concrete mixes') || rawText.toLowerCase().includes('mixes')) {
+          stat = `${num} mixes`;
+          rawText = rawText.replace(/^specialized\s+concrete\s+mixes,?\s*/i, 'Specialized concrete mixes, ');
+        }
+
+        const text = rawText.charAt(0).toUpperCase() + rawText.slice(1);
+        return {
+          stat,
+          text,
+          isWide: text.length > 65 || (lines.length % 2 === 1 && idx === lines.length - 1),
+        };
+      }
+
+      return {
+        stat: null,
+        text: line.charAt(0).toUpperCase() + line.slice(1),
+        isWide: line.length > 55 || (lines.length % 2 === 1 && idx === lines.length - 1),
+      };
+    });
   }
 
   getActiveSlideIndex(project: IconicProject): number {

@@ -331,6 +331,105 @@
   font-size: 0.91rem;
 }
 
+.featured-project-details {
+  width: min(100% - 48px, 1100px);
+  margin: 0 auto;
+  padding: 20px 0 28px;
+}
+
+.featured-project-description {
+  max-width: 760px;
+  margin: 0;
+  color: rgba(var(--white-rgb), 0.86);
+  font-size: 0.92rem;
+  line-height: 1.65;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.featured-project-highlights {
+  max-width: 760px;
+  margin: 14px 0 0;
+}
+
+.project-highlight {
+  max-width: 560px;
+  margin: 12px 0 0;
+}
+
+.highlights-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+}
+
+.highlight-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 3px;
+  padding: 9px 12px 10px;
+  border-radius: 9px;
+  background: #f4f7fb;
+  border: 1px solid rgba(var(--holcim-dark-blue-rgb), 0.08);
+  border-left: 3px solid var(--accent);
+  box-shadow: 0 1px 4px rgba(var(--holcim-dark-blue-rgb), 0.03);
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+
+  &.is-wide {
+    grid-column: 1 / -1;
+  }
+}
+
+.featured-project-highlights .highlight-card {
+  background: rgba(var(--white-rgb), 0.07);
+  border: 1px solid rgba(var(--white-rgb), 0.14);
+  border-left: 3px solid var(--accent);
+  box-shadow: none;
+
+  .highlight-stat {
+    color: var(--white);
+  }
+
+  .highlight-text {
+    color: rgba(var(--white-rgb), 0.85);
+  }
+}
+
+.highlight-stat {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  font-family: 'Holcim Headline', 'Holcim', sans-serif;
+  font-size: 1.14rem;
+  font-weight: 500;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+
+.highlight-text {
+  margin: 0;
+  color: #4b5868;
+  font-size: 0.77rem;
+  line-height: 1.38;
+}
+
+@media (max-width: 480px) {
+  .highlights-grid {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .highlight-card {
+    padding: 8px 11px;
+  }
+}
+
 .asset-badge {
   display: inline-block;
   margin-top: 16px;
@@ -552,24 +651,14 @@
   letter-spacing: 0.08em;
 }
 
-.project-highlight {
-  max-width: 520px;
-  margin: 11px 0 0;
-  color: var(--muted);
-  font-size: 0.79rem;
-  line-height: 1.6;
-}
-
 .project-description {
-  display: -webkit-box;
   max-width: 560px;
   margin: 10px 0 0;
-  overflow: hidden;
   color: var(--muted);
   font-size: 0.84rem;
-  line-height: 1.55;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
+  line-height: 1.6;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
 }
 
 .project-highlight p {
