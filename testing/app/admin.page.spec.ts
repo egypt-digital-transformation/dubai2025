@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { AlertController } from '@ionic/angular';
-import { vi } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {
   AdminDashboard,
   AdminInteractiveActivity,
@@ -18,9 +18,13 @@ describe('AdminPage', () => {
     loadDashboard: vi.fn<AdminService['loadDashboard']>(),
     loadNotificationAudience: vi.fn<AdminService['loadNotificationAudience']>(),
     loadFlightDetailsForAttendees: vi.fn<AdminService['loadFlightDetailsForAttendees']>(),
+    loadCarDetailsForAttendees: vi.fn<AdminService['loadCarDetailsForAttendees']>(),
     loadSafetyInductionStatus: vi.fn<AdminService['loadSafetyInductionStatus']>(),
+    connectHseAdmin: vi.fn<AdminService['connectHseAdmin']>(),
     sendNotification: vi.fn<AdminService['sendNotification']>(),
     scheduleNotification: vi.fn<AdminService['scheduleNotification']>(),
+    removeHomeAnnouncement: vi.fn<AdminService['removeHomeAnnouncement']>(),
+    activateHomeAnnouncement: vi.fn<AdminService['activateHomeAnnouncement']>(),
     listAdminInteractiveActivities: vi.fn<AdminService['listAdminInteractiveActivities']>(),
     setInteractiveActivityActive: vi.fn<AdminService['setInteractiveActivityActive']>(),
     createInteractiveActivity: vi.fn<AdminService['createInteractiveActivity']>(),
@@ -75,6 +79,7 @@ describe('AdminPage', () => {
       },
     ],
     campaigns: [],
+    featuredAnnouncements: [],
   };
 
   beforeEach(async () => {
@@ -82,7 +87,9 @@ describe('AdminPage', () => {
     adminService.loadDashboard.mockResolvedValue(dashboard);
     adminService.loadNotificationAudience.mockResolvedValue(dashboard.attendees);
     adminService.loadFlightDetailsForAttendees.mockResolvedValue(dashboard.attendees);
+    adminService.loadCarDetailsForAttendees.mockResolvedValue(dashboard.attendees);
     adminService.loadSafetyInductionStatus.mockResolvedValue(dashboard.attendees);
+    adminService.connectHseAdmin.mockResolvedValue(undefined);
     adminService.loadAdminRequests.mockResolvedValue([]);
     adminService.updateAdminRequest.mockResolvedValue(undefined);
     adminService.loadEventEndAt.mockResolvedValue(null);
@@ -261,6 +268,47 @@ describe('AdminPage', () => {
     expect(component.noticeMessage).toContain('1 in-app inbox');
   });
 
+  it('sends highlighted Home updates when the option is checked', async () => {
+    component.selectedUserIds = ['delegate-a'];
+    selectAudienceKind('users', 'update');
+    component.notificationTitle = 'Important update';
+    component.notificationBody = 'Please read this update.';
+    component.highlightOnHome = true;
+
+    await component.sendNotification();
+
+    expect(adminService.sendNotification).toHaveBeenCalledWith(
+      'Important update',
+      'Please read this update.',
+      { kind: 'users', userIds: ['delegate-a'] },
+      true
+    );
+  });
+
+  it('can promote an existing campaign to a Home announcement', async () => {
+    const campaign: AdminCampaign = {
+      id: 'campaign-1',
+      title: 'Important update',
+      targetLabel: 'All attendees',
+      createdAt: new Date().toISOString(),
+      targetCount: 2,
+      inAppCount: 2,
+      pushReadyCount: 2,
+      acceptedCount: 2,
+      failedCount: 0,
+      openedCount: 0,
+      status: 'complete',
+      scheduledAt: null,
+    };
+
+    await component.activateHomeAnnouncement(campaign);
+
+    expect(adminService.activateHomeAnnouncement).toHaveBeenCalledWith(
+      'campaign-1'
+    );
+    expect(component.noticeMessage).toContain('now highlighted on Home');
+  });
+
   it('searches Firestore users and selects every visible result', () => {
     component.notificationUserSearch = 'delegate';
 
@@ -379,14 +427,16 @@ describe('AdminPage', () => {
 
     await component.createInteractiveActivity();
 
-    expect(adminService.createInteractiveActivity).toHaveBeenCalledWith({
-      title: 'Safety check',
-      question: 'Which item protects your eyes?',
-      options: ['Safety glasses', 'Open sandals'],
-      kind: 'quiz',
-      target: { kind: 'segment', field: 'participantsGroup', value: 'Leadership' },
-      correctOptionIndex: 0,
-    });
+    expect(adminService.createInteractiveActivity).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'Safety check',
+        question: 'Which item protects your eyes?',
+        options: ['Safety glasses', 'Open sandals'],
+        kind: 'quiz',
+        target: { kind: 'segment', field: 'participantsGroup', value: 'Leadership' },
+        correctOptionIndex: 0,
+      })
+    );
   });
 
   it('uses the same multi-user audience for a poll', async () => {
@@ -507,6 +557,22 @@ describe('AdminPage', () => {
     component.attendeeStatusFilter = 'all';
     fixture.detectChanges();
     expect(component.filteredAttendees.map((attendee) => attendee.id)).toEqual(['delegate-b']);
+  });
+
+  it('connects to HSE when the attendee action button is clicked', async () => {
+    component.selectedSection = 'attendees';
+    fixture.detectChanges();
+
+    const button = fixture.nativeElement.querySelector(
+      'button.hse-connect-button'
+    ) as HTMLButtonElement;
+    button.click();
+    await fixture.whenStable();
+
+    expect(adminService.connectHseAdmin).toHaveBeenCalledOnce();
+    expect(adminService.loadSafetyInductionStatus).toHaveBeenCalledWith(
+      dashboard.attendees
+    );
   });
 
   it('uses dashboard attendee statuses rather than notification-audience placeholders', () => {

@@ -366,7 +366,7 @@
         </div>
         <div class="project-form-grid">
           <ion-input label="Title" labelPlacement="stacked" fill="outline" [(ngModel)]="projectForm.title" name="projectTitle" required></ion-input>
-          <ion-input label="Location" labelPlacement="stacked" fill="outline" [(ngModel)]="projectForm.location" name="projectLocation" required></ion-input>
+          <ion-input label="Location (optional)" labelPlacement="stacked" fill="outline" [(ngModel)]="projectForm.location" name="projectLocation"></ion-input>
           <ion-input label="Order" type="number" min="1" step="1" labelPlacement="stacked" fill="outline" [(ngModel)]="projectForm.order" name="projectOrder" placeholder="1" required></ion-input>
           <div class="country-picker">
             <label class="country-picker-label" for="project-country-search">Region / country</label>
@@ -404,17 +404,17 @@
             </div>
           </div>
         </div>
-        <ion-textarea
-          class="project-description-field"
-          label="Description"
-          labelPlacement="stacked"
-          fill="outline"
-          rows="3"
-          autoGrow="true"
-          [(ngModel)]="projectForm.description"
-          name="projectDescription"
-          required
-        ></ion-textarea>
+        <div class="project-textarea-field">
+          <label class="project-textarea-label" for="project-description-input">Description</label>
+          <textarea
+            id="project-description-input"
+            class="project-textarea-control"
+            [rows]="getProjectTextareaRows(projectForm.description, 4)"
+            [(ngModel)]="projectForm.description"
+            name="projectDescription"
+            required
+          ></textarea>
+        </div>
         <div class="project-highlights">
           <div class="project-highlights-heading">
             <label>Highlights <span>(optional)</span></label>
@@ -423,15 +423,17 @@
               Add highlight
             </ion-button>
           </div>
-          <div class="project-highlight-row" *ngFor="let highlight of projectForm.highlights; let i = index">
-            <ion-textarea
-              label="Highlight {{ i + 1 }}"
-              labelPlacement="stacked"
-              fill="outline"
-              autoGrow="true"
-              [(ngModel)]="projectForm.highlights[i]"
-              [name]="'projectHighlight' + i"
-            ></ion-textarea>
+          <div class="project-highlight-row" *ngFor="let highlight of projectForm.highlights; let i = index; trackBy: trackByIndex">
+            <div class="project-textarea-field">
+              <label class="project-textarea-label" [attr.for]="'project-highlight-input-' + i">Highlight {{ i + 1 }}</label>
+              <textarea
+                [id]="'project-highlight-input-' + i"
+                class="project-textarea-control"
+                [rows]="getProjectTextareaRows(projectForm.highlights[i], 2)"
+                [(ngModel)]="projectForm.highlights[i]"
+                [name]="'projectHighlight' + i"
+              ></textarea>
+            </div>
             <ion-button
               *ngIf="projectForm.highlights.length > 1"
               type="button"
@@ -861,6 +863,17 @@
           name="notificationBody"
           required
         ></ion-textarea>
+        <label class="audience-mode-option home-highlight-option">
+          <input
+            type="checkbox"
+            [(ngModel)]="highlightOnHome"
+            name="highlightOnHome"
+          />
+          <span>
+            <strong>Show on Home as an important announcement</strong>
+            <small>Display this message as a banner for its recipients until an admin removes it.</small>
+          </span>
+        </label>
         <fieldset class="audience-mode">
           <legend>Choose notification audience</legend>
           <label class="audience-mode-option">
@@ -1175,6 +1188,35 @@
       </form>
     </section>
     <ng-container *ngIf="dashboard as data; else campaignsUnavailable">
+      <section class="panel-card">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">HOME PAGE</p>
+            <h2>Active important announcements</h2>
+          </div>
+        </div>
+        <div *ngIf="data.featuredAnnouncements?.length; else noHomeAnnouncements" class="home-announcement-list">
+          <article *ngFor="let announcement of data.featuredAnnouncements || []" class="home-announcement-item">
+            <div>
+              <strong>{{ announcement.title }}</strong>
+              <p>{{ announcement.body }}</p>
+              <span class="metric-caption">{{ announcement.targetLabel }} · Added {{ announcement.createdAt | date:'short' }}</span>
+            </div>
+            <ion-button
+              type="button"
+              fill="outline"
+              color="danger"
+              (click)="removeHomeAnnouncement(announcement)"
+            >
+              <ion-icon slot="start" name="trash-outline"></ion-icon>
+              Remove
+            </ion-button>
+          </article>
+        </div>
+        <ng-template #noHomeAnnouncements>
+          <p class="metric-caption">No active important announcements.</p>
+        </ng-template>
+      </section>
       <section id="campaigns" class="panel-card">
         <div class="section-heading">
           <div>
@@ -1195,6 +1237,7 @@
                 <th scope="col">Failed</th>
                 <th scope="col">Opened</th>
                 <th scope="col">Open rate</th>
+                <th scope="col">Home banner</th>
               </tr>
             </thead>
             <tbody>
@@ -1208,9 +1251,21 @@
                 <td>{{ campaign.failedCount }}</td>
                 <td>{{ campaign.openedCount }}</td>
                 <td>{{ openRate(campaign) }}%</td>
+                <td>
+                  <span *ngIf="campaign.homeHighlightActive">Active</span>
+                  <ion-button
+                    *ngIf="campaign.canHighlightOnHome && !campaign.homeHighlightActive && campaign.status !== 'scheduled' && campaign.status !== 'sending'"
+                    type="button"
+                    fill="outline"
+                    size="small"
+                    (click)="activateHomeAnnouncement(campaign)"
+                  >
+                    Show on Home
+                  </ion-button>
+                </td>
               </tr>
               <tr *ngIf="!data.campaigns.length">
-                <td colspan="9" class="empty-state">No notifications have been sent or scheduled.</td>
+                <td colspan="10" class="empty-state">No notifications have been sent or scheduled.</td>
               </tr>
             </tbody>
           </table>
@@ -1354,6 +1409,46 @@
       </section>
     </ng-container>
 
+    <ng-container *ngIf="selectedSection === 'flights'">
+      <section class="panel-card" *ngIf="!isLoading && (!isLoadingAttendeeDetails || attendeesWithCarDetails.length)">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">CAR DATA</p>
+            <h2>Users car details</h2>
+            <p class="subtitle">Values from each user's <code>cardata/details</code> document.</p>
+          </div>
+          <span class="metric-caption">{{ attendeesWithCarDetails.length }} users</span>
+        </div>
+        <div class="table-scroll">
+          <table class="flight-details-table">
+            <thead>
+              <tr>
+                <th scope="col">email</th>
+                <th scope="col">arrivalTime</th>
+                <th scope="col">carModel</th>
+                <th scope="col">driverName</th>
+                <th scope="col">licensePlate</th>
+                <th scope="col">mobileNumber</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let attendee of attendeesWithCarDetails">
+                <td>{{ attendee.email }}</td>
+                <td>{{ attendee.carDetails?.arrivalTime }}</td>
+                <td>{{ attendee.carDetails?.carModel }}</td>
+                <td>{{ attendee.carDetails?.driverName }}</td>
+                <td>{{ attendee.carDetails?.licensePlate }}</td>
+                <td>{{ attendee.carDetails?.mobileNumber }}</td>
+              </tr>
+              <tr *ngIf="!isLoadingAttendeeDetails && !attendeeDetailsError && !attendeesWithCarDetails.length">
+                <td colspan="6" class="empty-state">No car details have been submitted.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </ng-container>
+
     <ng-container *ngIf="selectedSection === 'requests'">
       <!-- Requests Loading State -->
       <section *ngIf="isLoadingRequests && !requests.length" class="panel-card admin-tab-loading" role="status" aria-live="polite">
@@ -1475,6 +1570,114 @@
           <ion-select-option value="quiz">Quiz (one correct answer)</ion-select-option>
           <ion-select-option value="poll">Poll (no correct answer)</ion-select-option>
         </ion-select>
+
+        <div class="session-picker">
+          <label class="session-picker-label">Agenda session (optional — connects to workshop / session)</label>
+          <div class="session-picker-control">
+            <button
+              type="button"
+              class="session-picker-trigger"
+              [class.is-open]="isActivitySessionPickerOpen"
+              [class.has-selection]="!!activitySessionName"
+              (click)="toggleActivitySessionPicker()"
+              [attr.aria-expanded]="isActivitySessionPickerOpen">
+              <div class="session-picker-trigger-text">
+                <ng-container *ngIf="activitySessionName; else emptyActivitySessionPrompt">
+                  <span class="session-picker-selected-meta" *ngIf="selectedActivityAgendaSessionOption?.day || selectedActivityAgendaSessionOption?.category">
+                    <span class="session-day-badge" *ngIf="selectedActivityAgendaSessionOption?.day">Day {{ selectedActivityAgendaSessionOption?.day }}</span>
+                    <span class="session-category-label" *ngIf="selectedActivityAgendaSessionOption?.category">{{ selectedActivityAgendaSessionOption?.category }}</span>
+                  </span>
+                  <span class="session-picker-selected-title">{{ activitySessionName }}</span>
+                  <span class="session-picker-selected-speaker" *ngIf="activitySpeakerName">
+                    Speaker: {{ activitySpeakerName }}
+                  </span>
+                </ng-container>
+                <ng-template #emptyActivitySessionPrompt>
+                  <span class="session-picker-placeholder">Tap to search or choose an agenda session (optional)</span>
+                </ng-template>
+              </div>
+              <ion-icon [name]="isActivitySessionPickerOpen ? 'chevron-up-outline' : 'chevron-down-outline'"></ion-icon>
+            </button>
+            <button
+              *ngIf="activitySessionName"
+              type="button"
+              class="session-picker-clear"
+              (click)="clearSelectedActivityAgendaSession($event)"
+              aria-label="Clear selected agenda session">
+              <ion-icon name="close-circle"></ion-icon>
+            </button>
+          </div>
+          <div *ngIf="isActivitySessionPickerOpen" class="session-picker-menu">
+            <div class="session-picker-toolbar">
+              <ion-searchbar
+                [(ngModel)]="activitySessionSearch"
+                [ngModelOptions]="{ standalone: true }"
+                (ionInput)="filterActivityAgendaSessions()"
+                placeholder="Search session, speaker, or day..."
+                debounce="0">
+              </ion-searchbar>
+              <div *ngIf="agendaSessionDays.length > 2" class="session-picker-days" role="tablist" aria-label="Filter sessions by day">
+                <button
+                  *ngFor="let dayFilter of agendaSessionDays"
+                  type="button"
+                  class="session-day-chip"
+                  [class.active]="selectedActivitySessionDayFilter === dayFilter"
+                  (click)="setActivitySessionDayFilter(dayFilter)">
+                  {{ dayFilter }}
+                </button>
+              </div>
+            </div>
+            <div class="session-picker-options" role="listbox">
+              <button
+                type="button"
+                class="session-picker-option session-picker-option-none"
+                [class.selected]="!activitySessionName"
+                (click)="selectActivityAgendaSession(null)">
+                <div class="session-option-main">
+                  <span class="session-option-title">None (General event activity)</span>
+                  <span class="session-option-subtitle">Available to all chosen audience regardless of session schedule</span>
+                </div>
+                <ion-icon *ngIf="!activitySessionName" name="checkmark-circle" class="session-option-check"></ion-icon>
+              </button>
+              <button
+                *ngFor="let option of filteredActivityAgendaSessionOptions"
+                type="button"
+                class="session-picker-option"
+                [class.selected]="option.sessionName === activitySessionName"
+                (click)="selectActivityAgendaSession(option)">
+                <div class="session-option-main">
+                  <div class="session-option-badges" *ngIf="option.day || option.category">
+                    <span *ngIf="option.day" class="session-day-badge">Day {{ option.day }}</span>
+                    <span *ngIf="option.category" class="session-category-label">{{ option.category }}</span>
+                  </div>
+                  <span class="session-option-title">{{ option.sessionName }}</span>
+                  <span *ngIf="option.speakerName" class="session-option-subtitle">
+                    <ion-icon name="person-outline"></ion-icon>
+                    {{ option.speakerName }}{{ option.speakerTitle ? ' · ' + option.speakerTitle : '' }}
+                  </span>
+                </div>
+                <ion-icon *ngIf="option.sessionName === activitySessionName" name="checkmark-circle" class="session-option-check"></ion-icon>
+              </button>
+              <div *ngIf="!filteredActivityAgendaSessionOptions.length" class="session-picker-empty">
+                No agenda sessions match "{{ activitySessionSearch }}".
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="schedule-lock-banner" *ngIf="activitySessionName">
+          <label class="schedule-lock-toggle">
+            <input
+              type="checkbox"
+              [(ngModel)]="activityScheduleLocked"
+              name="activityScheduleLocked"
+            />
+            <span class="schedule-lock-copy">
+              <strong>Schedule-Aware Auto-Unlock (Option A)</strong>
+              <span>Automatically unlocks for each participant at their specific group rotation time. Prevents later groups from seeing questions in advance.</span>
+            </span>
+          </label>
+        </div>
         <ion-input
           label="Title"
           labelPlacement="stacked"
@@ -1894,7 +2097,13 @@
               {{ activity.kind | uppercase }} · {{ activity.responseCount }} responses
             </p>
             <h3>{{ activity.question || activity.title }}</h3>
-
+            <p class="activity-session-badge" *ngIf="activity.sessionName">
+              <ion-icon name="calendar-outline"></ion-icon>
+              <span>Session: <strong>{{ activity.sessionName }}</strong></span>
+              <span *ngIf="activity.speakerName"> · {{ activity.speakerName }}</span>
+              <span *ngIf="activity.day"> · Day {{ activity.day }}</span>
+              <span *ngIf="activity.scheduleLocked" class="badge-tag">Auto-unlock per group slot</span>
+            </p>
           </div>
           <div class="activity-actions">
             <span
@@ -1919,24 +2128,52 @@
           </div>
         </div>
         <div class="activity-result-counts" *ngIf="showActivityResults[activity.id]">
-          <p *ngFor="let option of activity.options; let i = index">
-            {{ option }} — {{ activity.optionCounts[i] }} response(s)
-          </p>
-          <p *ngIf="activity.kind === 'quiz'">
-            Correct answers: {{ activity.correctCount }} of {{ activity.responseCount }}
-          </p>
+          <div class="activity-group-filter-bar">
+            <span class="group-filter-label">Group filter:</span>
+            <div class="group-filter-chips">
+              <button
+                type="button"
+                class="group-filter-chip"
+                [class.active]="getActivityGroupFilter(activity.id) === 'all'"
+                (click)="setActivityGroupFilter(activity.id, 'all')">
+                All ({{ (activity.responses || []).length }})
+              </button>
+              <button
+                *ngFor="let g of [1, 2, 3, 4, 5, 6]"
+                type="button"
+                class="group-filter-chip"
+                [class.active]="getActivityGroupFilter(activity.id) === 'Group ' + g"
+                (click)="setActivityGroupFilter(activity.id, 'Group ' + g)">
+                Group {{ g }} ({{ countActivityResponsesForGroup(activity, 'Group ' + g) }})
+              </button>
+            </div>
+          </div>
+
+          <div class="activity-summary-stats">
+            <p *ngFor="let option of activity.options; let i = index">
+              {{ option }} — {{ getFilteredActivityOptionCounts(activity)[i] }} response(s) ({{ getFilteredActivityOptionPercentage(activity, i) }}%)
+            </p>
+            <p *ngIf="activity.kind === 'quiz'">
+              Correct answers: {{ getFilteredActivityCorrectCount(activity) }} of {{ getFilteredActivityResponses(activity).length }}
+            </p>
+          </div>
+
           <div class="activity-responses-table-wrap">
             <table class="activity-responses-table">
               <thead>
                 <tr>
                   <th scope="col">User</th>
+                  <th scope="col">Group</th>
                   <th scope="col">Selected answer</th>
                   <th *ngIf="activity.kind === 'quiz'" scope="col">Result</th>
                 </tr>
               </thead>
               <tbody>
-                <tr *ngFor="let response of activity.responses || []">
+                <tr *ngFor="let response of getFilteredActivityResponses(activity)">
                   <td>{{ response.email }}</td>
+                  <td>
+                    <span class="response-group-pill">{{ response.group || '—' }}</span>
+                  </td>
                   <td>{{ response.option || 'No valid answer recorded' }}</td>
                   <td *ngIf="activity.kind === 'quiz'">
                     <span
@@ -1948,15 +2185,9 @@
                     </span>
                   </td>
                 </tr>
-                <tr *ngIf="!activity.responses?.length && activity.responseCount > 0">
-                  <td [attr.colspan]="activity.kind === 'quiz' ? 3 : 2">
-                    {{ activity.responseCount }} response(s) recorded, but respondent details were not returned.
-                    Refresh results; if this continues, update the Cloud Functions deployment.
-                  </td>
-                </tr>
-                <tr *ngIf="!activity.responses?.length && activity.responseCount === 0">
-                  <td [attr.colspan]="activity.kind === 'quiz' ? 3 : 2">
-                    No responses yet.
+                <tr *ngIf="!getFilteredActivityResponses(activity).length">
+                  <td [attr.colspan]="activity.kind === 'quiz' ? 4 : 3">
+                    {{ (activity.responses || []).length ? 'No responses recorded for this specific group.' : 'No responses yet.' }}
                   </td>
                 </tr>
               </tbody>
@@ -1995,10 +2226,23 @@
             <p class="eyebrow">USER STATUS</p>
             <h2>All users</h2>
           </div>
-          <ion-button fill="outline" (click)="exportAttendees()" [disabled]="!filteredAttendees.length">
-            <ion-icon slot="start" name="download-outline"></ion-icon>
-            Export CSV
-          </ion-button>
+          <div class="section-heading-actions">
+            <button
+              type="button"
+              class="hse-connect-button"
+              (click)="connectHseAndLoadSafetyInductionStatuses()"
+              [disabled]="isConnectingHse"
+              [attr.aria-busy]="isConnectingHse"
+            >
+              <ion-spinner *ngIf="isConnectingHse" name="crescent" slot="start"></ion-spinner>
+              <ion-icon *ngIf="!isConnectingHse" slot="start" name="refresh-outline"></ion-icon>
+              {{ isConnectingHse ? 'Connecting to HSE…' : isHseConnected ? 'Refresh HSE statuses' : 'Connect to HSE' }}
+            </button>
+            <ion-button fill="outline" (click)="exportAttendees()" [disabled]="!filteredAttendees.length">
+              <ion-icon slot="start" name="download-outline"></ion-icon>
+              Export CSV
+            </ion-button>
+          </div>
         </div>
         <div *ngIf="isLoadingAttendeeDetails" class="admin-loading-badge inline-loader" role="status">
           <ion-spinner name="crescent" color="primary"></ion-spinner>
@@ -2094,7 +2338,7 @@
                     [class.status-badge--positive]="attendee.safetyInductionCompleted === true"
                     [class.status-badge--attention]="attendee.safetyInductionCompleted !== true"
                   >
-                    {{ attendee.safetyInductionStatus || 'Not started' }}
+                    {{ attendee.safetyInductionStatus || (attendee.plantVisit ? 'Not checked' : 'N/A') }}
                   </span>
                 </td>
               </tr>

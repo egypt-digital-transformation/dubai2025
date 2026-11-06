@@ -54,7 +54,19 @@ function validateNotification(request) {
     throw new HttpsError("invalid-argument", "Choose a valid notification audience.");
   }
 
-  return { title, body, target };
+  if (
+    request.data?.highlightOnHome !== undefined &&
+    typeof request.data.highlightOnHome !== "boolean"
+  ) {
+    throw new HttpsError("invalid-argument", "Choose whether to highlight this update on Home.");
+  }
+
+  return {
+    title,
+    body,
+    target,
+    highlightOnHome: request.data?.highlightOnHome === true,
+  };
 }
 
 function getTargetLabel(target, users) {
@@ -72,7 +84,13 @@ function getTargetLabel(target, users) {
   return `${target.field}: ${target.value}`;
 }
 
-async function createCampaign(title, body, target, scheduledAt = null) {
+async function createCampaign(
+  title,
+  body,
+  target,
+  scheduledAt = null,
+  highlightOnHome = false
+) {
   const { targetCount, recipients, users } = await getTargetRecipients(target);
   if (!targetCount) {
     throw new HttpsError(
@@ -96,6 +114,12 @@ async function createCampaign(title, body, target, scheduledAt = null) {
     openedCount: 0,
     status: scheduledAt ? "scheduled" : "sending",
     scheduledAt,
+    ...(highlightOnHome
+      ? {
+          highlightOnHome: true,
+          homeHighlightActive: !scheduledAt,
+        }
+      : {}),
     createdAt: FieldValue.serverTimestamp(),
   });
   return { campaignRef, targetCount, recipients, users, targetLabel };
@@ -117,7 +141,13 @@ async function deliverCampaign(campaignRef, campaign, recipients, users) {
         return data.emailAddress || data.email || user.id;
       }),
       link,
-      metadata: { status: "sending" },
+      homeAnnouncement: campaign.highlightOnHome === true,
+      metadata: {
+        status: "sending",
+        ...(campaign.highlightOnHome === true
+          ? { homeHighlightActive: true }
+          : {}),
+      },
     });
   } catch (error) {
     await campaignRef.set(
@@ -198,18 +228,20 @@ export const sendTargetedNotification = onCall(
   { region: "europe-west1" },
   async (request) => {
     await requireAdminUser(request);
-    const { title, body, target } = validateNotification(request);
+    const { title, body, target, highlightOnHome } = validateNotification(request);
     const { campaignRef, targetCount, recipients, users, targetLabel } =
       await createCampaign(
-      title,
-      body,
-      target
-    );
+        title,
+        body,
+        target,
+        null,
+        highlightOnHome
+      );
 
     try {
       const result = await deliverCampaign(
         campaignRef,
-        { title, body, targetLabel },
+        { title, body, targetLabel, highlightOnHome },
         recipients,
         users
       );
@@ -217,6 +249,7 @@ export const sendTargetedNotification = onCall(
         campaignId: campaignRef.id,
         targetCount,
         pushReadyCount: new Set(recipients.map((recipient) => recipient.id)).size,
+        homeHighlightActive: highlightOnHome,
         ...result,
       };
     } catch (error) {
@@ -233,7 +266,7 @@ export const scheduleTargetedNotification = onCall(
   { region: "europe-west1" },
   async (request) => {
     await requireAdminUser(request);
-    const { title, body, target } = validateNotification(request);
+    const { title, body, target, highlightOnHome } = validateNotification(request);
     const scheduledAtValue = request.data?.scheduledAt;
     const scheduledAtMs =
       typeof scheduledAtValue === "string" ? Date.parse(scheduledAtValue) : NaN;
@@ -249,13 +282,15 @@ export const scheduleTargetedNotification = onCall(
       title,
       body,
       target,
-      scheduledAt
+      scheduledAt,
+      highlightOnHome
     );
     return {
       campaignId: campaignRef.id,
       targetCount,
       pushReadyCount: new Set(recipients.map((recipient) => recipient.id)).size,
       inAppCount: targetCount,
+      homeHighlightActive: highlightOnHome,
       status: "scheduled",
       scheduledAt: scheduledAt.toDate().toISOString(),
     };
@@ -402,6 +437,8 @@ export const listUserNotifications = onCall(
         title: existing?.title || data.title || null,
         body: existing?.body || data.body || null,
         link: existing?.link || data.link || null,
+        homeAnnouncement:
+          existing?.homeAnnouncement === true || data.homeAnnouncement === true,
         createdAt:
           existing?.createdAt ||
           data.receivedAt?.toDate?.().toISOString() ||
@@ -411,30 +448,29 @@ export const listUserNotifications = onCall(
 
     const notifications = await Promise.all(
       [...campaignsById.entries()].map(async ([id, delivery]) => {
-        if (delivery.title && delivery.body) {
-          return {
-            id,
-            title: delivery.title,
-            body: delivery.body,
-            link: delivery.link,
-            createdAt: delivery.createdAt,
-            opened: delivery.opened,
-          };
-        }
-
         const campaignSnapshot = await delivery.ref.get();
-        if (!campaignSnapshot.exists) {
+        const campaign = campaignSnapshot?.exists
+          ? campaignSnapshot.data()
+          : null;
+        const title = delivery.title || campaign?.title;
+        const body = delivery.body || campaign?.body;
+        if (!title || !body) {
           return null;
         }
 
-        const campaign = campaignSnapshot.data();
         return {
           id,
-          title: campaign.title,
-          body: campaign.body,
+          title,
+          body,
           link: delivery.link,
-          createdAt: campaign.createdAt?.toDate?.().toISOString() ?? null,
+          createdAt:
+            delivery.createdAt ||
+            campaign?.createdAt?.toDate?.().toISOString() ||
+            null,
           opened: delivery.opened,
+          homeAnnouncement:
+            campaign?.highlightOnHome === true &&
+            campaign.homeHighlightActive === true,
         };
       })
     );

@@ -23,6 +23,9 @@ import {
   starOutline,
   statsChartOutline,
   cloudUploadOutline,
+  chevronUpOutline,
+  closeCircle,
+  timeOutline,
 } from 'ionicons/icons';
 import { interval } from 'rxjs';
 import { NavigationEnd, Router } from '@angular/router';
@@ -31,6 +34,7 @@ import {
   AdminAttendee,
   AdminCampaign,
   AdminDashboard,
+  AdminHomeAnnouncement,
   AdminInteractiveActivity,
   AdminRequest,
   AdminResource,
@@ -110,6 +114,7 @@ export class AdminPage implements OnInit, OnDestroy {
   selectedRebrandingValue: 'true' | 'false' = 'true';
   notificationTitle = '';
   notificationBody = '';
+  highlightOnHome = false;
   scheduledDateTime = '';
   segments: AudienceSegment[] = [];
   activityKind: 'quiz' | 'poll' = 'quiz';
@@ -128,6 +133,15 @@ export class AdminPage implements OnInit, OnDestroy {
   activitySelectedPlantVisitValues: Array<'true' | 'false'> = ['true'];
   activitySelectedGroupNumberKey = 'group:group 1';
   activitySelectedRebrandingValue: 'true' | 'false' = 'true';
+  activitySessionName = '';
+  activitySpeakerName = '';
+  activityDay: string | number | null = null;
+  activityScheduleLocked = true;
+  isActivitySessionPickerOpen = false;
+  activitySessionSearch = '';
+  selectedActivitySessionDayFilter = 'All';
+  filteredActivityAgendaSessionOptions: AgendaSessionOption[] = [];
+  activityGroupFilterMap: Record<string, string> = {};
   isCreatingActivity = false;
   activityNotice = '';
   activityError = '';
@@ -201,6 +215,8 @@ export class AdminPage implements OnInit, OnDestroy {
   private navigationSubscription?: Subscription;
   private hasLoadedFlightDetails = false;
   private hasLoadedSafetyInductionStatus = false;
+  isConnectingHse = false;
+  isHseConnected = false;
   private flightDetailsLoad?: Promise<void>;
   private safetyInductionLoad?: Promise<void>;
 
@@ -225,6 +241,9 @@ export class AdminPage implements OnInit, OnDestroy {
       statsChartOutline,
       cloudUploadOutline,
       calendarOutline,
+      chevronUpOutline,
+      closeCircle,
+      timeOutline,
     });
   }
 
@@ -236,9 +255,6 @@ export class AdminPage implements OnInit, OnDestroy {
     this.selectedSection = section;
     if (section === 'flights' && this.dashboard) {
       void this.loadFlightDetails();
-    }
-    if (section === 'attendees' && this.dashboard) {
-      void this.loadSafetyInductionStatuses();
     }
     if (section === 'projects' && !this.projects.length && !this.isLoadingProjects) {
       void this.loadProjects();
@@ -294,9 +310,6 @@ export class AdminPage implements OnInit, OnDestroy {
       if (!this.isLoading && !this.isSending) {
         if (this.selectedSection === 'flights') {
           this.hasLoadedFlightDetails = false;
-        }
-        if (this.selectedSection === 'attendees') {
-          this.hasLoadedSafetyInductionStatus = false;
         }
         void this.loadDashboard(true);
         void this.loadNotificationAudience();
@@ -440,9 +453,6 @@ export class AdminPage implements OnInit, OnDestroy {
       if (this.selectedSection === 'flights') {
         void this.loadFlightDetails();
       }
-      if (this.selectedSection === 'attendees') {
-        void this.loadSafetyInductionStatuses();
-      }
     } catch (error) {
       console.error('[AdminPage] Failed to load dashboard:', error);
       this.errorMessage =
@@ -470,6 +480,14 @@ export class AdminPage implements OnInit, OnDestroy {
           .loadAccommodationDetailsForAttendees(attendees)
           .catch((error: unknown) => {
             console.warn('[AdminPage] Failed to load accommodation details:', error);
+            return attendees;
+          })
+      )
+      .then((attendees) =>
+        this.adminService
+          .loadCarDetailsForAttendees(attendees)
+          .catch((error: unknown) => {
+            console.warn('[AdminPage] Failed to load car details:', error);
             return attendees;
           })
       )
@@ -511,8 +529,27 @@ export class AdminPage implements OnInit, OnDestroy {
       })
       .catch((error: unknown) => {
         console.error('[AdminPage] Failed to load safety induction status:', error);
+        this.isHseConnected = false;
+        if (this.dashboard) {
+          this.dashboard = {
+            ...this.dashboard,
+            attendees: this.dashboard.attendees.map((attendee) =>
+              attendee.plantVisit
+                ? {
+                    ...attendee,
+                    safetyInductionCompleted: undefined,
+                    safetyInductionStatus: 'Unavailable',
+                  }
+                : {
+                    ...attendee,
+                    safetyInductionCompleted: undefined,
+                    safetyInductionStatus: 'N/A',
+                  }
+            ),
+          };
+        }
         this.attendeeDetailsError =
-          'Safety induction statuses could not be loaded. Please try again.';
+          'Safety induction statuses could not be loaded. Confirm your account has HSE admin access, then try again.';
       })
       .finally(() => {
         this.isLoadingAttendeeDetails = false;
@@ -521,13 +558,35 @@ export class AdminPage implements OnInit, OnDestroy {
     return this.safetyInductionLoad;
   }
 
+  async connectHseAndLoadSafetyInductionStatuses(): Promise<void> {
+    if (!this.dashboard || this.isConnectingHse) {
+      return;
+    }
+
+    this.isConnectingHse = true;
+    this.attendeeDetailsError = '';
+    try {
+      await this.adminService.connectHseAdmin();
+      this.isHseConnected = true;
+      this.hasLoadedSafetyInductionStatus = false;
+      await this.loadSafetyInductionStatuses();
+    } catch (error) {
+      console.error('[AdminPage] Failed to connect to HSE:', error);
+      this.attendeeDetailsError =
+        error instanceof Error && error.message
+          ? error.message
+          : 'Could not connect to HSE. Check your HSE admin access and try again.';
+    } finally {
+      this.isConnectingHse = false;
+    }
+  }
+
   retryAttendeeDetails(): void {
     if (this.selectedSection === 'flights') {
       this.hasLoadedFlightDetails = false;
       void this.loadFlightDetails();
     } else if (this.selectedSection === 'attendees') {
-      this.hasLoadedSafetyInductionStatus = false;
-      void this.loadSafetyInductionStatuses();
+      void this.connectHseAndLoadSafetyInductionStatuses();
     }
   }
 
@@ -757,6 +816,142 @@ export class AdminPage implements OnInit, OnDestroy {
         this.resourceForm.title = matched.sessionName;
       }
     }
+  }
+
+  get selectedActivityAgendaSessionOption(): AgendaSessionOption | null {
+    if (!this.activitySessionName) return null;
+    return (
+      this.agendaSessionOptions.find(
+        (option) => option.sessionName === this.activitySessionName
+      ) ?? null
+    );
+  }
+
+  toggleActivitySessionPicker(): void {
+    this.isActivitySessionPickerOpen = !this.isActivitySessionPickerOpen;
+    if (this.isActivitySessionPickerOpen) {
+      void this.ensureAgendaSessionOptions();
+      this.filterActivityAgendaSessions();
+    }
+  }
+
+  closeActivitySessionPicker(): void {
+    this.isActivitySessionPickerOpen = false;
+  }
+
+  setActivitySessionDayFilter(dayFilter: string): void {
+    this.selectedActivitySessionDayFilter = dayFilter;
+    this.filterActivityAgendaSessions();
+  }
+
+  filterActivityAgendaSessions(): void {
+    const query = this.activitySessionSearch.trim().toLowerCase();
+    this.filteredActivityAgendaSessionOptions = this.agendaSessionOptions.filter((option) => {
+      const dayLabel = option.day ? `Day ${option.day}` : '';
+      if (
+        this.selectedActivitySessionDayFilter !== 'All' &&
+        dayLabel !== this.selectedActivitySessionDayFilter
+      ) {
+        return false;
+      }
+      if (!query) return true;
+      const searchable = [
+        option.sessionName,
+        option.speakerName,
+        option.speakerTitle,
+        option.category,
+        dayLabel,
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+      return searchable.includes(query);
+    });
+  }
+
+  selectActivityAgendaSession(option: AgendaSessionOption | null): void {
+    if (!option) {
+      this.activitySessionName = '';
+      this.activitySpeakerName = '';
+      this.activityDay = null;
+    } else {
+      this.activitySessionName = option.sessionName;
+      this.activitySpeakerName = option.speakerName || '';
+      this.activityDay = option.day ?? null;
+      if (!this.activityTitle.trim()) {
+        this.activityTitle = option.sessionName;
+      }
+    }
+    this.closeActivitySessionPicker();
+  }
+
+  clearSelectedActivityAgendaSession(event: Event): void {
+    event.stopPropagation();
+    this.selectActivityAgendaSession(null);
+  }
+
+  async ensureAgendaSessionOptions(): Promise<void> {
+    if (this.agendaSessionOptions.length) {
+      this.filterActivityAgendaSessions();
+      return;
+    }
+    try {
+      this.agendaSessionOptions = await this.adminService.loadAgendaSessionOptions();
+      this.filterAgendaSessions();
+      this.filterActivityAgendaSessions();
+    } catch (e) {
+      console.warn('[AdminPage] Could not load agenda sessions:', e);
+    }
+  }
+
+  getActivityGroupFilter(activityId: string): string {
+    return this.activityGroupFilterMap[activityId] || 'all';
+  }
+
+  setActivityGroupFilter(activityId: string, group: string): void {
+    this.activityGroupFilterMap[activityId] = group;
+  }
+
+  getFilteredActivityResponses(activity: AdminInteractiveActivity): AdminInteractiveActivityResponse[] {
+    const responses = activity.responses || [];
+    const filter = this.getActivityGroupFilter(activity.id);
+    if (filter === 'all') return responses;
+    const filterNormalized = filter.toLowerCase().replace(/\s+/g, '');
+    return responses.filter((r) => {
+      const g = (r.group || '').toLowerCase().replace(/\s+/g, '');
+      return g === filterNormalized || g === filterNormalized.replace('group', '');
+    });
+  }
+
+  getFilteredActivityOptionCounts(activity: AdminInteractiveActivity): number[] {
+    const filter = this.getActivityGroupFilter(activity.id);
+    if (filter === 'all') return activity.optionCounts;
+    const counts = activity.options.map(() => 0);
+    for (const r of this.getFilteredActivityResponses(activity)) {
+      if (r.optionIndex !== null && r.optionIndex >= 0 && r.optionIndex < counts.length) {
+        counts[r.optionIndex] += 1;
+      }
+    }
+    return counts;
+  }
+
+  getFilteredActivityOptionPercentage(activity: AdminInteractiveActivity, index: number): number {
+    const counts = this.getFilteredActivityOptionCounts(activity);
+    const total = counts.reduce((a, b) => a + b, 0);
+    return total ? Math.round((counts[index] / total) * 100) : 0;
+  }
+
+  getFilteredActivityCorrectCount(activity: AdminInteractiveActivity): number {
+    return this.getFilteredActivityResponses(activity).filter((r) => r.isCorrect === true).length;
+  }
+
+  countActivityResponsesForGroup(activity: AdminInteractiveActivity, groupName: string): number {
+    const responses = activity.responses || [];
+    const target = groupName.toLowerCase().replace(/\s+/g, '');
+    return responses.filter((r) => {
+      const g = (r.group || '').toLowerCase().replace(/\s+/g, '');
+      return g === target || g === target.replace('group', '');
+    }).length;
   }
 
   cancelResourceEdit(): void {
@@ -1029,10 +1224,25 @@ export class AdminPage implements OnInit, OnDestroy {
     }
   }
 
+  trackByIndex(index: number): number {
+    return index;
+  }
+
+  getProjectTextareaRows(value: string | undefined, minRows = 3): number {
+    const text = value ?? '';
+    if (!text) return minRows;
+    const lines = text.split(/\r?\n/);
+    const totalRows = lines.reduce(
+      (sum, line) => sum + Math.max(1, Math.ceil(line.length / 54)),
+      0
+    );
+    return Math.max(minRows, totalRows);
+  }
+
   async saveProject(): Promise<void> {
     const form = this.projectForm;
-    if (!form.title.trim() || !form.location.trim() || !form.country || !form.description.trim()) {
-      this.projectError = 'Title, location, region, and description are required.';
+    if (!form.title.trim() || !form.country || !form.description.trim()) {
+      this.projectError = 'Title, region, and description are required.';
       return;
     }
     const parsedOrder = Number(form.order);
@@ -1779,6 +1989,10 @@ export class AdminPage implements OnInit, OnDestroy {
     return (this.dashboard?.attendees ?? []).filter((attendee) => attendee.accommodationDetails);
   }
 
+  get attendeesWithCarDetails(): AdminAttendee[] {
+    return (this.dashboard?.attendees ?? []).filter((attendee) => attendee.carDetails);
+  }
+
   exportAttendees(): void {
     const headers = ['Name', 'Email', 'ID', 'Logged in', 'Active', 'Installed', 'Push ready'];
     const rows = this.filteredAttendees.map((attendee) => [
@@ -1867,9 +2081,12 @@ export class AdminPage implements OnInit, OnDestroy {
       : '';
     const confirmation = await this.alertController.create({
       header: scheduledAt ? 'Schedule push notification?' : 'Send push notification?',
-      message: scheduledAt
+      message: (scheduledAt
         ? `This will add the message to the selected attendees’ in-app inboxes and send push notifications to ${this.pushReadyRecipientCount} available device(s) at ${scheduledDisplay} Egypt time.`
-        : `This will add the message to the selected attendees’ in-app inboxes and send push notifications to ${this.pushReadyRecipientCount} available device(s).`,
+        : `This will add the message to the selected attendees’ in-app inboxes and send push notifications to ${this.pushReadyRecipientCount} available device(s).`) +
+        (this.highlightOnHome
+          ? ' The message will also appear as an important banner on the recipients’ Home page until an admin removes it.'
+          : ''),
       buttons: [
         { text: 'Cancel', role: 'cancel' },
         { text: scheduledAt ? 'Schedule' : 'Send now', role: 'confirm' },
@@ -1885,17 +2102,47 @@ export class AdminPage implements OnInit, OnDestroy {
     this.errorMessage = '';
     this.noticeMessage = '';
     try {
-      const result = scheduledAt
-        ? await this.adminService.scheduleNotification(title, body, target, scheduledAt)
-        : await this.adminService.sendNotification(title, body, target);
+      let result: NotificationSendResult;
+      if (scheduledAt) {
+        result = this.highlightOnHome
+          ? await this.adminService.scheduleNotification(
+              title,
+              body,
+              target,
+              scheduledAt,
+              true
+            )
+          : await this.adminService.scheduleNotification(
+              title,
+              body,
+              target,
+              scheduledAt
+            );
+      } else {
+        result = this.highlightOnHome
+          ? await this.adminService.sendNotification(title, body, target, true)
+          : await this.adminService.sendNotification(title, body, target);
+      }
+      const resultMessage = this.notificationResultMessage(result, scheduledDisplay);
       this.notificationTitle = '';
       this.notificationBody = '';
       this.scheduledDateTime = '';
       if (result.status === 'failed') {
-        this.errorMessage = this.notificationResultMessage(result, scheduledDisplay);
+        this.errorMessage = resultMessage;
+      } else if (this.highlightOnHome && result.homeHighlightActive !== true) {
+        this.errorMessage =
+          `${resultMessage} The notification was sent, but the banner was not activated by the backend. ` +
+          'Deploy the updated notification functions, then use “Show on Home” in Recent updates.';
       } else {
-        this.noticeMessage = this.notificationResultMessage(result, scheduledDisplay);
+        this.noticeMessage =
+          resultMessage +
+          (this.highlightOnHome
+            ? result.status === 'scheduled'
+              ? ' The Home banner will appear when the scheduled update is delivered.'
+              : ' The Home banner is now active for recipients.'
+            : '');
       }
+      this.highlightOnHome = false;
       await this.loadDashboard(true);
     } catch (error: any) {
       console.error('[AdminPage] Failed to send notification:', error);
@@ -1920,6 +2167,42 @@ export class AdminPage implements OnInit, OnDestroy {
       `${result.failedCount} failed; audience ${result.targetCount}, ` +
       `${result.pushReadyCount} push-enabled.`
     );
+  }
+
+  async removeHomeAnnouncement(announcement: AdminHomeAnnouncement): Promise<void> {
+    const confirmation = await this.alertController.create({
+      header: 'Remove Home announcement?',
+      message: `“${announcement.title}” will disappear from recipients’ Home pages. The notification and campaign history will remain.`,
+      buttons: [
+        { text: 'Cancel', role: 'cancel' },
+        { text: 'Remove', role: 'confirm', cssClass: 'danger-button' },
+      ],
+    });
+    await confirmation.present();
+    const { role } = await confirmation.onDidDismiss();
+    if (role !== 'confirm') {
+      return;
+    }
+
+    try {
+      await this.adminService.removeHomeAnnouncement(announcement.id);
+      this.noticeMessage = 'The Home announcement was removed. Notification history was kept.';
+      await this.loadDashboard(true);
+    } catch (error) {
+      console.error('[AdminPage] Failed to remove Home announcement:', error);
+      this.errorMessage = 'The Home announcement could not be removed. Try again.';
+    }
+  }
+
+  async activateHomeAnnouncement(campaign: AdminCampaign): Promise<void> {
+    try {
+      await this.adminService.activateHomeAnnouncement(campaign.id);
+      this.noticeMessage = `“${campaign.title}” is now highlighted on Home for its recipients.`;
+      await this.loadDashboard(true);
+    } catch (error) {
+      console.error('[AdminPage] Failed to activate Home announcement:', error);
+      this.errorMessage = 'The update could not be highlighted on Home. Try again.';
+    }
   }
 
   openRate(campaign: AdminCampaign): number {
@@ -1968,6 +2251,10 @@ export class AdminPage implements OnInit, OnDestroy {
         options,
         kind: this.activityKind,
         target,
+        sessionName: this.activitySessionName ? this.activitySessionName.trim() : null,
+        speakerName: this.activitySpeakerName ? this.activitySpeakerName.trim() : null,
+        day: this.activityDay,
+        scheduleLocked: this.activityScheduleLocked,
         correctOptionIndex:
           this.activityKind === 'quiz' ? this.correctOptionIndex : null,
       });
@@ -1975,6 +2262,10 @@ export class AdminPage implements OnInit, OnDestroy {
       this.activityQuestion = '';
       this.activityOptions = ['', ''];
       this.correctOptionIndex = 0;
+      this.activitySessionName = '';
+      this.activitySpeakerName = '';
+      this.activityDay = null;
+      this.activityScheduleLocked = true;
       this.activitySelectedUserIds = [];
       this.activityUserSearch = '';
       this.activitySelectedSegmentKey = '';
@@ -2035,6 +2326,7 @@ export class AdminPage implements OnInit, OnDestroy {
 
   async loadAdminActivities(): Promise<void> {
     this.isLoadingActivities = true;
+    void this.ensureAgendaSessionOptions();
     try {
       const result = await this.adminService.listAdminInteractiveActivities();
       this.adminActivities = result.activities;

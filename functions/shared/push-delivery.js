@@ -120,6 +120,7 @@ export async function recordInAppNotification({
   emails,
   link,
   metadata = {},
+  homeAnnouncement = false,
 }) {
   const normalizedEmails = [
     ...new Set(
@@ -169,6 +170,7 @@ export async function recordInAppNotification({
           title,
           body,
           link: link || null,
+          ...(homeAnnouncement ? { homeAnnouncement: true } : {}),
           receivedAt: FieldValue.serverTimestamp(),
         },
         { merge: true }
@@ -204,7 +206,10 @@ export async function updateInAppNotificationPushSummary(
   );
 }
 
-export async function sendPushToRecipients(recipients, { title, body, data = {}, link }) {
+export async function sendPushToRecipients(
+  recipients,
+  { title, body, data = {}, link, android, webpush }
+) {
   const results = [];
   for (let index = 0; index < recipients.length; index += 500) {
     const batch = recipients.slice(index, index + 500);
@@ -222,6 +227,8 @@ export async function sendPushToRecipients(recipients, { title, body, data = {},
     const message = {
       tokens: batch.map((recipient) => recipient.token),
       data: messageData,
+      ...(android ? { android } : {}),
+      ...(webpush ? { webpush } : {}),
     };
     const response = await getMessaging().sendEachForMulticast(message);
     const batchResults = response.responses.map((result, recipientIndex) => {

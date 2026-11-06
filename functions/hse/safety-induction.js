@@ -4,7 +4,7 @@ import { fileURLToPath } from "url";
 import { Firestore } from "@google-cloud/firestore";
 import { HttpsError, onCall } from "firebase-functions/v2/https";
 import { db } from "../shared/firebase.js";
-import { requireAdminUser, requireAuthenticatedUser } from "../shared/admin-auth.js";
+import { requireAuthenticatedUser } from "../shared/admin-auth.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const serviceAccountPath = path.resolve(__dirname, "../hse-service-account.json");
@@ -23,6 +23,7 @@ function getHseFirestore() {
         options.credentials = JSON.parse(process.env.HSE_SERVICE_ACCOUNT_KEY);
       } catch (err) {
         console.error("[SafetyInduction] Failed to parse HSE_SERVICE_ACCOUNT_KEY:", err);
+        throw new Error("HSE_SERVICE_ACCOUNT_KEY is not valid JSON.");
       }
     }
     hseFirestoreInstance = new Firestore(options);
@@ -120,51 +121,6 @@ export const getMySafetyInductionStatus = onCall(
         unavailable: true,
         ...parseInductionData(null),
       };
-    }
-  }
-);
-
-export const getAdminSafetyInductionStatuses = onCall(
-  { region: "europe-west1", cors: true },
-  async (request) => {
-    await requireAdminUser(request);
-
-    try {
-      const hseDb = getHseFirestore();
-      const snapshot = await withTimeout(
-        hseDb.collection("userProgress").get(),
-        10000
-      );
-      const statuses = {};
-
-      for (const progressDoc of snapshot.docs) {
-        const data = progressDoc.data();
-        const email = typeof data.email === "string" ? data.email.trim().toLowerCase() : "";
-        if (!email) {
-          continue;
-        }
-
-        const rmx = data.RMX ?? data.rmx;
-        const sokhna = data.sokhnaplant ?? data.sokhnaPlant;
-        const requiresRmx = rmx !== undefined && rmx !== null;
-        const sokhnaComplete = sokhna?.questionnairePassed === true;
-        const rmxComplete = rmx?.questionnairePassed === true;
-        const completed = requiresRmx ? (sokhnaComplete && rmxComplete) : sokhnaComplete;
-        const lastWatchedIndex = sokhna?.lastWatchedIndex;
-        const progress = typeof lastWatchedIndex === "number" && lastWatchedIndex > 0
-          ? `${lastWatchedIndex}/5`
-          : "Not started";
-
-        statuses[email] = {
-          completed,
-          status: completed ? "Done" : progress,
-        };
-      }
-
-      return { statuses };
-    } catch (error) {
-      console.warn("[SafetyInduction] getAdminSafetyInductionStatuses could not read HSE DB:", error?.message || error);
-      return { statuses: {} };
     }
   }
 );

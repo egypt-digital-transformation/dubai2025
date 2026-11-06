@@ -5,8 +5,10 @@ export {
   verifyUserAccess,
 } from "./engagement/activity.js";
 export {
+  activateAdminHomeAnnouncement,
   createAdminAnnouncement,
   getAdminDashboard,
+  removeAdminHomeAnnouncement,
 } from "./admin/dashboard.js";
 export {
   listUserNotifications,
@@ -35,8 +37,5 @@ export {
   setInteractiveActivityActive,
   submitInteractiveActivityResponse,
 } from "./activities/interactive-activities.js";
-export {
-  getMySafetyInductionStatus,
-  getAdminSafetyInductionStatuses,
-} from "./hse/safety-induction.js";
+export { getMySafetyInductionStatus } from "./hse/safety-induction.js";
 export { getEventArchiveStatus } from "./event-archive.js";

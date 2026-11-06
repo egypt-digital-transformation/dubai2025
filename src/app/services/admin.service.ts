@@ -30,6 +30,12 @@ import {
   where,
 } from 'firebase/firestore';
 import { getApp, getApps, initializeApp } from 'firebase/app';
+import {
+  GoogleAuthProvider,
+  getAuth,
+  signInWithPopup,
+  signOut,
+} from 'firebase/auth';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import {
   getDownloadURL,
@@ -64,6 +70,7 @@ export interface AdminAttendee {
   safetyInductionStatus?: string;
   flightDetails?: FlightDetails;
   accommodationDetails?: AccommodationDetails;
+  carDetails?: CarDetails;
 }
 
 export interface AccommodationDetails {
@@ -76,8 +83,11 @@ export interface AccommodationDetails {
 }
 
 export interface CarDetails {
+  arrivalTime: string;
   carModel: string;
+  driverName: string;
   licensePlate: string;
+  mobileNumber: string;
 }
 
 export interface MeetAndGreetRepresentative {
@@ -136,6 +146,9 @@ export interface AdminCampaign {
   openedCount: number;
   status: string;
   scheduledAt: string | null;
+  highlightOnHome?: boolean;
+  homeHighlightActive?: boolean;
+  canHighlightOnHome?: boolean;
 }
 
 export interface NotificationSendResult {
@@ -147,6 +160,7 @@ export interface NotificationSendResult {
   failedCount: number;
   status: string;
   scheduledAt?: string;
+  homeHighlightActive?: boolean;
 }
 
 export interface ReceivedNotification {
@@ -156,6 +170,15 @@ export interface ReceivedNotification {
   createdAt: string | null;
   opened: boolean;
   link?: string | null;
+  homeAnnouncement?: boolean;
+}
+
+export interface AdminHomeAnnouncement {
+  id: string;
+  title: string;
+  body: string;
+  targetLabel: string;
+  createdAt: string | null;
 }
 
 export interface AdminDashboard {
@@ -167,6 +190,7 @@ export interface AdminDashboard {
   pushReadyUsers: number;
   attendees: AdminAttendee[];
   campaigns: AdminCampaign[];
+  featuredAnnouncements?: AdminHomeAnnouncement[];
 }
 
 export type ResourceType = string;
@@ -206,6 +230,10 @@ export interface InteractiveActivity {
   question: string;
   options: string[];
   kind: 'quiz' | 'poll';
+  sessionName?: string | null;
+  speakerName?: string | null;
+  day?: string | number | null;
+  scheduleLocked?: boolean | null;
   active?: boolean;
   submitted: boolean;
   submittedOptionIndex?: number | null;
@@ -227,6 +255,7 @@ export interface AdminInteractiveActivityResponse {
   email: string;
   optionIndex: number | null;
   option: string | null;
+  group?: string | null;
   isCorrect: boolean | null;
 }
 
@@ -458,9 +487,15 @@ export class AdminService {
   async sendNotification(
     title: string,
     body: string,
-    target: NotificationTarget
+    target: NotificationTarget,
+    highlightOnHome = false
   ): Promise<NotificationSendResult> {
-    return this.call('sendTargetedNotification', { title, body, target });
+    return this.call('sendTargetedNotification', {
+      title,
+      body,
+      target,
+      highlightOnHome,
+    });
   }
 
   async listReceivedNotifications(): Promise<ReceivedNotification[]> {
@@ -471,14 +506,24 @@ export class AdminService {
     title: string,
     body: string,
     target: NotificationTarget,
-    scheduledAt: string
+    scheduledAt: string,
+    highlightOnHome = false
   ): Promise<NotificationSendResult> {
     return this.call('scheduleTargetedNotification', {
       title,
       body,
       target,
       scheduledAt,
+      highlightOnHome,
     });
+  }
+
+  async removeHomeAnnouncement(campaignId: string): Promise<void> {
+    await this.call('removeAdminHomeAnnouncement', { campaignId });
+  }
+
+  async activateHomeAnnouncement(campaignId: string): Promise<void> {
+    await this.call('activateAdminHomeAnnouncement', { campaignId });
   }
 
   async createInteractiveActivity(activity: {
@@ -488,6 +533,10 @@ export class AdminService {
     kind: 'quiz' | 'poll';
     target: NotificationTarget;
     correctOptionIndex: number | null;
+    sessionName?: string | null;
+    speakerName?: string | null;
+    day?: string | number | null;
+    scheduleLocked?: boolean | null;
   }): Promise<{
     id: string;
     notificationSummary?: {
@@ -515,6 +564,10 @@ export class AdminService {
               question: a.question,
               options: a.options,
               kind: a.kind,
+              sessionName: a.sessionName,
+              speakerName: a.speakerName,
+              day: a.day,
+              scheduleLocked: a.scheduleLocked,
               active: a.active,
               submitted: false,
               optionPercentages: a.optionPercentages,
@@ -633,10 +686,70 @@ export class AdminService {
     });
   }
 
+  async loadCarDetailsForAttendees(
+    attendees: AdminAttendee[]
+  ): Promise<AdminAttendee[]> {
+    const snapshot = await getDocs(collectionGroup(this.firestore, 'cardata'));
+    const detailsByUserId = new Map<string, CarDetails>();
+    for (const carDocument of snapshot.docs) {
+      if (carDocument.id !== 'details') {
+        continue;
+      }
+      const userId = carDocument.ref.parent.parent?.id;
+      if (userId) {
+        detailsByUserId.set(
+          userId,
+          this.toCarDetails(carDocument.data() as Record<string, unknown>)
+        );
+      }
+    }
+    return attendees.map((attendee) => {
+      const carDetails = detailsByUserId.get(attendee.id);
+      return carDetails ? { ...attendee, carDetails } : attendee;
+    });
+  }
+
   async loadSafetyInductionStatus(
     attendees: AdminAttendee[]
   ): Promise<AdminAttendee[]> {
     return this.attachSafetyInductionStatus(attendees);
+  }
+
+  async connectHseAdmin(): Promise<void> {
+    const adminEmail = this.auth.currentUser?.email?.trim().toLowerCase();
+    if (!adminEmail) {
+      throw new Error('Sign in to Ahlan before connecting to HSE.');
+    }
+
+    const hseApp =
+      getApps().find((app) => app.name === 'HSEApp') ??
+      initializeApp(environment.hsefirebaseConfig, 'HSEApp');
+    const hseAuth = getAuth(hseApp);
+    const currentHseEmail = hseAuth.currentUser?.email?.trim().toLowerCase();
+    if (currentHseEmail === adminEmail) {
+      if (!(await this.isAdmin(adminEmail))) {
+        throw new Error('Administrator access is required.');
+      }
+      return;
+    }
+
+    const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({
+      prompt: 'select_account',
+      login_hint: adminEmail,
+    });
+
+    // Start the popup before awaiting Ahlan authorization checks so the click
+    // still carries the browser's user-activation required to open it.
+    const credential = await signInWithPopup(hseAuth, provider);
+    if (credential.user.email?.trim().toLowerCase() !== adminEmail) {
+      await signOut(hseAuth);
+      throw new Error('Sign in to HSE using the same Google account as Ahlan.');
+    }
+    if (!(await this.isAdmin(adminEmail))) {
+      await signOut(hseAuth);
+      throw new Error('Administrator access is required.');
+    }
   }
 
   async loadPreviewUsers(): Promise<PreviewUser[]> {
@@ -761,11 +874,7 @@ export class AdminService {
     if (!carDocument.exists()) return null;
 
     const data = carDocument.data();
-    const carDetails = {
-      carModel: String(data['carModel'] ?? '').trim(),
-      licensePlate: String(data['licensePlate'] ?? '').trim(),
-    };
-    return carDetails;
+    return this.toCarDetails(data);
   }
 
   async loadMeetAndGreetRepresentative(
@@ -785,11 +894,7 @@ export class AdminService {
     if (!representativeDocument.exists()) return null;
 
     const data = representativeDocument.data();
-    const representative = {
-      name: String(data['name'] ?? '').trim(),
-      phoneNumber: String(data['phoneNumber'] ?? '').trim(),
-    };
-    return representative;
+    return this.toMeetAndGreetRepresentative(data);
   }
 
   watchJourneyDetails(email: string): Observable<JourneyDetails> {
@@ -828,10 +933,7 @@ export class AdminService {
             ).pipe(
               map((data) =>
                 data
-                  ? {
-                      carModel: String(data['carModel'] ?? '').trim(),
-                      licensePlate: String(data['licensePlate'] ?? '').trim(),
-                    }
+                  ? this.toCarDetails(data as Record<string, unknown>)
                   : null
               )
             ),
@@ -845,10 +947,7 @@ export class AdminService {
             ).pipe(
               map((data) =>
                 data
-                  ? {
-                      name: String(data['name'] ?? '').trim(),
-                      phoneNumber: String(data['phoneNumber'] ?? '').trim(),
-                    }
+                  ? this.toMeetAndGreetRepresentative(data as Record<string, unknown>)
                   : null
               )
             ),
@@ -1126,7 +1225,9 @@ export class AdminService {
   }
 
   async loadEventEndAt(): Promise<Date | null> {
-    const snapshot = await getDoc(firestoreDoc(this.firestore, 'appConfiguration', 'event'));
+    const snapshot = await this.firebaseContext.run(() =>
+      getDoc(firestoreDoc(this.firestore, 'appConfiguration', 'event'))
+    );
     const eventEndAt = snapshot.data()?.['eventEndAt'];
     if (!eventEndAt) return null;
     if (eventEndAt instanceof Timestamp) return eventEndAt.toDate();
@@ -1302,53 +1403,84 @@ export class AdminService {
   private async attachSafetyInductionStatus(
     attendees: AdminAttendee[]
   ): Promise<AdminAttendee[]> {
-    try {
-      const response = await this.call<{
-        statuses: Record<string, { completed: boolean; status: string }>;
-      }>('getAdminSafetyInductionStatuses', {});
-
-      const statusByEmail = new Map<string, { completed: boolean; status: string }>(
-        Object.entries(response?.statuses ?? {})
-      );
-
-      return attendees.map((attendee) => {
-        if (!attendee.plantVisit) {
-          return {
-            ...attendee,
-            safetyInductionCompleted: undefined,
-            safetyInductionStatus: 'N/A',
-          };
-        }
-        const matchingEmails = [
-          attendee.email,
-          attendee.id,
-          attendee.authenticatedEmail ?? '',
-        ]
-          .map((email) => email.trim().toLowerCase())
-          .filter(Boolean);
-        const status = matchingEmails
-          .map((email) => statusByEmail.get(email))
-          .find((value) => value !== undefined);
-        return status
-          ? {
-              ...attendee,
-              safetyInductionCompleted: status.completed,
-              safetyInductionStatus: status.status,
-            }
-          : {
-              ...attendee,
-              safetyInductionCompleted: false,
-              safetyInductionStatus: 'No matching HSE record',
-            };
-      });
-    } catch (error) {
-      console.error('[AdminService] Failed to load HSE induction status:', error);
-      return attendees.map((attendee) =>
-        attendee.plantVisit
-          ? { ...attendee, safetyInductionStatus: 'Unavailable' }
-          : { ...attendee, safetyInductionStatus: 'N/A' }
-      );
+    const adminEmail = this.auth.currentUser?.email?.trim().toLowerCase();
+    if (!adminEmail || !(await this.isAdmin(adminEmail))) {
+      throw new Error('Administrator access is required.');
     }
+
+    const hseApp =
+      getApps().find((app) => app.name === 'HSEApp') ??
+      initializeApp(environment.hsefirebaseConfig, 'HSEApp');
+    const hseAuth = getAuth(hseApp);
+    if (!adminEmail || hseAuth.currentUser?.email?.trim().toLowerCase() !== adminEmail) {
+      throw new Error('Connect to HSE using your Ahlan administrator account first.');
+    }
+
+    const hseFirestore = getFirestore(hseApp);
+    const snapshot = await this.firebaseContext.run(() =>
+      getDocs(collection(hseFirestore, 'userProgress'))
+    );
+    const statusByEmail = new Map<string, { completed: boolean; status: string }>();
+
+    for (const progressDocument of snapshot.docs) {
+      const data = progressDocument.data();
+      const email = String(data['email'] ?? '').trim().toLowerCase();
+      if (!email) {
+        continue;
+      }
+
+      const rmx = data['RMX'] ?? data['rmx'];
+      const sokhna = data['sokhnaplant'] ?? data['sokhnaPlant'];
+      const rmxData = rmx && typeof rmx === 'object'
+        ? rmx as Record<string, unknown>
+        : undefined;
+      const sokhnaData = sokhna && typeof sokhna === 'object'
+        ? sokhna as Record<string, unknown>
+        : undefined;
+      const requiresRmx = rmx !== undefined && rmx !== null;
+      const sokhnaComplete = sokhnaData?.['questionnairePassed'] === true;
+      const rmxComplete = rmxData?.['questionnairePassed'] === true;
+      const completed = requiresRmx ? sokhnaComplete && rmxComplete : sokhnaComplete;
+      const lastWatchedIndex = sokhnaData?.['lastWatchedIndex'];
+      const progress = typeof lastWatchedIndex === 'number' && lastWatchedIndex > 0
+        ? `${lastWatchedIndex}/5`
+        : 'Not started';
+      statusByEmail.set(email, {
+        completed,
+        status: completed ? 'Done' : progress,
+      });
+    }
+
+    return attendees.map((attendee) => {
+      if (!attendee.plantVisit) {
+        return {
+          ...attendee,
+          safetyInductionCompleted: undefined,
+          safetyInductionStatus: 'N/A',
+        };
+      }
+      const matchingEmails = [
+        attendee.email,
+        attendee.id,
+        attendee.authenticatedEmail ?? '',
+      ]
+        .map((email) => email.trim().toLowerCase())
+        .filter(Boolean);
+      const status = matchingEmails
+        .map((email) => statusByEmail.get(email))
+        .find((value) => value !== undefined);
+      return status
+        ? {
+            ...attendee,
+            safetyInductionCompleted: status.completed,
+            safetyInductionStatus: status.status,
+          }
+        : {
+            ...attendee,
+            safetyInductionCompleted: false,
+            safetyInductionStatus: 'No matching HSE record',
+          };
+    });
   }
 
   private toProject(id: string, data: Record<string, unknown>): IconicProject {
@@ -1437,6 +1569,32 @@ export class AdminService {
       outbound: toLeg(data['outbound']),
       updatedAt: typeof data['updatedAt'] === 'string' ? data['updatedAt'] : undefined,
     };
+  }
+
+  private toCarDetails(data: Record<string, unknown>): CarDetails {
+    return {
+      arrivalTime: String(data['arrivalTime'] ?? '').trim(),
+      carModel: String(data['carModel'] ?? '').trim(),
+      driverName: String(data['driverName'] ?? '').trim(),
+      licensePlate: String(data['licensePlate'] ?? '').trim(),
+      mobileNumber: this.toInternationalPhoneNumber(data['mobileNumber']),
+    };
+  }
+
+  private toMeetAndGreetRepresentative(
+    data: Record<string, unknown>
+  ): MeetAndGreetRepresentative {
+    return {
+      name: String(data['name'] ?? '').trim(),
+      phoneNumber: this.toInternationalPhoneNumber(data['phoneNumber']),
+    };
+  }
+
+  private toInternationalPhoneNumber(value: unknown): string {
+    const phoneNumber = String(value ?? '').trim();
+    return phoneNumber && !phoneNumber.startsWith('+')
+      ? `+${phoneNumber}`
+      : phoneNumber;
   }
 
   private createProjectId(name: string): string {
