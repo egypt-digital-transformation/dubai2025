@@ -2269,15 +2269,19 @@ export class AdminPage implements OnInit, OnDestroy {
       this.activitySelectedUserIds = [];
       this.activityUserSearch = '';
       this.activitySelectedSegmentKey = '';
-      this.activityNotice = `${this.activityKind === 'quiz' ? 'Quiz' : 'Poll'} published for attendees.`;
-      if (result.notificationSummary?.deliveryError) {
-        this.activityNotice += ' Inbox delivery also needs attention; attendees can still access it in the app.';
-      } else if (result.notificationSummary?.pushReadyCount === 0) {
-        this.activityNotice += ' The activity is saved in attendees’ in-app inboxes; no push tokens are available.';
-      } else if (result.notificationSummary) {
-        this.activityNotice +=
-          ` Push notifications accepted: ${result.notificationSummary.acceptedCount}; ` +
-          `failed: ${result.notificationSummary.failedCount}.`;
+      if (result.notificationSummary?.scheduled) {
+        this.activityNotice = `${this.activityKind === 'quiz' ? 'Quiz' : 'Poll'} scheduled successfully. No immediate notifications were sent; it will unlock automatically during live session times.`;
+      } else {
+        this.activityNotice = `${this.activityKind === 'quiz' ? 'Quiz' : 'Poll'} published for attendees.`;
+        if (result.notificationSummary?.deliveryError) {
+          this.activityNotice += ' Inbox delivery also needs attention; attendees can still access it in the app.';
+        } else if (result.notificationSummary?.pushReadyCount === 0) {
+          this.activityNotice += ' The activity is saved in attendees’ in-app inboxes; no push tokens are available.';
+        } else if (result.notificationSummary) {
+          this.activityNotice +=
+            ` Push notifications accepted: ${result.notificationSummary.acceptedCount}; ` +
+            `failed: ${result.notificationSummary.failedCount}.`;
+        }
       }
       await this.loadAdminActivities();
     } catch (error) {

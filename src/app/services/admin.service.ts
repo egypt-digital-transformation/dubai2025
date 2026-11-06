@@ -545,6 +545,7 @@ export class AdminService {
       acceptedCount: number;
       failedCount: number;
       deliveryError: boolean;
+      scheduled?: boolean;
     };
   }> {
     return this.call('createInteractiveActivity', activity);
