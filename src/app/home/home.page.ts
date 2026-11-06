@@ -707,16 +707,31 @@ export class HomePage implements OnInit, OnDestroy {
         this.userGroup = userGroup;
         this.welcomeGreeting = nationality ? greetingForNationality(nationality) : 'Ahlan';
         this.isPlantVisitRequired = data['plantVisit'] === true;
-        this.checkFlightArrivalWelcome(data, profileEmail);
+        void this.checkFlightArrivalWelcome(data, profileEmail, userId);
       });
     } catch (error) {
       console.error('[HomePage] Failed to update the live welcome profile:', error);
     }
   }
 
-  private checkFlightArrivalWelcome(data: Record<string, unknown>, email: string): void {
-    const inbound = (data['inbound'] as any) || (data['flightDetails'] as any)?.inbound;
+  private async checkFlightArrivalWelcome(data: Record<string, unknown>, email: string, userId?: string): Promise<void> {
+    let inbound = (data['inbound'] as any) || (data['flightDetails'] as any)?.inbound;
     const flightWelcomeSent = data['flightWelcomeSent'] === true;
+
+    if (!inbound && userId) {
+      try {
+        const flightDoc = await this.firebaseContext.run(() =>
+          getDoc(doc(this.firestore, 'users', userId, 'flightDetails', 'flightInfo'))
+        ).catch(() => null);
+        if (flightDoc && flightDoc.exists()) {
+          const flightData = flightDoc.data();
+          inbound = flightData['inbound'] || flightData['arrival'];
+        }
+      } catch (e) {
+        console.warn('[HomePage] Could not check flightInfo subcollection:', e);
+      }
+    }
+
     if (!inbound && !flightWelcomeSent) return;
 
     const emailKey = (email || '').trim().toLowerCase();
@@ -729,8 +744,11 @@ export class HomePage implements OnInit, OnDestroy {
     } catch {}
 
     let isDue = flightWelcomeSent;
-    if (!isDue && inbound?.arrivalDate && inbound?.arrivalTime) {
-      const arrivalDate = this.parseCairoFlightArrival(String(inbound.arrivalDate), String(inbound.arrivalTime));
+    const arrivalDateStr = inbound?.arrivalDate || inbound?.date;
+    const arrivalTimeStr = inbound?.arrivalTime || inbound?.time;
+
+    if (!isDue && arrivalDateStr && arrivalTimeStr) {
+      const arrivalDate = this.parseCairoFlightArrival(String(arrivalDateStr), String(arrivalTimeStr));
       if (arrivalDate && !isNaN(arrivalDate.getTime())) {
         const triggerMillis = arrivalDate.getTime() + 40 * 60 * 1000;
         const now = Date.now();
@@ -742,7 +760,8 @@ export class HomePage implements OnInit, OnDestroy {
     }
 
     if (isDue) {
-      this.flightWelcomeFlightNo = inbound?.flightNo ? String(inbound.flightNo).trim() : '';
+      const flightNum = inbound?.flightNo || inbound?.flight;
+      this.flightWelcomeFlightNo = flightNum ? String(flightNum).trim() : '';
       const rawFirstName = String(data['firstName'] ?? data['displayName'] ?? this.firstName ?? '').trim();
       this.flightWelcomeFirstName = rawFirstName.split(/\s+/)[0] || 'Delegate';
       setTimeout(() => {

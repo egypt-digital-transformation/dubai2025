@@ -125,9 +125,24 @@ function getAttendeeFirstName(userData) {
  */
 export async function processFlightArrivalReminders() {
   const now = Date.now();
-  const usersSnapshot = await db.collection("users").get();
+  const [usersSnapshot, flightsSnapshot] = await Promise.all([
+    db.collection("users").get(),
+    db.collectionGroup("flightDetails").get().catch(() => ({ docs: [] })),
+  ]);
+
   if (usersSnapshot.empty) {
     return { checkedCount: 0, sentCount: 0 };
+  }
+
+  // Map subcollection documents users/{userId}/flightDetails/flightInfo
+  const flightsByUserId = new Map();
+  for (const flightDoc of flightsSnapshot.docs || []) {
+    if (flightDoc.id === "flightInfo") {
+      const parentUserDoc = flightDoc.ref.parent?.parent;
+      if (parentUserDoc?.id) {
+        flightsByUserId.set(parentUserDoc.id, flightDoc.data());
+      }
+    }
   }
 
   let sentCount = 0;
@@ -142,15 +157,23 @@ export async function processFlightArrivalReminders() {
       continue;
     }
 
-    // Extract inbound flight info from userDoc.inbound or userDoc.flightDetails.inbound
-    const inbound = data.inbound || data.flightDetails?.inbound;
+    // Extract inbound flight info from userDoc or users/{userId}/flightDetails/flightInfo subcollection
+    const flightSubDocData = flightsByUserId.get(userDoc.id);
+    const inbound =
+      data.inbound ||
+      data.flightDetails?.inbound ||
+      flightSubDocData?.inbound ||
+      flightSubDocData?.arrival;
+
     if (!inbound || typeof inbound !== "object") {
       continue;
     }
 
-    const arrivalDateStr = inbound.arrivalDate;
-    const arrivalTimeStr = inbound.arrivalTime;
-    const flightNo = inbound.flightNo ? String(inbound.flightNo).trim() : "";
+    const arrivalDateStr = inbound.arrivalDate || inbound.date;
+    const arrivalTimeStr = inbound.arrivalTime || inbound.time;
+    const flightNo = inbound.flightNo || inbound.flight
+      ? String(inbound.flightNo || inbound.flight).trim()
+      : "";
 
     if (!arrivalDateStr || !arrivalTimeStr) {
       continue;
