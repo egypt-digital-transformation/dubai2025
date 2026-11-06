@@ -9,6 +9,9 @@ export interface PreviewUser {
   lastName: string;
   currentPosition: string;
   locationCountry: string;
+  group?: string;
+  galaDinner?: string;
+  plenarySeating?: string;
 }
 
 @Injectable({ providedIn: 'root' })

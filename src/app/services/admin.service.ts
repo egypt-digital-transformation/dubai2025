@@ -762,6 +762,12 @@ export class AdminService {
         const lastName = String(data['lastName'] ?? '').trim();
         const name = String(data['displayName'] ?? data['name'] ?? '').trim() ||
           [firstName, lastName].filter(Boolean).join(' ');
+        const rawPlenary = data['plenarySeating'] ?? data['plenaryTable'] ?? data['Plenary Seating'];
+        const plenarySeating = rawPlenary !== undefined && rawPlenary !== null ? String(rawPlenary).trim() : '';
+        const rawGala = data['galaDinner'] ?? data['galaTable'] ?? data['Gala Dinner'];
+        const galaDinner = rawGala !== undefined && rawGala !== null ? String(rawGala).trim() : '';
+        const rawGroup = data['group'] ?? data['userGroup'] ?? '';
+        const group = rawGroup !== undefined && rawGroup !== null ? String(rawGroup).trim() : '';
         return {
           id: userDocument.id,
           email,
@@ -770,6 +776,9 @@ export class AdminService {
           lastName,
           currentPosition: String(data['currentPosition'] ?? '').trim(),
           locationCountry: String(data['locationCountry'] ?? '').trim(),
+          group,
+          galaDinner,
+          plenarySeating,
         };
       })
       .filter((user) => user.email)

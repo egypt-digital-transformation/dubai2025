@@ -55,6 +55,11 @@ import {
   copyOutline,
   checkmarkOutline,
   notificationsOutline,
+  easelOutline,
+  wineOutline,
+  sparklesOutline,
+  peopleOutline,
+  restaurantOutline,
 } from 'ionicons/icons';
 
 import {
@@ -154,6 +159,7 @@ export class HomePage implements OnInit, OnDestroy {
   /** True once the viewed user's (or previewed user's) personal agenda has been read. */
   private isViewerAgendaLoaded = false;
   public showQR = false;
+  public showSeatingModal = false;
   public displayName: string | null = null;
   public firstName: string | null = null;
   public welcomeGreeting = 'Ahlan';
@@ -164,6 +170,9 @@ export class HomePage implements OnInit, OnDestroy {
   public homeAnnouncements: ReceivedNotification[] = [];
   public profileMobile = '';
   public profileQrCode = '';
+  public plenarySeating = '';
+  public galaDinner = '';
+  public userGroup = '';
   public shareContactCard = false;
   public isSavingContactSharing = false;
   public contactSharingError = '';
@@ -188,6 +197,10 @@ export class HomePage implements OnInit, OnDestroy {
   public eventArchiveStatusError = false;
   public isWifiPasswordCopied = false;
   public wifiPasswordCopyError = '';
+  public wifiNetworkName = '';
+  public wifiPassword = '';
+  public isWifiLoading = true;
+  public wifiLoadError = '';
 
   private destroy$ = new Subject<void>();
   private readonly retrySessions$ = new Subject<void>();
@@ -199,12 +212,58 @@ export class HomePage implements OnInit, OnDestroy {
   private hseAuthUnsubscribe?: Unsubscribe;
   private agendaUnsubscribe?: Unsubscribe;
   private profileUnsubscribe?: Unsubscribe;
+  private wifiDetailsUnsubscribe?: Unsubscribe;
   private viewGeneration = 0;
   private homeAnnouncementGeneration = 0;
   private profileDocumentId = '';
   private wifiCopyResetTimer?: ReturnType<typeof setTimeout>;
   private safetyStatusRefreshTimer?: ReturnType<typeof setInterval>;
   private homeAnnouncementRefreshTimer?: ReturnType<typeof setInterval>;
+
+  get hasSeatingAssignments(): boolean {
+    return Boolean(this.plenarySeating?.trim() || this.galaDinner?.trim());
+  }
+
+  get userGroupLabel(): string {
+    if (!this.userGroup) return '';
+    const trimmed = this.userGroup.trim();
+    if (/^group\s*\d+/i.test(trimmed)) {
+      return trimmed.replace(/^group\s*/i, 'Group ');
+    }
+    return trimmed;
+  }
+
+  formatTableNumber(value: string | number | null | undefined): string {
+    if (value === null || value === undefined) return '';
+    const str = String(value).trim();
+    if (!str) return '';
+    return str.replace(/^table\s*#?/i, '').trim();
+  }
+
+  get seatingQuickSummary(): string {
+    const plenary = this.formatTableNumber(this.plenarySeating);
+    const gala = this.formatTableNumber(this.galaDinner);
+    if (plenary && gala) {
+      return `Table ${plenary} & ${gala}`;
+    }
+    if (plenary) {
+      return `Table ${plenary}`;
+    }
+    if (gala) {
+      return `Table ${gala}`;
+    }
+    return 'Table assignments';
+  }
+
+  openSeatingModal() {
+    this.showSeatingModal = true;
+  }
+
+  async closeSeatingModal() {
+    this.showSeatingModal = false;
+    const modal = document.querySelector('ion-modal.seating-modal') as HTMLIonModalElement;
+    if (modal) await modal.dismiss();
+  }
 
   constructor(
     private router: Router,
@@ -215,7 +274,7 @@ export class HomePage implements OnInit, OnDestroy {
     private zone: NgZone,
     private readonly adminPreview: AdminPreviewService
   ) {
-    addIcons({ qrCodeOutline, mapOutline, airplaneOutline, bulbOutline, cameraOutline, statsChartOutline, chevronForward, locationOutline, hourglassOutline, calendarOutline, radioOutline, keyOutline, closeOutline, personOutline, briefcaseOutline, callOutline, mailOutline, copyOutline, checkmarkOutline, notificationsOutline, timeOutline, checkmarkCircle, trophy, });
+    addIcons({ qrCodeOutline, mapOutline, airplaneOutline, bulbOutline, cameraOutline, statsChartOutline, chevronForward, locationOutline, hourglassOutline, calendarOutline, radioOutline, keyOutline, closeOutline, personOutline, briefcaseOutline, callOutline, mailOutline, copyOutline, checkmarkOutline, notificationsOutline, timeOutline, checkmarkCircle, trophy, easelOutline, wineOutline, sparklesOutline, peopleOutline, restaurantOutline });
   }
 
   ionViewWillEnter() {
@@ -283,6 +342,7 @@ export class HomePage implements OnInit, OnDestroy {
   ngOnInit() {
 
     this.showQR = false;
+    this.loadWifiDetails();
     this.hseAuthUnsubscribe = onFirebaseAuthStateChanged(this.hseAuth, (user) => {
       const email = this.auth.currentUser?.email ?? '';
       if (user && this.isSameEmail(user.email, email) && !this.isPreviewingUser) {
@@ -466,8 +526,12 @@ export class HomePage implements OnInit, OnDestroy {
     this.profileMobile = '';
     this.profileQrCode = '';
     this.profileDocumentId = '';
+    this.plenarySeating = previewUser?.plenarySeating ?? '';
+    this.galaDinner = previewUser?.galaDinner ?? '';
+    this.userGroup = previewUser?.group ?? '';
     this.agendaUnsubscribe?.();
     this.agendaUnsubscribe = undefined;
+    this.showSeatingModal = false;
     this.shareContactCard = false;
     this.contactSharingError = '';
     this.welcomeGreeting = 'Ahlan';
@@ -560,10 +624,10 @@ export class HomePage implements OnInit, OnDestroy {
     generation: number
   ): Promise<void> {
     try {
-      const firstName = String(data.firstName ?? '').trim();
-      const nationality = String(data.nationality ?? '').trim();
-      const lastName = String(data.lastName ?? '').trim();
-      const profileEmail = String(data.emailAddress ?? data.email ?? email).trim();
+      const firstName = String(data['firstName'] ?? '').trim();
+      const nationality = String(data['nationality'] ?? '').trim();
+      const lastName = String(data['lastName'] ?? '').trim();
+      const profileEmail = String(data['emailAddress'] ?? data['email'] ?? email).trim();
       const profileMobile = this.firstProfileString(data, [
         'mobileNumber',
         'mobile',
@@ -576,8 +640,14 @@ export class HomePage implements OnInit, OnDestroy {
         'Mobile Number',
         'Phone Number',
       ]);
-      const profilePosition = String(data.currentPosition ?? '').trim();
+      const profilePosition = String(data['currentPosition'] ?? '').trim();
       const profileName = [firstName, lastName].filter(Boolean).join(' ');
+      const rawPlenary = data['plenarySeating'] ?? data['plenaryTable'] ?? data['Plenary Seating'];
+      const plenarySeating = rawPlenary !== undefined && rawPlenary !== null ? String(rawPlenary).trim() : '';
+      const rawGala = data['galaDinner'] ?? data['galaTable'] ?? data['Gala Dinner'];
+      const galaDinner = rawGala !== undefined && rawGala !== null ? String(rawGala).trim() : '';
+      const rawGroup = data['group'] ?? data['userGroup'] ?? '';
+      const userGroup = rawGroup !== undefined && rawGroup !== null ? String(rawGroup).trim() : '';
       const themeColors = getComputedStyle(document.documentElement);
       const profileQrCode = await QRCode.toDataURL(
         this.createContactVCard(
@@ -600,16 +670,19 @@ export class HomePage implements OnInit, OnDestroy {
       if (!this.isCurrentViewingUser(email, uid, generation)) return;
       this.zone.run(() => {
         this.profileDocumentId = userId;
-        this.shareContactCard = data.shareContactCard === true;
+        this.shareContactCard = data['shareContactCard'] === true;
         this.firstName = firstName || null;
         this.profileName = profileName;
         this.profileEmail = profileEmail;
         this.profileMobile = profileMobile;
         this.profileQrCode = profileQrCode;
         this.profilePosition = profilePosition;
-        this.profileCountry = String(data.locationCountry ?? '').trim();
+        this.profileCountry = String(data['locationCountry'] ?? '').trim();
+        this.plenarySeating = plenarySeating;
+        this.galaDinner = galaDinner;
+        this.userGroup = userGroup;
         this.welcomeGreeting = nationality ? greetingForNationality(nationality) : 'Ahlan';
-        this.isPlantVisitRequired = data.plantVisit === true;
+        this.isPlantVisitRequired = data['plantVisit'] === true;
       });
     } catch (error) {
       console.error('[HomePage] Failed to update the live welcome profile:', error);
@@ -722,6 +795,7 @@ export class HomePage implements OnInit, OnDestroy {
     this.profileUnsubscribe?.();
     this.hseAuthUnsubscribe?.();
     this.agendaUnsubscribe?.();
+    this.wifiDetailsUnsubscribe?.();
     if (this.wifiCopyResetTimer) clearTimeout(this.wifiCopyResetTimer);
     this.destroy$.next();
     this.destroy$.complete();
@@ -730,10 +804,13 @@ export class HomePage implements OnInit, OnDestroy {
   async copyWifiPassword(): Promise<void> {
     this.wifiPasswordCopyError = '';
     try {
+      if (!this.wifiPassword) {
+        throw new Error('The Wi-Fi password is not available.');
+      }
       if (!navigator.clipboard?.writeText) {
         throw new Error('Clipboard access is unavailable in this browser.');
       }
-      await navigator.clipboard.writeText('OneAMEA2026');
+      await navigator.clipboard.writeText(this.wifiPassword);
       this.isWifiPasswordCopied = true;
       if (this.wifiCopyResetTimer) clearTimeout(this.wifiCopyResetTimer);
       this.wifiCopyResetTimer = setTimeout(() => {
@@ -745,6 +822,45 @@ export class HomePage implements OnInit, OnDestroy {
       this.wifiPasswordCopyError =
         'Could not copy the password. Please select and copy it manually.';
     }
+  }
+
+  private loadWifiDetails(): void {
+    this.isWifiLoading = true;
+    this.wifiLoadError = '';
+    const wifiDocument = firebaseDoc(this.firestore, 'network', 'details');
+    this.wifiDetailsUnsubscribe?.();
+    this.wifiDetailsUnsubscribe = this.firebaseContext.run(() =>
+      onSnapshot(
+        wifiDocument,
+        (snapshot) => {
+          const data = snapshot.data();
+          const name = typeof data?.['name'] === 'string'
+            ? data['name'].trim()
+            : '';
+          const password = typeof data?.['password'] === 'string'
+            ? data['password'].trim()
+            : '';
+          this.zone.run(() => {
+            this.wifiNetworkName = name;
+            this.wifiPassword = password;
+            this.isWifiLoading = false;
+            this.wifiLoadError = name && password
+              ? ''
+              : 'Wi-Fi details are not available right now.';
+          });
+        },
+        (error) => {
+          console.error('[HomePage] Could not load hotel Wi-Fi details:', error);
+          this.zone.run(() => {
+            this.wifiNetworkName = '';
+            this.wifiPassword = '';
+            this.isWifiLoading = false;
+            this.wifiLoadError =
+              'Wi-Fi details could not be loaded. Please try again later.';
+          });
+        }
+      )
+    );
   }
 
   private async loadSafetyInductionStatus(email: string, generation: number): Promise<void> {

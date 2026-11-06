@@ -632,6 +632,199 @@ ion-content {
   margin-right: auto;
 }
 // ========================================
+// MY SEATING (TABLE ASSIGNMENTS)
+// ========================================
+.seating-section {
+  margin-bottom: 1.35rem;
+
+  .home-section-heading {
+    margin-bottom: 0.75rem;
+  }
+}
+
+.seating-group-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: rgba(var(--holcim-bright-blue-rgb), 0.1);
+  color: var(--holcim-medium-blue);
+  border: 1px solid rgba(var(--holcim-bright-blue-rgb), 0.22);
+  border-radius: 999px;
+  padding: 0.35rem 0.65rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+
+  ion-icon {
+    font-size: 0.85rem;
+  }
+}
+
+.seating-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(0.5rem, 2vw, 0.75rem);
+
+  &.single-item {
+    grid-template-columns: 1fr;
+
+    .seating-card {
+      padding: 1.05rem 1.25rem;
+
+      .seating-card-layout {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .seating-number-box {
+        margin: 0;
+        text-align: right;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 0.1rem;
+      }
+    }
+  }
+}
+
+.seating-card {
+  background: var(--white);
+  border-radius: 0.95rem;
+  padding: 0.95rem 1rem 0.9rem;
+  box-shadow: 0 4px 16px rgba(var(--holcim-dark-blue-rgb), 0.05);
+  border: 1px solid rgba(var(--holcim-dark-blue-rgb), 0.08);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.16s ease, box-shadow 0.16s ease;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+  }
+
+  &.plenary-card {
+    border-color: rgba(var(--holcim-bright-blue-rgb), 0.25);
+    background: linear-gradient(170deg, rgba(var(--holcim-bright-blue-rgb), 0.04) 0%, var(--white) 65%);
+
+    &::before {
+      background: linear-gradient(90deg, var(--holcim-dark-blue) 0%, var(--holcim-bright-blue) 100%);
+    }
+
+    .seating-badge {
+      background: rgba(var(--holcim-bright-blue-rgb), 0.12);
+      color: var(--holcim-medium-blue);
+    }
+
+    .table-val {
+      color: var(--holcim-dark-blue);
+    }
+
+    .seating-venue-row {
+      color: var(--holcim-medium-blue);
+    }
+  }
+
+  &.gala-card {
+    border-color: rgba(217, 119, 6, 0.25);
+    background: linear-gradient(170deg, rgba(217, 119, 6, 0.04) 0%, var(--white) 65%);
+
+    &::before {
+      background: linear-gradient(90deg, #B45309 0%, #F59E0B 100%);
+    }
+
+    .seating-badge {
+      background: rgba(217, 119, 6, 0.12);
+      color: #92400E;
+    }
+
+    .table-val {
+      color: #78350F;
+    }
+
+    .seating-venue-row {
+      color: #92400E;
+    }
+  }
+
+  .seating-card-layout {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 100%;
+  }
+
+  .seating-info-col {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .seating-card-top {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.65rem;
+  }
+
+  .seating-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.25rem 0.55rem;
+    border-radius: 999px;
+    font-size: 0.62rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+
+    ion-icon {
+      font-size: 0.8rem;
+    }
+  }
+
+  .seating-number-box {
+    display: flex;
+    align-items: baseline;
+    gap: 0.35rem;
+    margin: 0.35rem 0 0.55rem;
+
+    .table-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--bright-gray);
+    }
+
+    .table-val {
+      font-size: clamp(1.65rem, 5vw, 2.15rem);
+      font-weight: 800;
+      line-height: 1;
+      letter-spacing: -0.03em;
+    }
+  }
+
+  .seating-venue-row {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.74rem;
+    font-weight: 600;
+    line-height: 1.35;
+
+    ion-icon {
+      font-size: 0.85rem;
+      flex-shrink: 0;
+    }
+  }
+}
+
+// ========================================
 // QUICK ACTIONS (EVENT ESSENTIALS)
 // ========================================
 .essentials-section {
@@ -735,6 +928,10 @@ ion-content {
 
       &.journey {
         background: linear-gradient(135deg, #00A3E0 0%, #0077A8 100%);
+      }
+
+      &.seating {
+        background: linear-gradient(135deg, #002F6C 0%, #B45309 100%);
       }
 
       &.venue {
@@ -1937,6 +2134,106 @@ ion-modal {
       font-weight: 600;
       word-break: break-word;
       overflow-wrap: anywhere;
+    }
+  }
+}
+
+// ========================================
+// SEATING MODAL
+// ========================================
+.seating-modal {
+  --width: min(94vw, 440px);
+  --max-width: 440px;
+  --border-radius: 1.25rem;
+  --height: auto;
+  --max-height: 90vh;
+  --box-shadow: 0 8px 24px rgba(var(--holcim-dark-blue-rgb), 0.15);
+
+  .seating-modal-content {
+    background: var(--white);
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    max-height: 90vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+
+  .seating-modal-header {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    background: var(--white);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.85rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid rgba(var(--holcim-dark-blue-rgb), 0.08);
+
+    .section-eyebrow {
+      color: var(--bright-gray);
+      font-size: 0.62rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      margin: 0 0 0.2rem;
+    }
+
+    .seating-modal-title {
+      color: var(--holcim-dark-blue);
+      font-size: 1.35rem;
+      font-weight: 700;
+      line-height: 1.2;
+      margin: 0;
+    }
+
+    .close-btn {
+      background: rgba(var(--holcim-dark-blue-rgb), 0.05);
+      border: none;
+      border-radius: 50%;
+      width: 2.2rem;
+      height: 2.2rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background 0.2s ease, transform 0.15s ease;
+
+      &:hover {
+        background: rgba(var(--holcim-dark-blue-rgb), 0.1);
+      }
+
+      &:active {
+        transform: scale(0.95);
+      }
+
+      ion-icon {
+        font-size: 1.25rem;
+        color: var(--holcim-dark-blue);
+      }
+    }
+  }
+
+  .seating-group-banner {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    background: rgba(var(--holcim-bright-blue-rgb), 0.08);
+    border: 1px solid rgba(var(--holcim-bright-blue-rgb), 0.2);
+    border-radius: 0.75rem;
+    padding: 0.55rem 0.85rem;
+    margin-bottom: 1rem;
+    font-size: 0.78rem;
+    color: var(--holcim-medium-blue);
+
+    ion-icon {
+      font-size: 1.05rem;
+      flex-shrink: 0;
+    }
+
+    strong {
+      color: var(--holcim-dark-blue);
     }
   }
 }

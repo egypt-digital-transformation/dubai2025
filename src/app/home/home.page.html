@@ -88,6 +88,21 @@
             </span>
           </button>
 
+          <button
+            *ngIf="hasSeatingAssignments"
+            type="button"
+            class="action-card"
+            (click)="openSeatingModal()"
+          >
+            <span class="action-content">
+              <span class="action-icon seating">
+                <ion-icon name="restaurant-outline"></ion-icon>
+              </span>
+              <span class="action-title">My Seating</span>
+              <span class="action-desc">{{ seatingQuickSummary }}</span>
+            </span>
+          </button>
+
           <button type="button" class="action-card" (click)="openTips()">
             <span class="action-content">
               <span class="action-icon networking"><ion-icon name="bulb-outline"></ion-icon></span>
@@ -216,7 +231,7 @@
                     (!primarySession.speaker.photoURL ||
                       primarySession.speaker.photoURL === 'null')
                   ">
-                    {{ primarySession.speaker.name[0] }}{{ primarySession.speaker.name.split(' ')[1]?.[0] || '' }}
+                    {{ primarySession.speaker?.name?.[0] }}{{ primarySession.speaker?.name?.split(' ')[1]?.[0] || '' }}
                   </div>
 
                   <img *ngIf="
@@ -265,7 +280,7 @@
                     (!secondarySession.speaker.photoURL ||
                       secondarySession.speaker.photoURL === 'null')
                   ">
-                    {{ secondarySession.speaker.name[0] }}{{ secondarySession.speaker.name.split(' ')[1]?.[0] || '' }}
+                    {{ secondarySession.speaker?.name?.[0] }}{{ secondarySession.speaker?.name?.split(' ')[1]?.[0] || '' }}
                   </div>
 
                   <img *ngIf="
@@ -333,13 +348,11 @@
           <div class="card-content">
             <div class="card-header">
               <div>
-                <p class="section-eyebrow">
-                  {{ messageType === 'over' ? 'FROM THE FINAL EVENT DAY' : 'A LITTLE MORE TO LOOK FORWARD TO' }}
-                </p>
-                <h2 class="card-title">{{ messageType === 'over' ? 'Event schedule' : 'Today’s agenda' }}</h2>
+                <p class="section-eyebrow">A LITTLE MORE TO LOOK FORWARD TO</p>
+                <h2 class="card-title">Today’s agenda</h2>
               </div>
               <button class="view-all-btn" (click)="navigateToAgenda()">
-                {{ messageType === 'over' ? 'Browse archive' : 'View all' }}
+                View all
               </button>
             </div>
 
@@ -362,14 +375,11 @@
                   <div class="empty-icon">
                     <ion-icon name="calendar-outline"></ion-icon>
                   </div>
-                  <h4 class="empty-title">{{ messageType === 'over' ? 'Explore the event archive' : 'No Sessions Today' }}</h4>
-                  <p class="empty-text" *ngIf="messageType !== 'over'">
+                  <h4 class="empty-title">No Sessions Today</h4>
+                  <p class="empty-text">
                     Free time! Relax or visit the
                     <a [routerLink]="['/tips']" class="deeplink-text">Explore Cairo</a>
                     for things to do in Egypt.
-                  </p>
-                  <p class="empty-text" *ngIf="messageType === 'over'">
-                    Browse all event days, sessions, and shared materials in the schedule archive.
                   </p>
                 </div>
               </ng-template>
@@ -392,16 +402,21 @@
             <div class="wifi-credentials">
               <div class="wifi-credential">
                 <span class="wifi-credential-label">NETWORK</span>
-                <span class="wifi-credential-value">Holcim</span>
+                <span class="wifi-credential-value">
+                  {{ isWifiLoading ? 'Loading…' : wifiNetworkName || 'Unavailable' }}
+                </span>
               </div>
               <div class="wifi-credential">
                 <span class="wifi-credential-label">PASSWORD</span>
                 <div class="wifi-password-row">
-                  <span class="wifi-credential-value">OneAMEA2026</span>
+                  <span class="wifi-credential-value">
+                    {{ isWifiLoading ? 'Loading…' : wifiPassword || 'Unavailable' }}
+                  </span>
                   <button
                     class="wifi-copy-button"
                     type="button"
                     (click)="copyWifiPassword()"
+                    [disabled]="isWifiLoading || !wifiPassword"
                     [attr.aria-label]="isWifiPasswordCopied ? 'Password copied' : 'Copy Wi-Fi password'"
                     [attr.title]="isWifiPasswordCopied ? 'Copied' : 'Copy password'"
                   >
@@ -410,6 +425,9 @@
                 </div>
               </div>
             </div>
+            <p class="wifi-copy-status wifi-copy-error" *ngIf="wifiLoadError" role="alert">
+              {{ wifiLoadError }}
+            </p>
             <p class="wifi-copy-status" *ngIf="isWifiPasswordCopied" role="status">Password copied</p>
             <p class="wifi-copy-status wifi-copy-error" *ngIf="wifiPasswordCopyError" role="alert">
               {{ wifiPasswordCopyError }}
@@ -501,6 +519,80 @@
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      </div>
+    </ng-template>
+  </ion-modal>
+
+  <!-- ================= SEATING MODAL ================= -->
+  <ion-modal
+    [isOpen]="showSeatingModal"
+    (didDismiss)="closeSeatingModal()"
+    [backdropDismiss]="true"
+    class="seating-modal"
+  >
+    <ng-template>
+      <div class="seating-modal-content">
+        <div class="seating-modal-header">
+          <div>
+                  <h1 class="seating-modal-title">My Seating</h1>
+          </div>
+          <button class="close-btn" (click)="closeSeatingModal()" aria-label="Close seating details">
+            <ion-icon name="close-outline"></ion-icon>
+          </button>
+        </div>
+
+        <div class="seating-modal-body">
+          <div class="seating-group-banner" *ngIf="userGroupLabel">
+            <ion-icon name="people-outline" aria-hidden="true"></ion-icon>
+            <span>Assigned to <strong>{{ userGroupLabel }}</strong></span>
+          </div>
+
+          <div class="seating-grid" [ngClass]="{ 'single-item': !plenarySeating || !galaDinner }">
+            <!-- Plenary Seating Card -->
+            <article *ngIf="plenarySeating" class="seating-card plenary-card">
+              <div class="seating-card-layout">
+                <div class="seating-info-col">
+                  <div class="seating-card-top">
+                    <span class="seating-badge plenary">
+                      <ion-icon name="easel-outline" aria-hidden="true"></ion-icon>
+                      <span>PLENARY SESSIONS</span>
+                    </span>
+                  </div>
+                  <div class="seating-venue-row">
+                    <ion-icon name="location-outline" aria-hidden="true"></ion-icon>
+                    <span>Versailles Ballroom</span>
+                  </div>
+                </div>
+                <div class="seating-number-box">
+                  <span class="table-label">TABLE</span>
+                  <strong class="table-val">{{ formatTableNumber(plenarySeating) }}</strong>
+                </div>
+              </div>
+            </article>
+
+            <!-- Gala Dinner Card -->
+            <article *ngIf="galaDinner" class="seating-card gala-card">
+              <div class="seating-card-layout">
+                <div class="seating-info-col">
+                  <div class="seating-card-top">
+                    <span class="seating-badge gala">
+                      <ion-icon name="wine-outline" aria-hidden="true"></ion-icon>
+                      <span>GALA DINNER</span>
+                    </span>
+                  </div>
+                  <div class="seating-venue-row">
+                    <ion-icon name="sparkles-outline" aria-hidden="true"></ion-icon>
+                    <span>Evening Celebration</span>
+                  </div>
+                </div>
+                <div class="seating-number-box">
+                  <span class="table-label">TABLE</span>
+                  <strong class="table-val">{{ formatTableNumber(galaDinner) }}</strong>
+                </div>
+              </div>
+            </article>
           </div>
         </div>
       </div>

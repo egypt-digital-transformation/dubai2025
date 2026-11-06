@@ -129,6 +129,11 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    match /network/{networkDocumentId} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+
     match /requests/{requestId} {
       allow read: if isAdmin()
         || (
