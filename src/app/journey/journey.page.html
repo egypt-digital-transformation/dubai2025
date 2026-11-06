@@ -144,12 +144,38 @@
           <h3>Car transfer</h3>
           <dl>
             <div class="logistics-detail">
+              <dt>Arrival time</dt>
+              <dd>{{ carDetails?.arrivalTime || 'To be confirmed' }}</dd>
+            </div>
+            <div class="logistics-detail">
               <dt>Car</dt>
               <dd>{{ carDetails?.carModel || 'To be confirmed' }}</dd>
             </div>
             <div class="logistics-detail">
+              <dt>Driver</dt>
+              <dd>{{ carDetails?.driverName || 'To be confirmed' }}</dd>
+            </div>
+            <div class="logistics-detail">
               <dt>License plate</dt>
               <dd>{{ carDetails?.licensePlate || 'To be confirmed' }}</dd>
+            </div>
+            <div class="logistics-detail">
+              <dt>Mobile number</dt>
+              <dd>
+                <ng-container *ngIf="carDetails?.mobileNumber as carMobileNumber; else pendingCarMobile">
+                  <a [href]="'tel:' + carMobileNumber">{{ carMobileNumber }}</a>
+                  <a
+                    class="whatsapp-link"
+                    [href]="whatsappUrl(carMobileNumber)"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="Message the car driver on WhatsApp"
+                  >
+                    <ion-icon name="logo-whatsapp" aria-hidden="true"></ion-icon>
+                  </a>
+                </ng-container>
+                <ng-template #pendingCarMobile>To be confirmed</ng-template>
+              </dd>
             </div>
           </dl>
         </article>
@@ -169,6 +195,16 @@
                   [href]="'tel:' + meetAndGreetRepresentative?.phoneNumber"
                 >
                   {{ meetAndGreetRepresentative?.phoneNumber }}
+                </a>
+                <a
+                  *ngIf="meetAndGreetRepresentative?.phoneNumber"
+                  class="whatsapp-link"
+                  [href]="whatsappUrl(meetAndGreetRepresentative?.phoneNumber)"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Message the Meet and Greet representative on WhatsApp"
+                >
+                  <ion-icon name="logo-whatsapp" aria-hidden="true"></ion-icon>
                 </a>
                 <ng-template #pendingRepresentativePhone>To be confirmed</ng-template>
               </dd>

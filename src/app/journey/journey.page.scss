@@ -167,6 +167,15 @@
     color: var(--holcim-medium-blue);
     text-decoration: none;
   }
+
+  .whatsapp-link {
+    display: inline-flex;
+    align-items: center;
+    margin-left: 0.45rem;
+    color: #25d366;
+    font-size: 1.1rem;
+    vertical-align: middle;
+  }
 }
 
 .visa-assistance-note {

@@ -13,6 +13,7 @@ import {
   keyOutline,
   layersOutline,
   locationOutline,
+  logoWhatsapp,
   timeOutline,
 } from 'ionicons/icons';
 import {
@@ -60,8 +61,14 @@ export class JourneyPage implements OnInit, OnDestroy {
       keyOutline,
       layersOutline,
       locationOutline,
+      logoWhatsapp,
       timeOutline,
     });
+  }
+
+  whatsappUrl(phoneNumber: string | undefined): string {
+    const internationalNumber = phoneNumber?.replace(/\D/g, '') ?? '';
+    return `https://wa.me/${internationalNumber}`;
   }
 
   ngOnInit(): void {
