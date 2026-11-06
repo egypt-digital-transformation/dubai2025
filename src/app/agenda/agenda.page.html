@@ -298,6 +298,51 @@
                 </a>
               </div>
             </div>
+
+            <!-- Interactive Activity Section (Poll / Quiz) -->
+            <div class="materials-section activity-session-section" *ngIf="getSessionActivity(session) as act">
+              <div class="materials-header">
+                <div class="materials-title">
+                  <ion-icon
+                    [name]="act.kind === 'quiz' ? 'help-circle-outline' : 'stats-chart-outline'"
+                    class="folder-icon"
+                  ></ion-icon>
+                  <span>Interactive {{ act.kind === 'quiz' ? 'Quiz' : 'Poll' }}</span>
+                </div>
+              </div>
+
+              <div class="materials-grid">
+                <button
+                  type="button"
+                  class="material-card session-activity-card"
+                  (click)="openSessionActivity($event, act)"
+                >
+                  <div
+                    class="material-icon-wrapper"
+                    [style.background-color]="act.kind === 'quiz' ? 'rgba(235, 0, 141, 0.12)' : 'rgba(0, 163, 224, 0.12)'"
+                  >
+                    <ion-icon
+                      [name]="act.kind === 'quiz' ? 'help-circle-outline' : 'stats-chart-outline'"
+                      class="material-icon"
+                      [style.color]="act.kind === 'quiz' ? 'var(--holcim-fuchsia)' : 'var(--holcim-bright-blue)'"
+                    ></ion-icon>
+                  </div>
+
+                  <div class="material-info">
+                    <div class="material-name">{{ act.question || act.title }}</div>
+                    <div class="material-meta">
+                      <span class="activity-status-pill" [class.submitted]="act.submitted">
+                        {{ act.submitted ? 'Completed (View results)' : (act.kind === 'quiz' ? 'Take live quiz' : 'Vote in live poll') }}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div class="material-download-btn" [style.color]="act.kind === 'quiz' ? 'var(--holcim-fuchsia)' : 'var(--holcim-bright-blue)'">
+                    <ion-icon name="chevron-forward-outline"></ion-icon>
+                  </div>
+                </button>
+              </div>
+            </div>
           </div>
           </article>
           </div>

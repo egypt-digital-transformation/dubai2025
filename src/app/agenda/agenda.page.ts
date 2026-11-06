@@ -37,12 +37,16 @@ import {
   calendarOutline,
   documentTextOutline,
   closeOutline,
+  statsChartOutline,
+  helpCircleOutline,
 } from 'ionicons/icons';
 import { interval, Subject, Subscription, takeUntil, timeout } from 'rxjs';
 import { filter } from 'rxjs/operators';
 import { AdminPreviewService } from '../services/admin-preview.service';
 import { EventArchiveService } from '../services/event-archive.service';
 import { FirebaseInjectionContext } from '../services/firebase-injection-context.service';
+import { ActivitiesService } from '../services/activities.service';
+import { InteractiveActivity } from '../services/admin.service';
 import {
   AgendaDayDate,
   mapAgendaDaySessions,
@@ -93,6 +97,7 @@ export class AgendaPage implements OnInit, OnDestroy {
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly zone = inject(NgZone);
   private readonly eventArchiveService = inject(EventArchiveService);
+  private readonly activitiesService = inject(ActivitiesService);
 
   private runInContext<T>(operation: () => T): T {
     return runInInjectionContext(this.injector, operation);
@@ -124,6 +129,7 @@ export class AgendaPage implements OnInit, OnDestroy {
   private userAgendaSubscription?: Subscription;
   private resourcesSubscription?: Subscription;
   private readonly sessionResourceUrls = new Map<string, string>();
+  private readonly sessionActivitiesMap = new Map<string, InteractiveActivity>();
   private agendaLoadId = 0;
   private hasUserAgenda = false;
   private readonly destroy$ = new Subject<void>();
@@ -153,11 +159,14 @@ export class AgendaPage implements OnInit, OnDestroy {
       calendarOutline,
       documentTextOutline,
       closeOutline,
+      statsChartOutline,
+      helpCircleOutline,
     });
   }
 
   ngOnInit() {
     console.log('[DEBUG] Initializing AgendaPage...');
+    void this.loadSessionActivities();
     this.eventArchiveService.start();
     this.eventArchiveService.state$
       .pipe(takeUntil(this.destroy$))
@@ -202,6 +211,7 @@ export class AgendaPage implements OnInit, OnDestroy {
 
   ionViewWillEnter(): void {
     this.updateAgendaDayForCurrentDate();
+    void this.loadSessionActivities();
     this.cdr.detectChanges();
   }
 
@@ -840,5 +850,42 @@ export class AgendaPage implements OnInit, OnDestroy {
       return 'live';
     }
     return 'upcoming';
+  }
+
+  async loadSessionActivities(): Promise<void> {
+    try {
+      const activities = await this.activitiesService.getActivities();
+      this.sessionActivitiesMap.clear();
+      for (const act of activities) {
+        if (act.sessionName && act.active !== false) {
+          const key = act.sessionName.trim().toLowerCase();
+          if (!this.sessionActivitiesMap.has(key)) {
+            this.sessionActivitiesMap.set(key, act);
+          }
+        }
+      }
+      this.cdr.detectChanges();
+    } catch (e) {
+      console.warn('[AgendaPage] Could not load activities for sessions:', e);
+    }
+  }
+
+  getSessionActivity(session: Session): InteractiveActivity | undefined {
+    if (!session?.title) return undefined;
+    const act = this.sessionActivitiesMap.get(session.title.trim().toLowerCase());
+    if (!act) return undefined;
+
+    // The activity card only appears on the session when it is live now for him,
+    // or if already submitted so he can review results.
+    const isLive = this.getSessionStatus(session) === 'live';
+    if (!isLive && !act.submitted) {
+      return undefined;
+    }
+    return act;
+  }
+
+  openSessionActivity(event: Event, activity: InteractiveActivity): void {
+    event.stopPropagation();
+    void this.router.navigate(['/activities']);
   }
 }

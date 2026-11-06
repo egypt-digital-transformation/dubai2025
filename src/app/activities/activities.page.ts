@@ -8,7 +8,7 @@ import {
   InteractiveActivity,
 } from '../services/admin.service';
 
-import { ActivitiesService } from '../services/activities.service';
+import { ActivitiesService, UserSessionTiming } from '../services/activities.service';
 
 import { addIcons } from 'ionicons';
 import {
@@ -22,6 +22,8 @@ import {
   statsChartOutline,
   sendOutline,
   alertCircleOutline,
+  calendarOutline,
+  timeOutline,
 } from 'ionicons/icons';
 
 @Component({
@@ -37,6 +39,7 @@ export class ActivitiesPage implements OnInit, OnDestroy {
   private readonly router = inject(Router);
 
   activities: InteractiveActivity[] = [];
+  userSessionTimings: UserSessionTiming[] = [];
   selectedOptions: Record<string, number | null> = {};
   submittingActivityId = '';
   isLoading = true;
@@ -57,6 +60,8 @@ export class ActivitiesPage implements OnInit, OnDestroy {
       statsChartOutline,
       sendOutline,
       alertCircleOutline,
+      calendarOutline,
+      timeOutline,
     });
   }
 
@@ -117,15 +122,22 @@ export class ActivitiesPage implements OnInit, OnDestroy {
       this.errorMessage = '';
     }
     try {
-      const fetchPromise = this.activitiesService.getActivities();
-      const timeoutPromise = new Promise<InteractiveActivity[]>((_, reject) =>
-        setTimeout(
-          () => reject(new Error('Request timed out. Please check your connection.')),
-          12000
-        )
-      );
+      // Parallelize fetching activities and user session timings
+      const [fetchedActivities, timings] = await Promise.all([
+        Promise.race([
+          this.activitiesService.getActivities(),
+          new Promise<InteractiveActivity[]>((_, reject) =>
+            setTimeout(
+              () => reject(new Error('Request timed out. Please check your connection.')),
+              12000
+            )
+          ),
+        ]),
+        this.activitiesService.getUserSessionTimings(),
+      ]);
 
-      this.activities = await Promise.race([fetchPromise, timeoutPromise]);
+      this.userSessionTimings = timings;
+      this.activities = fetchedActivities;
       this.errorMessage = '';
       // Mark all activities as seen since user is viewing the page
       this.activitiesService.markActivitiesAsSeen(this.activities);
@@ -143,6 +155,16 @@ export class ActivitiesPage implements OnInit, OnDestroy {
   }
 
   async submit(activity: InteractiveActivity): Promise<void> {
+    const isUnlocked = this.activitiesService.isActivityScheduleUnlocked(
+      activity,
+      this.userSessionTimings
+    ).isUnlocked;
+    if (!isUnlocked) {
+      this.feedback[activity.id] =
+        'This activity is only available while your workshop session is live.';
+      return;
+    }
+
     const optionIndex = this.selectedOptions[activity.id];
     if (optionIndex === undefined || optionIndex === null || !Number.isInteger(optionIndex)) {
       this.feedback[activity.id] = 'Choose an answer before submitting.';

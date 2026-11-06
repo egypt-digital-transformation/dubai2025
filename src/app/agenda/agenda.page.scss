@@ -1181,6 +1181,23 @@ $holcim-green: var(--app-accent);
   }
 }
 
+button.material-card {
+  width: 100%;
+  border: none;
+  font: inherit;
+  text-align: left;
+}
+
+.activity-status-pill {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--holcim-bright-blue);
+
+  &.submitted {
+    color: var(--holcim-green);
+  }
+}
+
 .material-icon-wrapper {
   flex-shrink: 0;
   width: 44px;

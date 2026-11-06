@@ -42,7 +42,7 @@ export const createInteractiveActivity = onCall(
   { region: "europe-west1" },
   async (request) => {
     await requireAdminUser(request);
-    const { title, question, options, kind, target, correctOptionIndex } =
+    const { title, question, options, kind, target, correctOptionIndex, sessionName, speakerName, day, scheduleLocked } =
       request.data ?? {};
 
     if (
@@ -77,6 +77,10 @@ export const createInteractiveActivity = onCall(
       options: options.map((option) => option.trim()),
       kind,
       target,
+      sessionName: typeof sessionName === "string" && sessionName.trim() ? sessionName.trim() : null,
+      speakerName: typeof speakerName === "string" && speakerName.trim() ? speakerName.trim() : null,
+      day: day !== undefined && day !== null && day !== "" ? day : null,
+      scheduleLocked: scheduleLocked === true,
       correctOptionIndex: kind === "quiz" ? correctOptionIndex : null,
       active: true,
       createdBy: request.auth.uid,
@@ -266,6 +270,10 @@ export const listInteractiveActivities = onCall(
           question: data.question,
           options: data.options,
           kind: data.kind,
+          sessionName: data.sessionName || null,
+          speakerName: data.speakerName || null,
+          day: data.day || null,
+          scheduleLocked: data.scheduleLocked === true,
           active: data.active === true,
           submitted: Boolean(response),
           submittedOptionIndex: userResponse?.optionIndex ?? null,
@@ -333,10 +341,20 @@ export const submitInteractiveActivityResponse = onCall(
         throw new HttpsError("already-exists", "You have already responded.");
       }
 
+      const profileData = profile?.data() || {};
+      let userGroup = null;
+      if (profileData.group !== undefined && profileData.group !== null && profileData.group !== "") {
+        const raw = String(profileData.group).trim();
+        userGroup = /^[1-6]$/.test(raw) ? `Group ${raw}` : raw;
+      } else if (profileData.participantsGroup) {
+        userGroup = String(profileData.participantsGroup).trim();
+      }
+
       transaction.create(responseRef, {
         uid: user.uid,
         email: user.email,
         optionIndex,
+        group: userGroup,
         isCorrect:
           activity.kind === "quiz"
             ? optionIndex === activity.correctOptionIndex
@@ -386,6 +404,7 @@ export const listAdminInteractiveActivities = onCall(
               : "Unknown attendee",
           optionIndex: hasValidOption ? answer.optionIndex : null,
           option: hasValidOption ? data.options[answer.optionIndex] : null,
+          group: answer.group || null,
           isCorrect:
             data.kind === "quiz" && typeof answer.isCorrect === "boolean"
               ? answer.isCorrect
@@ -403,6 +422,10 @@ export const listAdminInteractiveActivities = onCall(
         question: data.question,
         options: data.options,
         kind: data.kind,
+        sessionName: data.sessionName || null,
+        speakerName: data.speakerName || null,
+        day: data.day || null,
+        scheduleLocked: data.scheduleLocked === true,
         active: data.active === true,
         target: data.target,
         responseCount: responses.size,

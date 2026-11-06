@@ -38,7 +38,7 @@
         <ion-icon name="sparkles-outline"></ion-icon>
       </div>
       <h3>Nothing yet — stay tuned!</h3>
-      <p>New interactive polls and quizzes will appear here during the event. Stay tuned for live engagement!</p>
+      <p>Interactive polls and quizzes will appear here live during your workshop sessions. Stay tuned for live engagement!</p>
     </div>
 
     <!-- Activity Cards -->
@@ -56,13 +56,26 @@
           ></ion-icon>
           <span>{{ activity.kind === 'quiz' ? 'QUIZ' : 'POLL' }}</span>
         </span>
-        <span *ngIf="!activity.submitted && activity.active !== false" class="status-tag active">
-          <span class="status-dot" aria-hidden="true"></span>
-          <span>Active</span>
+
+        <span *ngIf="activity.sessionName" class="session-tag" [title]="activity.sessionName">
+          <ion-icon name="calendar-outline" aria-hidden="true"></ion-icon>
+          <span>{{ activity.sessionName }}</span>
         </span>
-        <span *ngIf="!activity.submitted && activity.active === false" class="status-tag timed-out">
-          <ion-icon name="time-outline" aria-hidden="true"></ion-icon>
-          <span>Timed out</span>
+
+        <ng-container *ngIf="!activity.submitted">
+          <span *ngIf="activity.active !== false" class="status-tag active">
+            <span class="status-dot" aria-hidden="true"></span>
+            <span>Active</span>
+          </span>
+          <span *ngIf="activity.active === false" class="status-tag timed-out">
+            <ion-icon name="time-outline" aria-hidden="true"></ion-icon>
+            <span>Timed out</span>
+          </span>
+        </ng-container>
+
+        <span *ngIf="activity.submitted" class="status-tag completed">
+          <ion-icon name="checkmark-circle-outline" aria-hidden="true"></ion-icon>
+          <span>Submitted</span>
         </span>
       </div>
 
