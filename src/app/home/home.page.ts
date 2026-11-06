@@ -39,6 +39,7 @@ import {
   chevronForward,
   qrCodeOutline,
   mapOutline,
+  airplaneOutline,
   bulbOutline,
   checkmarkCircle,
   trophy,
@@ -53,6 +54,7 @@ import {
   mailOutline,
   copyOutline,
   checkmarkOutline,
+  notificationsOutline,
 } from 'ionicons/icons';
 
 import {
@@ -89,6 +91,7 @@ import QRCode from 'qrcode';
 import { mapAgendaDaySessions, parseAgendaDate } from '../shared/agenda-day';
 import { ActivitiesService } from '../services/activities.service';
 import { EventArchiveService } from '../services/event-archive.service';
+import { AdminService, ReceivedNotification } from '../services/admin.service';
 import {
   SafetyInductionModalComponent,
   SafetyInductionSite,
@@ -148,6 +151,8 @@ export class HomePage implements OnInit, OnDestroy {
   public currentDay = 0;
   public eventStartDate = EVENT_START;
   private agendaDayDates: { dayNumber: number; date: Date }[] = [];
+  /** True once the viewed user's (or previewed user's) personal agenda has been read. */
+  private isViewerAgendaLoaded = false;
   public showQR = false;
   public displayName: string | null = null;
   public firstName: string | null = null;
@@ -156,6 +161,7 @@ export class HomePage implements OnInit, OnDestroy {
   public profilePosition = '';
   public profileCountry = '';
   public profileEmail = '';
+  public homeAnnouncements: ReceivedNotification[] = [];
   public profileMobile = '';
   public profileQrCode = '';
   public shareContactCard = false;
@@ -188,14 +194,17 @@ export class HomePage implements OnInit, OnDestroy {
   private readonly agendaSessions$ = new BehaviorSubject<Session[] | null>(null);
   private readonly activitiesService = inject(ActivitiesService);
   private readonly eventArchiveService = inject(EventArchiveService);
+  private readonly adminService = inject(AdminService);
   private readonly TICK_MS = 1000;
   private hseAuthUnsubscribe?: Unsubscribe;
   private agendaUnsubscribe?: Unsubscribe;
   private profileUnsubscribe?: Unsubscribe;
   private viewGeneration = 0;
+  private homeAnnouncementGeneration = 0;
   private profileDocumentId = '';
   private wifiCopyResetTimer?: ReturnType<typeof setTimeout>;
   private safetyStatusRefreshTimer?: ReturnType<typeof setInterval>;
+  private homeAnnouncementRefreshTimer?: ReturnType<typeof setInterval>;
 
   constructor(
     private router: Router,
@@ -206,11 +215,18 @@ export class HomePage implements OnInit, OnDestroy {
     private zone: NgZone,
     private readonly adminPreview: AdminPreviewService
   ) {
-    addIcons({ qrCodeOutline, mapOutline, bulbOutline, cameraOutline, statsChartOutline, chevronForward, locationOutline, hourglassOutline, calendarOutline, radioOutline, keyOutline, closeOutline, personOutline, briefcaseOutline, callOutline, mailOutline, copyOutline, checkmarkOutline, timeOutline, checkmarkCircle, trophy, });
+    addIcons({ qrCodeOutline, mapOutline, airplaneOutline, bulbOutline, cameraOutline, statsChartOutline, chevronForward, locationOutline, hourglassOutline, calendarOutline, radioOutline, keyOutline, closeOutline, personOutline, briefcaseOutline, callOutline, mailOutline, copyOutline, checkmarkOutline, notificationsOutline, timeOutline, checkmarkCircle, trophy, });
   }
 
   ionViewWillEnter() {
     void this.activitiesService.refreshUnseenCount();
+    void this.refreshHomeAnnouncement();
+    if (!this.homeAnnouncementRefreshTimer) {
+      this.homeAnnouncementRefreshTimer = setInterval(
+        () => void this.refreshHomeAnnouncement(),
+        30_000
+      );
+    }
     if (this.profileEmail) {
       void this.loadSafetyInductionStatus(this.profileEmail, this.viewGeneration);
       if (!this.safetyStatusRefreshTimer) {
@@ -227,9 +243,40 @@ export class HomePage implements OnInit, OnDestroy {
   }
 
   ionViewWillLeave(): void {
+    if (this.homeAnnouncementRefreshTimer) {
+      clearInterval(this.homeAnnouncementRefreshTimer);
+      this.homeAnnouncementRefreshTimer = undefined;
+    }
     if (this.safetyStatusRefreshTimer) {
       clearInterval(this.safetyStatusRefreshTimer);
       this.safetyStatusRefreshTimer = undefined;
+    }
+  }
+
+  private async refreshHomeAnnouncement(): Promise<void> {
+    const generation = ++this.homeAnnouncementGeneration;
+    const userId = this.auth.currentUser?.uid;
+    if (this.isPreviewingUser || !userId) {
+      this.homeAnnouncements = [];
+      return;
+    }
+
+    try {
+      const notifications = await this.adminService.listReceivedNotifications();
+      if (
+        generation !== this.homeAnnouncementGeneration ||
+        this.isPreviewingUser ||
+        this.auth.currentUser?.uid !== userId
+      ) {
+        return;
+      }
+      this.homeAnnouncements = notifications
+        .filter((notification) => notification.homeAnnouncement === true)
+        .sort((a, b) =>
+          (b.createdAt || '').localeCompare(a.createdAt || '')
+        );
+    } catch (error) {
+      console.error('[HomePage] Failed to load Home announcements:', error);
     }
   }
 
@@ -289,7 +336,7 @@ export class HomePage implements OnInit, OnDestroy {
       this.agendaSessions$,
     ]).pipe(
       map(([sharedSessions, agendaSessions]) =>
-        (agendaSessions ?? sharedSessions)
+        (agendaSessions ?? (this.adminPreview.isPreviewing ? [] : sharedSessions))
           .slice()
           .sort((a, b) => this.toDate(a.startTime).getTime() - this.toDate(b.startTime).getTime())
       ),
@@ -406,6 +453,8 @@ export class HomePage implements OnInit, OnDestroy {
   }
 
   private applyViewingProfile(authEmail: string | null, uid: string | null): void {
+    this.homeAnnouncements = [];
+    void this.refreshHomeAnnouncement();
     const previewUser = this.adminPreview.selectedUser;
     const email = previewUser?.email ?? authEmail;
     const generation = ++this.viewGeneration;
@@ -424,6 +473,8 @@ export class HomePage implements OnInit, OnDestroy {
     this.welcomeGreeting = 'Ahlan';
     this.eventStartDate = EVENT_START;
     this.agendaDayDates = [];
+    this.isViewerAgendaLoaded = false;
+    this.currentDay = 0;
     this.agendaSessions$.next(null);
     this.isPlantVisitRequired = false;
     this.safetyInductionStatusLoaded = false;
@@ -643,15 +694,21 @@ export class HomePage implements OnInit, OnDestroy {
                 endTime: Timestamp.fromDate(session.endTime!),
               }));
             this.zone.run(() => {
-              this.agendaSessions$.next(agendaDocuments.length ? sessions : null);
+              // Update day dates BEFORE emitting sessions so the day
+              // calculation never runs against the previous user's dates.
               this.agendaDayDates = agendaDays;
-              if (agendaDays.length) {
-                this.eventStartDate = agendaDays[0].date;
-              }
+              this.isViewerAgendaLoaded = true;
+              this.eventStartDate = agendaDays.length ? agendaDays[0].date : EVENT_START;
+              this.agendaSessions$.next(agendaDocuments.length ? sessions : null);
             });
           },
           (error) => {
             console.error('[HomePage] Failed to listen to the user agenda:', error);
+            if (!this.isCurrentViewingUser(email, uid, generation)) return;
+            this.zone.run(() => {
+              this.isViewerAgendaLoaded = true;
+              this.agendaSessions$.next(this.agendaSessions$.value);
+            });
           }
         )
       );
@@ -888,8 +945,16 @@ export class HomePage implements OnInit, OnDestroy {
   private getEventDays(sessions: Session[]): { dayNumber: number; date: Date }[] {
     if (this.agendaDayDates.length) return this.agendaDayDates;
 
+    // Never derive the day number from the shared/global schedule while the
+    // viewed user's agenda is still loading, or while an admin is previewing
+    // another attendee — otherwise the admin's/global "Day N" leaks through.
+    const useSessionDates =
+      this.isViewerAgendaLoaded && !this.adminPreview.isPreviewing
+        ? sessions
+        : this.agendaSessions$.value ?? [];
+
     const sessionDays = new Map<number, Date>();
-    for (const session of sessions || []) {
+    for (const session of useSessionDates || []) {
       const dayNumber = this.parseDayToInt(session.day);
       const sessionDate = this.toDate(session.startTime);
       if (Number.isNaN(sessionDate.getTime())) continue;
@@ -1100,6 +1165,10 @@ export class HomePage implements OnInit, OnDestroy {
     this.showQR = false;
     const modal = document.querySelector('ion-modal.qr-modal') as HTMLIonModalElement;
     if (modal) await modal.dismiss();
+  }
+
+  navigateToJourney() {
+    this.router.navigate(['/tabs/journey']);
   }
 
   navigateToVenue() {

@@ -12,9 +12,13 @@
           </p>
           <h1 id="welcome-title">{{ welcomeGreeting }}, {{ firstName || displayName || 'there' }}.</h1>
           <p class="welcome-description">
-            {{ messageType === 'over'
-              ? 'The meeting may be over, but the highlights are yours to revisit. Explore the agenda, resources, and captured moments.'
-              : 'Stay updated with real-time schedules, venue guides, and notifications—guiding you through every moment of the event and Cairo.' }}
+            <ng-container *ngIf="messageType === 'over'; else welcomeMessage">
+              The meeting may be over, but the highlights are yours to revisit. Explore the agenda, resources, and captured moments.
+            </ng-container>
+            <ng-template #welcomeMessage>
+              Welcome to Cairo, a city rich in culture, history and heritage.<br />
+              We wish you a pleasant stay and look forward to spending the coming days together at the AMEA Management Meeting 2026, connecting, exchanging perspectives and shaping our priorities for the future.
+            </ng-template>
           </p>
           <div class="welcome-meta">
             <span class="welcome-day">{{ messageType === 'over' ? 'EVENT ARCHIVE' : eventDayLabel }}</span>
@@ -43,6 +47,19 @@
         </div>
       </section>
 
+      <section
+        *ngFor="let announcement of homeAnnouncements"
+        class="home-announcement-banner"
+        aria-label="Important announcement"
+      >
+        <div class="home-announcement-label">
+          <ion-icon name="notifications-outline"></ion-icon>
+          <span>IMPORTANT</span>
+        </div>
+        <h2>{{ announcement.title }}</h2>
+        <p>{{ announcement.body }}</p>
+      </section>
+
       <section class="home-section essentials-section" aria-labelledby="essentials-heading">
         <div class="home-section-heading">
           <div>
@@ -63,11 +80,11 @@
             </span>
           </button>
 
-          <button type="button" class="action-card" (click)="navigateToVenue()">
+          <button type="button" class="action-card" (click)="navigateToJourney()">
             <span class="action-content">
-              <span class="action-icon venue"><ion-icon name="map-outline"></ion-icon></span>
-              <span class="action-title">Find your way</span>
-              <span class="action-desc">Venue &amp; maps</span>
+              <span class="action-icon journey"><ion-icon name="airplane-outline"></ion-icon></span>
+              <span class="action-title">My Journey</span>
+              <span class="action-desc">Flights, stay &amp; transfers</span>
             </span>
           </button>
 

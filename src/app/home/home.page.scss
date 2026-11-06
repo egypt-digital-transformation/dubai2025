@@ -107,7 +107,7 @@ ion-content {
 .content-container {
   max-width: 28rem;
   margin: -1.5rem auto 0;
-  padding: 0 1.5rem 1.5rem;
+  padding: 0 clamp(0.75rem, 3.5vw, 1.25rem) 1.5rem;
 }
 
 
@@ -645,13 +645,13 @@ ion-content {
 .quick-actions {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.5rem;
+  gap: clamp(0.35rem, 1.5vw, 0.5rem);
   margin-bottom: 1.25rem;
 
   .action-card {
     background: var(--white);
     border-radius: 0.85rem;
-    padding: 0.65rem 0.35rem 0.55rem;
+    padding: 0.65rem 0.25rem 0.55rem;
     text-align: center;
     box-shadow: 0 2px 8px rgba(var(--holcim-dark-blue-rgb), 0.04);
     border: 1px solid rgba(var(--holcim-dark-blue-rgb), 0.08);
@@ -662,7 +662,8 @@ ion-content {
     align-items: center;
     justify-content: flex-start;
     width: 100%;
-    min-height: 5.8rem;
+    min-height: auto;
+    height: 100%;
     box-sizing: border-box;
 
     &:hover {
@@ -732,6 +733,10 @@ ion-content {
         background: linear-gradient(135deg, #00C389 0%, #009C6D 100%);
       }
 
+      &.journey {
+        background: linear-gradient(135deg, #00A3E0 0%, #0077A8 100%);
+      }
+
       &.venue {
         background: linear-gradient(135deg, #78BE20 0%, #5C9614 100%);
       }
@@ -766,7 +771,7 @@ ion-content {
     }
 
     .action-title {
-      font-size: 0.72rem;
+      font-size: clamp(0.64rem, 2.3vw, 0.72rem);
       font-weight: 650;
       color: var(--holcim-dark-blue);
       line-height: 1.2;
@@ -778,18 +783,22 @@ ion-content {
       align-items: center;
       justify-content: center;
       width: 100%;
+      word-break: normal;
+      overflow-wrap: break-word;
     }
 
     .action-desc {
-      font-size: 0.58rem;
+      font-size: clamp(0.54rem, 2vw, 0.6rem);
       line-height: 1.2;
       color: var(--bright-gray);
       text-align: center;
-      min-height: 1.4rem;
+      min-height: 1.3rem;
       display: flex;
       align-items: flex-start;
       justify-content: center;
       width: 100%;
+      word-break: normal;
+      overflow-wrap: break-word;
 
       .unseen-badge-text {
         color: #e11d48;
@@ -1698,11 +1707,11 @@ ion-modal {
 // QR CODE MODAL
 // ========================================
 .qr-modal {
-  --width: 92%;
-  --max-width: 400px;
+  --width: min(94vw, 420px);
+  --max-width: 420px;
   --border-radius: 1.25rem;
   --height: auto;
-  --max-height: 85vh;
+  --max-height: 90vh;
   --box-shadow: 0 6px 18px rgba(var(--black-rgb), 0.1);
 
   @media (min-width: 480px) {
@@ -1711,13 +1720,20 @@ ion-modal {
 
   .qr-modal-content {
     background: var(--white);
-    padding: 1.25rem 1.5rem 1.5rem;
+    padding: 1.25rem 1.25rem 1.5rem;
     display: flex;
     flex-direction: column;
-    overflow: hidden;
+    max-height: 90vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
   }
 
   .qr-header {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    background: var(--white);
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -1773,8 +1789,8 @@ ion-modal {
       align-items: center;
 
       .qr-image {
-        width: 8.5rem;
-        height: 8.5rem;
+        width: clamp(120px, 32vw, 140px);
+        height: clamp(120px, 32vw, 140px);
         object-fit: contain;
       }
 
@@ -1783,10 +1799,10 @@ ion-modal {
         color: var(--app-text-muted);
         display: flex;
         font-size: 0.75rem;
-        height: 8.5rem;
+        height: clamp(120px, 32vw, 140px);
         justify-content: center;
         text-align: center;
-        width: 8.5rem;
+        width: clamp(120px, 32vw, 140px);
       }
     }
 
@@ -1916,9 +1932,11 @@ ion-modal {
     }
 
     .info-value {
-      font-size: 1rem;
+      font-size: 0.95rem;
       color: var(--holcim-dark-blue);
       font-weight: 600;
+      word-break: break-word;
+      overflow-wrap: anywhere;
     }
   }
 }
@@ -1982,13 +2000,13 @@ ion-modal::part(content) {
 
 .welcome-eyebrow {
   color: var(--border-color);
-  font-size: clamp(0.48rem, 2.3vw, 0.7rem);
+  font-size: clamp(0.55rem, 2.6vw, 0.72rem);
   font-weight: 700;
   letter-spacing: 0.02em;
   line-height: 1.4;
   margin: 0 0 0.75rem;
   text-transform: none;
-  white-space: nowrap;
+  white-space: normal;
 }
 
 .section-eyebrow {
@@ -2016,7 +2034,7 @@ ion-modal::part(content) {
   font-size: 0.95rem;
   line-height: 1.6;
   margin: 0.85rem 0 1.1rem;
-  max-width: 26rem;
+  max-width: none;
 }
 
 .welcome-meta {
@@ -2079,6 +2097,46 @@ ion-modal::part(content) {
   margin-bottom: 1.5rem;
   min-height: 0;
   position: relative;
+}
+
+.home-announcement-banner {
+  margin: 0 0 1.5rem;
+  padding: 1rem 1.15rem;
+  border: 1px solid rgba(var(--holcim-bright-blue-rgb), 0.22);
+  border-left: 4px solid var(--holcim-bright-blue);
+  border-radius: 0.9rem;
+  background:
+    linear-gradient(110deg, rgba(var(--holcim-bright-blue-rgb), 0.08), transparent 70%),
+    var(--white);
+  box-shadow: 0 8px 22px rgba(var(--holcim-dark-blue-rgb), 0.06);
+
+  h2 {
+    margin: 0.5rem 0 0.35rem;
+    color: var(--holcim-dark-blue);
+    font-size: 1.1rem;
+    line-height: 1.35;
+  }
+
+  p {
+    margin: 0;
+    color: var(--bright-gray);
+    line-height: 1.55;
+    white-space: pre-wrap;
+  }
+}
+
+.home-announcement-label {
+  align-items: center;
+  display: flex;
+  gap: 0.4rem;
+  color: var(--holcim-medium-blue);
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+
+  ion-icon {
+    font-size: 0.95rem;
+  }
 }
 
 .ahlan-card-character {
