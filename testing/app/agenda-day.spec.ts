@@ -1,3 +1,4 @@
+import { describe, it, expect } from 'vitest';
 import {
   mapAgendaDaySessions,
   parseAgendaDate,
@@ -25,18 +26,19 @@ describe('selectAgendaDayForDate', () => {
 });
 
 describe('mapAgendaDaySessions', () => {
-  it('parses agenda dates in both ISO and legacy day-month formats', () => {
-    // Legacy YYYY-DD-MM
+  it('parses agenda dates in dd/mm/yyyy format', () => {
+    expect(parseAgendaDate('09/11/2026')).toEqual(new Date(2026, 10, 9));
+    expect(parseAgendaDate('10/11/2026')).toEqual(new Date(2026, 10, 10));
+    expect(parseAgendaDate('11/11/2026')).toEqual(new Date(2026, 10, 11));
+    expect(parseAgendaDate('12/11/2026')).toEqual(new Date(2026, 10, 12));
+    expect(parseAgendaDate('09/11/26')).toEqual(new Date(2026, 10, 9));
+    expect(parseAgendaDate('31/11/2026')).toBeNull();
+  });
+
+  it('parses agenda dates as year-day-month', () => {
     expect(parseAgendaDate('2026-09-11')).toEqual(new Date(2026, 10, 9));
     expect(parseAgendaDate('2026-10-11')).toEqual(new Date(2026, 10, 10));
     expect(parseAgendaDate('2026-31-11')).toBeNull();
-
-    // Standard ISO YYYY-MM-DD
-    expect(parseAgendaDate('2026-11-09')).toEqual(new Date(2026, 10, 9));
-    expect(parseAgendaDate('2026-11-10')).toEqual(new Date(2026, 10, 10));
-    expect(parseAgendaDate('2026-11-11')).toEqual(new Date(2026, 10, 11));
-    expect(parseAgendaDate('2026-11-12')).toEqual(new Date(2026, 10, 12));
-    expect(parseAgendaDate('2026-11-31')).toBeNull();
   });
 
   it('maps the day document session fields and keeps its section label', () => {

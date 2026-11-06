@@ -64,45 +64,85 @@ function timestampDate(value: unknown): Date | null {
 }
 
 export function parseAgendaDate(value: unknown): Date | null {
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : value;
+  }
+  const timestampValue = timestampDate(value);
+  if (timestampValue) return timestampValue;
+
   if (typeof value !== 'string') return null;
-  const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  if (!match) return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
 
-  const year = Number(match[1]);
-  const first = Number(match[2]);
-  const second = Number(match[3]);
+  // 1. Primary format: DD/MM/YYYY or DD-MM-YYYY or DD/MM/YY (e.g. "09/11/2026", "10/11/2026", "09/11/26")
+  const dmyMatch = trimmed.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
+  if (dmyMatch) {
+    const day = Number(dmyMatch[1]);
+    const month = Number(dmyMatch[2]);
+    const rawYear = Number(dmyMatch[3]);
+    const year = rawYear < 100 ? 2000 + rawYear : rawYear;
 
-  // Support both standard ISO YYYY-MM-DD and legacy/local YYYY-DD-MM.
-  // In the context of the AMEA 2026 event (November 2026, month 11):
-  let month: number;
-  let day: number;
-
-  if (first > 12) {
-    day = first;
-    month = second;
-  } else if (second > 12) {
-    month = first;
-    day = second;
-  } else if (first === 11) {
-    // Standard ISO format: 2026-11-DD
-    month = first;
-    day = second;
-  } else if (second === 11) {
-    // Legacy YYYY-DD-MM format: 2026-DD-11
-    month = second;
-    day = first;
-  } else {
-    // Default ISO format YYYY-MM-DD
-    month = first;
-    day = second;
+    if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+      const date = new Date(year, month - 1, day);
+      if (
+        date.getFullYear() === year &&
+        date.getMonth() === month - 1 &&
+        date.getDate() === day
+      ) {
+        return date;
+      }
+    }
+    return null;
   }
 
-  const date = new Date(year, month - 1, day);
-  return date.getFullYear() === year &&
-    date.getMonth() === month - 1 &&
-    date.getDate() === day
-    ? date
-    : null;
+  // 2. Format: YYYY-MM-DD (ISO) or YYYY-DD-MM (e.g. "2026-11-09" or legacy "2026-09-11")
+  const ymdMatch = trimmed.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
+  if (ymdMatch) {
+    const year = Number(ymdMatch[1]);
+    const p2 = Number(ymdMatch[2]);
+    const p3 = Number(ymdMatch[3]);
+
+    // Check if p3 is month 11 (November event) and p2 is a valid day (legacy YYYY-DD-MM)
+    if (p3 === 11 && p2 !== 11 && p2 >= 1 && p2 <= 31) {
+      const dmyDate = new Date(year, p3 - 1, p2);
+      if (
+        dmyDate.getFullYear() === year &&
+        dmyDate.getMonth() === p3 - 1 &&
+        dmyDate.getDate() === p2
+      ) {
+        return dmyDate;
+      }
+    }
+
+    // Standard ISO: YYYY-MM-DD
+    if (p2 >= 1 && p2 <= 12 && p3 >= 1 && p3 <= 31) {
+      const isoDate = new Date(year, p2 - 1, p3);
+      if (
+        isoDate.getFullYear() === year &&
+        isoDate.getMonth() === p2 - 1 &&
+        isoDate.getDate() === p3
+      ) {
+        return isoDate;
+      }
+    }
+
+    // Fallback: YYYY-DD-MM
+    if (p3 >= 1 && p3 <= 12 && p2 >= 1 && p2 <= 31) {
+      const dmyDate = new Date(year, p3 - 1, p2);
+      if (
+        dmyDate.getFullYear() === year &&
+        dmyDate.getMonth() === p3 - 1 &&
+        dmyDate.getDate() === p2
+      ) {
+        return dmyDate;
+      }
+    }
+    return null;
+  }
+
+  // 3. Fallback: native Date.parse
+  const fallback = new Date(trimmed);
+  return Number.isNaN(fallback.getTime()) ? null : fallback;
 }
 
 export interface AgendaDayDate {

@@ -14,9 +14,9 @@ import { emailDocumentId } from "../shared/notification-utils.js";
 import {
   getAgendaReminderMessage,
   getDueAgendaLabels,
+  MAX_REMINDER_LEAD_MS,
 } from "./session-reminder-utils.js";
 
-const REMINDER_WINDOW_MS = 5 * 60 * 1000;
 const CLAIM_TIMEOUT_MS = 10 * 60 * 1000;
 
 function getUserLabel(userDoc, user) {
@@ -32,7 +32,7 @@ function getUserLabel(userDoc, user) {
 function getReminderWindow(now = Timestamp.now()) {
   return {
     start: new Date(now.toMillis()),
-    end: new Date(now.toMillis() + REMINDER_WINDOW_MS),
+    end: new Date(now.toMillis() + MAX_REMINDER_LEAD_MS),
   };
 }
 
@@ -206,6 +206,8 @@ async function sendReminderForLabel(
         results = await sendPushToRecipients(eligibleRecipients, {
           title,
           body,
+          android: { priority: "high" },
+          webpush: { headers: { Urgency: "high" } },
           data: {
             campaignId,
             dayNumber: String(dueLabel.dayNumber ?? ""),

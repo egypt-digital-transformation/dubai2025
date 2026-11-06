@@ -6,6 +6,21 @@ import {
 } from "../../functions/reminders/session-reminder-utils.js";
 
 describe("getDueAgendaLabels", () => {
+  it("parses agenda dates in dd/mm/yyyy format for reminders", () => {
+    const labels = getDueAgendaLabels(
+      {
+        date: "09/11/2026",
+        dayNumber: 1,
+        labels: [{ label: "Welcome Cocktail Dinner", startTime: "19:00" }],
+      },
+      new Date("2026-11-09T16:59:00.000Z"),
+      new Date("2026-11-09T17:01:00.000Z")
+    );
+
+    assert.equal(labels.length, 1);
+    assert.equal(labels[0].startAt.toISOString(), "2026-11-09T17:00:00.000Z");
+  });
+
   it("parses agenda dates as year-day-month for reminders", () => {
     const labels = getDueAgendaLabels(
       {
@@ -78,6 +93,51 @@ describe("getDueAgendaLabels", () => {
 
     assert.equal(labels.length, 1);
     assert.equal(labels[0].index, 0);
+  });
+
+  it("makes the earliest item of the day eligible 15 minutes ahead", () => {
+    const labels = getDueAgendaLabels(
+      {
+        date: "2026-10-11",
+        dayNumber: 2,
+        labels: [
+          { label: "Breakfast", startTime: "09:00" },
+          { label: "Opening Session", startTime: "09:30" },
+        ],
+      },
+      new Date("2026-11-10T06:45:00.000Z"),
+      new Date("2026-11-10T07:00:00.000Z")
+    );
+
+    assert.equal(labels.length, 1);
+    assert.equal(labels[0].label, "Breakfast");
+    assert.equal(labels[0].firstItemOfDay, true);
+  });
+
+  it("keeps later items on the existing five-minute reminder window", () => {
+    const dayDocument = {
+      date: "2026-10-11",
+      dayNumber: 2,
+      labels: [
+        { label: "Breakfast", startTime: "09:00" },
+        { label: "Opening Session", startTime: "09:30" },
+      ],
+    };
+    const labelsTooEarly = getDueAgendaLabels(
+      dayDocument,
+      new Date("2026-11-10T07:15:00.000Z"),
+      new Date("2026-11-10T07:30:00.000Z")
+    );
+    const labelsInStandardWindow = getDueAgendaLabels(
+      dayDocument,
+      new Date("2026-11-10T07:25:00.000Z"),
+      new Date("2026-11-10T07:40:00.000Z")
+    );
+
+    assert.equal(labelsTooEarly.length, 0);
+    assert.equal(labelsInStandardWindow.length, 1);
+    assert.equal(labelsInStandardWindow[0].label, "Opening Session");
+    assert.equal(labelsInStandardWindow[0].firstItemOfDay, false);
   });
 
   it("skips labels whose reminders have already been sent", () => {

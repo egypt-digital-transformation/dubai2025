@@ -21,8 +21,8 @@
     "lib": ["es2018", "dom"],
     "useDefineForClassFields": false,
     "skipLibCheck": true,
-    "typeRoots": ["./node_modules/@types"]
-
+    "typeRoots": ["./node_modules/@types"],
+    "types": ["vitest/globals"]
   },
   "angularCompilerOptions": {
     "enableI18nLegacyMessageIdFormat": false,

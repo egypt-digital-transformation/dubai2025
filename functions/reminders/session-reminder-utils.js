@@ -1,4 +1,6 @@
 const EVENT_TIME_ZONE = "Africa/Cairo";
+const STANDARD_REMINDER_LEAD_MS = 5 * 60 * 1000;
+export const MAX_REMINDER_LEAD_MS = 15 * 60 * 1000;
 
 const eventTimeFormatter = new Intl.DateTimeFormat("en-GB", {
   timeZone: EVENT_TIME_ZONE,
@@ -17,24 +19,77 @@ function parseEventDate(value) {
   if (typeof value !== "string") {
     return null;
   }
-  const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  if (!match) {
+  const trimmed = value.trim();
+  if (!trimmed) {
     return null;
   }
 
-  const [, yearText, dayText, monthText] = match;
-  const year = Number(yearText);
-  const month = Number(monthText);
-  const day = Number(dayText);
-  const date = new Date(Date.UTC(year, month - 1, day));
-  if (
-    date.getUTCFullYear() !== year ||
-    date.getUTCMonth() !== month - 1 ||
-    date.getUTCDate() !== day
-  ) {
+  // 1. Primary format: DD/MM/YYYY or DD-MM-YYYY or DD/MM/YY (e.g. "09/11/2026", "10/11/2026", "09/11/26")
+  const dmyMatch = trimmed.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
+  if (dmyMatch) {
+    const day = Number(dmyMatch[1]);
+    const month = Number(dmyMatch[2]);
+    const rawYear = Number(dmyMatch[3]);
+    const year = rawYear < 100 ? 2000 + rawYear : rawYear;
+
+    if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+      const date = new Date(Date.UTC(year, month - 1, day));
+      if (
+        date.getUTCFullYear() === year &&
+        date.getUTCMonth() === month - 1 &&
+        date.getUTCDate() === day
+      ) {
+        return { year, month, day };
+      }
+    }
     return null;
   }
-  return { year, month, day };
+
+  // 2. Format: YYYY-MM-DD or YYYY-DD-MM (e.g. "2026-11-09" or legacy "2026-09-11")
+  const ymdMatch = trimmed.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
+  if (ymdMatch) {
+    const year = Number(ymdMatch[1]);
+    const p2 = Number(ymdMatch[2]);
+    const p3 = Number(ymdMatch[3]);
+
+    // Check if p3 is month 11 (November event) and p2 is a valid day (legacy YYYY-DD-MM)
+    if (p3 === 11 && p2 !== 11 && p2 >= 1 && p2 <= 31) {
+      const dmyDate = new Date(Date.UTC(year, p3 - 1, p2));
+      if (
+        dmyDate.getUTCFullYear() === year &&
+        dmyDate.getUTCMonth() === p3 - 1 &&
+        dmyDate.getUTCDate() === p2
+      ) {
+        return { year, month: p3, day: p2 };
+      }
+    }
+
+    // Standard ISO: YYYY-MM-DD
+    if (p2 >= 1 && p2 <= 12 && p3 >= 1 && p3 <= 31) {
+      const isoDate = new Date(Date.UTC(year, p2 - 1, p3));
+      if (
+        isoDate.getUTCFullYear() === year &&
+        isoDate.getUTCMonth() === p2 - 1 &&
+        isoDate.getUTCDate() === p3
+      ) {
+        return { year, month: p2, day: p3 };
+      }
+    }
+
+    // General YYYY-DD-MM
+    if (p3 >= 1 && p3 <= 12 && p2 >= 1 && p2 <= 31) {
+      const dmyDate = new Date(Date.UTC(year, p3 - 1, p2));
+      if (
+        dmyDate.getUTCFullYear() === year &&
+        dmyDate.getUTCMonth() === p3 - 1 &&
+        dmyDate.getUTCDate() === p2
+      ) {
+        return { year, month: p3, day: p2 };
+      }
+    }
+  }
+
+  return null;
 }
 
 function parseEventTime(value) {
@@ -110,11 +165,8 @@ export function getDueAgendaLabels(dayDocument, windowStart, windowEnd) {
     return [];
   }
 
-  return dayDocument.labels.flatMap((value, index) => {
+  const scheduledLabels = dayDocument.labels.flatMap((value, index) => {
     if (!value || typeof value !== "object" || Array.isArray(value)) {
-      return [];
-    }
-    if (value.reminderSent === true) {
       return [];
     }
     const label = typeof value.label === "string" ? value.label.trim() : "";
@@ -123,11 +175,7 @@ export function getDueAgendaLabels(dayDocument, windowStart, windowEnd) {
       return [];
     }
     const startAt = eventLocalTimeToDate(dateParts, timeParts);
-    if (
-      !startAt ||
-      startAt < windowStart ||
-      startAt > windowEnd
-    ) {
+    if (!startAt) {
       return [];
     }
     return [{
@@ -136,7 +184,35 @@ export function getDueAgendaLabels(dayDocument, windowStart, windowEnd) {
       startTime: value.startTime,
       startAt,
       dayNumber: dayDocument.dayNumber,
+      reminderSent: value.reminderSent === true,
     }];
+  });
+
+  const firstItem = scheduledLabels.reduce(
+    (earliest, candidate) =>
+      !earliest || candidate.startAt < earliest.startAt ? candidate : earliest,
+    null
+  );
+  const standardWindowEnd = new Date(
+    Math.min(
+      windowEnd.getTime(),
+      windowStart.getTime() + STANDARD_REMINDER_LEAD_MS
+    )
+  );
+
+  return scheduledLabels.flatMap((scheduledLabel) => {
+    const firstItemOfDay = scheduledLabel.index === firstItem?.index;
+    const labelWindowEnd = firstItemOfDay ? windowEnd : standardWindowEnd;
+    if (
+      scheduledLabel.reminderSent ||
+      scheduledLabel.startAt < windowStart ||
+      scheduledLabel.startAt > labelWindowEnd
+    ) {
+      return [];
+    }
+
+    const { reminderSent, ...dueLabel } = scheduledLabel;
+    return [{ ...dueLabel, firstItemOfDay }];
   });
 }
 
