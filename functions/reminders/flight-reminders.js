@@ -158,7 +158,16 @@ export async function processFlightArrivalReminders() {
     }
 
     // Extract inbound flight info from userDoc or users/{userId}/flightDetails/flightInfo subcollection
-    const flightSubDocData = flightsByUserId.get(userDoc.id);
+    let flightSubDocData = flightsByUserId.get(userDoc.id);
+    if (!flightSubDocData) {
+      try {
+        const directSub = await userDoc.ref.collection("flightDetails").doc("flightInfo").get();
+        if (directSub.exists) {
+          flightSubDocData = directSub.data();
+        }
+      } catch (e) {}
+    }
+
     const inbound =
       data.inbound ||
       data.flightDetails?.inbound ||
