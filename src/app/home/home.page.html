@@ -596,4 +596,84 @@
     </ng-template>
   </ion-modal>
 
+  <!-- ================= FLIGHT ARRIVAL WELCOME MODAL ================= -->
+  <ion-modal
+    [isOpen]="showFlightWelcomeModal"
+    (didDismiss)="closeFlightWelcomeModal()"
+    [backdropDismiss]="true"
+    class="flight-welcome-modal"
+  >
+    <ng-template>
+      <div class="flight-welcome-content">
+        <!-- Visual Hero Cover -->
+        <div class="flight-welcome-hero">
+          <img src="assets/skyline.webp" alt="" class="hero-skyline" />
+          <div class="hero-gradient-overlay"></div>
+
+          <button class="hero-close-btn" (click)="closeFlightWelcomeModal()" aria-label="Close welcome message">
+            <ion-icon name="close-outline"></ion-icon>
+          </button>
+
+          <div class="hero-badge-wrap">
+            <span class="hero-event-badge">
+              <ion-icon name="sparkles-outline"></ion-icon>
+              <span>AHLAN &bull; CAIRO 2026</span>
+            </span>
+          </div>
+
+          <div class="mascot-badge-wrap">
+            <div class="mascot-circle">
+              <img src="assets/guy.png" alt="Ahlan Pharaoh Mascot" class="mascot-img" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Body Content -->
+        <div class="flight-welcome-body">
+          <div *ngIf="flightWelcomeFlightNo" class="flight-arrival-chip">
+            <ion-icon name="airplane-outline"></ion-icon>
+            <span>Flight {{ flightWelcomeFlightNo }} &bull; Landed in Cairo</span>
+          </div>
+
+          <h1 class="welcome-heading">
+            Welcome to the Land of Pharaohs, <span class="highlight-name">{{ flightWelcomeFirstName }}</span>!
+          </h1>
+
+          <p class="welcome-lead">
+            We are excited to have you join us for the <strong>AMEA Management Meeting 2026</strong>.
+          </p>
+
+          <p class="welcome-desc">
+            Your <strong>Ahlan</strong> app is your personal companion for the event &mdash; check it out to connect with fellow leaders and stay updated on every session!
+          </p>
+
+          <!-- Quick Action Shortcuts -->
+          <div class="welcome-quick-grid">
+            <button type="button" class="quick-pill" (click)="exploreFromFlightWelcome('agenda')">
+              <span class="pill-icon agenda"><ion-icon name="calendar-outline"></ion-icon></span>
+              <span class="pill-text">
+                <strong>Schedule</strong>
+                <small>Sessions &amp; workshops</small>
+              </span>
+            </button>
+
+            <button type="button" class="quick-pill" (click)="exploreFromFlightWelcome('journey')">
+              <span class="pill-icon journey"><ion-icon name="airplane-outline"></ion-icon></span>
+              <span class="pill-text">
+                <strong>My Journey</strong>
+                <small>Transfers &amp; stay</small>
+              </span>
+            </button>
+          </div>
+
+          <!-- Primary CTA Button -->
+          <button type="button" class="explore-app-btn" (click)="closeFlightWelcomeModal()">
+            <span>Explore Ahlan</span>
+            <ion-icon name="chevron-forward"></ion-icon>
+          </button>
+        </div>
+      </div>
+    </ng-template>
+  </ion-modal>
+
 </ion-content>

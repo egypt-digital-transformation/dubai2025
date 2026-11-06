@@ -31,6 +31,10 @@ export {
   sendSessionRemindersManual,
 } from "./reminders/session-reminders.js";
 export {
+  sendFlightArrivalWelcome,
+  sendFlightArrivalWelcomeManual,
+} from "./reminders/flight-reminders.js";
+export {
   createInteractiveActivity,
   listAdminInteractiveActivities,
   listInteractiveActivities,

@@ -266,6 +266,29 @@ export class HomePage implements OnInit, OnDestroy {
     if (modal) await modal.dismiss();
   }
 
+  showFlightWelcomeModal = false;
+  flightWelcomeFlightNo = '';
+  flightWelcomeFirstName = '';
+
+  closeFlightWelcomeModal() {
+    this.showFlightWelcomeModal = false;
+    const emailKey = (this.profileEmail || this.auth.currentUser?.email || '').trim().toLowerCase();
+    if (emailKey) {
+      try {
+        localStorage.setItem(`flight_welcome_seen_${emailKey}`, 'true');
+      } catch {}
+    }
+  }
+
+  exploreFromFlightWelcome(target: 'agenda' | 'journey') {
+    this.closeFlightWelcomeModal();
+    if (target === 'agenda') {
+      void this.router.navigate(['/tabs/agenda']);
+    } else if (target === 'journey') {
+      void this.router.navigate(['/tabs/journey']);
+    }
+  }
+
   constructor(
     private router: Router,
     private firestore: Firestore,
@@ -684,10 +707,139 @@ export class HomePage implements OnInit, OnDestroy {
         this.userGroup = userGroup;
         this.welcomeGreeting = nationality ? greetingForNationality(nationality) : 'Ahlan';
         this.isPlantVisitRequired = data['plantVisit'] === true;
+        this.checkFlightArrivalWelcome(data, profileEmail);
       });
     } catch (error) {
       console.error('[HomePage] Failed to update the live welcome profile:', error);
     }
+  }
+
+  private checkFlightArrivalWelcome(data: Record<string, unknown>, email: string): void {
+    const inbound = (data['inbound'] as any) || (data['flightDetails'] as any)?.inbound;
+    const flightWelcomeSent = data['flightWelcomeSent'] === true;
+    if (!inbound && !flightWelcomeSent) return;
+
+    const emailKey = (email || '').trim().toLowerCase();
+    if (!emailKey) return;
+
+    try {
+      if (localStorage.getItem(`flight_welcome_seen_${emailKey}`) === 'true') {
+        return;
+      }
+    } catch {}
+
+    let isDue = flightWelcomeSent;
+    if (!isDue && inbound?.arrivalDate && inbound?.arrivalTime) {
+      const arrivalDate = this.parseCairoFlightArrival(String(inbound.arrivalDate), String(inbound.arrivalTime));
+      if (arrivalDate && !isNaN(arrivalDate.getTime())) {
+        const triggerMillis = arrivalDate.getTime() + 40 * 60 * 1000;
+        const now = Date.now();
+        // If 40 min passed and flight arrival is within last 48 hours
+        if (now >= triggerMillis && now <= triggerMillis + 48 * 60 * 60 * 1000) {
+          isDue = true;
+        }
+      }
+    }
+
+    if (isDue) {
+      this.flightWelcomeFlightNo = inbound?.flightNo ? String(inbound.flightNo).trim() : '';
+      const rawFirstName = String(data['firstName'] ?? data['displayName'] ?? this.firstName ?? '').trim();
+      this.flightWelcomeFirstName = rawFirstName.split(/\s+/)[0] || 'Delegate';
+      setTimeout(() => {
+        if (!this.showQR && !this.showSeatingModal) {
+          this.zone.run(() => {
+            this.showFlightWelcomeModal = true;
+          });
+        }
+      }, 700);
+    }
+  }
+
+  private parseCairoFlightArrival(arrivalDateStr: string, arrivalTimeStr: string): Date | null {
+    const dateTrimmed = (arrivalDateStr || '').trim();
+    const timeTrimmed = (arrivalTimeStr || '').trim();
+    if (!dateTrimmed || !timeTrimmed) return null;
+
+    let year: number;
+    let month: number;
+    let day: number;
+
+    const dmyMatch = dateTrimmed.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
+    const ymdMatch = dateTrimmed.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
+
+    if (dmyMatch) {
+      day = Number(dmyMatch[1]);
+      month = Number(dmyMatch[2]);
+      const rawYear = Number(dmyMatch[3]);
+      year = rawYear < 100 ? 2000 + rawYear : rawYear;
+    } else if (ymdMatch) {
+      year = Number(ymdMatch[1]);
+      month = Number(ymdMatch[2]);
+      day = Number(ymdMatch[3]);
+    } else {
+      const parsed = new Date(dateTrimmed);
+      if (isNaN(parsed.getTime())) return null;
+      year = parsed.getUTCFullYear();
+      month = parsed.getUTCMonth() + 1;
+      day = parsed.getUTCDate();
+    }
+
+    if (!year || !month || !day || month < 1 || month > 12 || day < 1 || day > 31) {
+      return null;
+    }
+
+    const timeMatch = timeTrimmed.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM|am|pm)?$/i);
+    if (!timeMatch) return null;
+
+    let hour = Number(timeMatch[1]);
+    const minute = Number(timeMatch[2]);
+    const second = Number(timeMatch[3] || 0);
+    const meridiem = timeMatch[4] ? timeMatch[4].toUpperCase() : null;
+
+    if (meridiem === 'PM' && hour < 12) {
+      hour += 12;
+    } else if (meridiem === 'AM' && hour === 12) {
+      hour = 0;
+    }
+
+    if (hour > 23 || minute > 59 || second > 59) {
+      return null;
+    }
+
+    const targetUtcMillis = Date.UTC(year, month - 1, day, hour, minute, second);
+    const formatter = new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'Africa/Cairo',
+      calendar: 'gregory',
+      numberingSystem: 'latn',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hourCycle: 'h23',
+    });
+
+    let candidateMillis = targetUtcMillis;
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const formattedParts = Object.fromEntries(
+        formatter
+          .formatToParts(new Date(candidateMillis))
+          .filter((part) => part.type !== 'literal')
+          .map(({ type, value }) => [type, Number(value)])
+      );
+      const formattedUtcMillis = Date.UTC(
+        formattedParts['year'],
+        formattedParts['month'] - 1,
+        formattedParts['day'],
+        formattedParts['hour'],
+        formattedParts['minute'],
+        formattedParts['second']
+      );
+      candidateMillis += targetUtcMillis - formattedUtcMillis;
+    }
+
+    return new Date(candidateMillis);
   }
 
   private firstProfileString(
