@@ -102,7 +102,7 @@
   margin-top: 0;
   border-radius: 999px;
   border: 1px solid rgba(var(--holcim-bright-turquoise-rgb, 0, 182, 214), 0.28);
-  background: rgba(0, 182, 214, 0.09);
+  background: rgba(var(--holcim-bright-turquoise-rgb), 0.09);
   color: var(--holcim-bright-turquoise);
   font-size: 1rem;
   transition: transform 0.15s ease, background-color 0.15s ease;
@@ -113,9 +113,9 @@
   }
 
   &.whatsapp-action {
-    border-color: rgba(37, 211, 102, 0.35);
-    background: rgba(37, 211, 102, 0.12);
-    color: #1da851;
+    border-color: rgba(var(--holcim-medium-green-rgb), 0.35);
+    background: rgba(var(--holcim-medium-green-rgb), 0.12);
+    color: var(--holcim-medium-green);
   }
 }
 

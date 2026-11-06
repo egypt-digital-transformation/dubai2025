@@ -5,7 +5,7 @@ $holcim-dark-green: var(--dark-gray); // Darker tone for active/hover
 $holcim-light-green: var(--border-color); // Subtle background highlight
 
 .resources-content {
-  --background: #f5f8fb;
+  --background: var(--holcim-gray-01);
 }
 
 .resource-library {
@@ -218,12 +218,12 @@ $holcim-light-green: var(--border-color); // Subtle background highlight
 }
 
 .accent-photo .resource-card-icon-wrap {
-  background: rgba(143, 219, 47, 0.16);
-  color: #3f7c0c;
+  background: rgba(var(--holcim-bright-green-rgb), 0.16);
+  color: var(--holcim-medium-green);
 }
 
 .accent-video .resource-card-icon-wrap {
-  background: rgba(0, 182, 214, 0.12);
+  background: rgba(var(--holcim-bright-turquoise-rgb), 0.12);
   color: var(--holcim-dark-turquoise);
 }
 
@@ -233,8 +233,8 @@ $holcim-light-green: var(--border-color); // Subtle background highlight
   margin: 0;
   padding: 3px 9px;
   border-radius: 999px;
-  background: #f1f5f9;
-  color: #475569;
+  background: var(--holcim-gray-01);
+  color: var(--holcim-premium-blue);
   font-size: 0.66rem;
   font-weight: 750;
   letter-spacing: 0.08em;
@@ -257,7 +257,7 @@ $holcim-light-green: var(--border-color); // Subtle background highlight
   gap: 6px;
   padding: 9px 11px;
   border-radius: 10px;
-  background: #f8fafc;
+  background: var(--holcim-gray-01);
   border: 1px solid rgba(var(--holcim-dark-blue-rgb), 0.06);
 }
 
@@ -291,7 +291,7 @@ $holcim-light-green: var(--border-color); // Subtle background highlight
 }
 
 .resource-session-label {
-  color: #64748b;
+  color: var(--holcim-premium-blue);
   font-size: 0.72rem;
   font-weight: 600;
   text-transform: uppercase;
@@ -300,13 +300,13 @@ $holcim-light-green: var(--border-color); // Subtle background highlight
 }
 
 .resource-speaker-role {
-  color: #64748b;
+  color: var(--holcim-premium-blue);
   font-weight: 500;
 }
 
 .resource-card-description {
   margin: 0;
-  color: #475569;
+  color: var(--holcim-premium-blue);
   font-size: 0.84rem;
   line-height: 1.48;
 }
@@ -392,7 +392,7 @@ $holcim-light-green: var(--border-color); // Subtle background highlight
 // HEADER SECTION  (mobile-first)
 // ============================================
 .header-gradient {
-  background: linear-gradient(135deg, var(--holcim-premium-blue) 0%, #031027 65%, var(--holcim-dark-blue) 100%);
+  background: linear-gradient(135deg, var(--holcim-premium-blue) 0%, var(--holcim-premium-blue) 65%, var(--holcim-dark-blue) 100%);
   padding: 4.5rem 1.25rem 3rem;  // ⬆️ more vertical padding on mobile
   position: relative;
   overflow: hidden;

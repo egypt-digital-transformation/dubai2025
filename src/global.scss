@@ -101,7 +101,7 @@ h3,
   border-radius: 1.25rem;
   background:
     radial-gradient(ellipse at 82% 15%, rgba(var(--holcim-bright-blue-rgb), 0.22), transparent 37%),
-    linear-gradient(125deg, var(--holcim-premium-blue) 0%, #031027 60%, var(--holcim-dark-blue) 100%);
+    linear-gradient(125deg, var(--holcim-premium-blue) 0%, var(--holcim-premium-blue) 60%, var(--holcim-dark-blue) 100%);
   color: var(--white);
 }
 

@@ -21,7 +21,7 @@
   overflow: hidden;
   background:
     radial-gradient(ellipse at 88% 12%, rgba(var(--holcim-bright-blue-rgb), 0.22), transparent 45%),
-    linear-gradient(135deg, var(--holcim-premium-blue) 0%, #031027 65%, var(--holcim-dark-blue) 100%);
+    linear-gradient(135deg, var(--holcim-premium-blue) 0%, var(--holcim-premium-blue) 65%, var(--holcim-dark-blue) 100%);
   border-radius: 1.15rem;
   color: var(--white);
   padding: 1.35rem 1.35rem 1.3rem;
@@ -172,7 +172,7 @@
     display: inline-flex;
     align-items: center;
     margin-left: 0.45rem;
-    color: #25d366;
+    color: var(--holcim-medium-green);
     font-size: 1.1rem;
     vertical-align: middle;
   }

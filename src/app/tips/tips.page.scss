@@ -3,9 +3,9 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: var(--app-surface, #ffffff);
-  border-top: 1px solid var(--app-border, #ececec);
-  color: var(--app-text-muted, #4a5568);
+  background: var(--app-surface, var(--holcim-white));
+  border-top: 1px solid var(--app-border, var(--holcim-gray-02));
+  color: var(--app-text-muted, var(--holcim-premium-blue));
   font-family: var(--ion-font-family, 'Holcim', sans-serif);
   font-size: 0.6rem;
   font-weight: 500;
@@ -24,8 +24,8 @@
 }
 
 .tips-content {
-  --background: #f8fafc;
-  background-color: #f8fafc;
+  --background: var(--holcim-gray-01);
+  background-color: var(--holcim-gray-01);
   font-family: var(--ion-font-family, 'Holcim', sans-serif);
 }
 
@@ -35,14 +35,14 @@
 .header-gradient {
   background: linear-gradient(
     135deg,
-    #041739 0%,
-    #07265c 50%,
-    #03112a 100%
+    var(--holcim-premium-blue) 0%,
+    var(--holcim-premium-blue) 50%,
+    var(--holcim-premium-blue) 100%
   );
   padding: clamp(3rem, 7vh, 4.5rem) 1.25rem 2rem;
   position: relative;
   overflow: hidden;
-  box-shadow: 0 4px 20px rgba(4, 23, 57, 0.2);
+  box-shadow: 0 4px 20px rgba(var(--holcim-premium-blue-rgb), 0.2);
 }
 
 .header-nav {
@@ -58,11 +58,11 @@
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(var(--white-rgb), 0.12);
+  border: 1px solid rgba(var(--white-rgb), 0.22);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  color: #ffffff;
+  color: var(--holcim-white);
   padding: 0.45rem 0.85rem;
   border-radius: 9999px;
   font-size: 0.825rem;
@@ -75,7 +75,7 @@
   }
 
   &:hover {
-    background: rgba(255, 255, 255, 0.22);
+    background: rgba(var(--white-rgb), 0.22);
     transform: translateX(-2px);
   }
 
@@ -89,11 +89,11 @@
   font-weight: 700;
   letter-spacing: 1.2px;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.75);
-  background: rgba(255, 255, 255, 0.08);
+  color: rgba(var(--white-rgb), 0.75);
+  background: rgba(var(--white-rgb), 0.08);
   padding: 0.35rem 0.75rem;
   border-radius: 9999px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(var(--white-rgb), 0.12);
 }
 
 .header-text-block {
@@ -103,7 +103,7 @@
 }
 
 .header-title {
-  color: #ffffff;
+  color: var(--holcim-white);
   font-size: clamp(1.65rem, 4vw, 2.25rem);
   font-weight: 800;
   line-height: 1.2;
@@ -112,7 +112,7 @@
 }
 
 .header-subtitle {
-  color: rgba(255, 255, 255, 0.8);
+  color: rgba(var(--white-rgb), 0.8);
   font-size: 0.875rem;
   line-height: 1.5;
   margin: 0;
@@ -149,10 +149,10 @@
   gap: 0.625rem;
   margin-bottom: 1.5rem;
   padding: 0.25rem;
-  background: #ffffff;
+  background: var(--holcim-white);
   border-radius: 9999px;
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  border: 1px solid var(--holcim-gray-02);
+  box-shadow: 0 1px 3px rgba(var(--black-rgb), 0.04);
 }
 
 .filter-tab-pill {
@@ -165,7 +165,7 @@
   border-radius: 9999px;
   border: none;
   background: transparent;
-  color: #64748b;
+  color: var(--holcim-premium-blue);
   font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
@@ -177,13 +177,13 @@
   }
 
   &:hover {
-    color: #041739;
+    color: var(--holcim-premium-blue);
   }
 
   &.active {
-    background: #041739;
-    color: #ffffff;
-    box-shadow: 0 2px 8px rgba(4, 23, 57, 0.18);
+    background: var(--holcim-premium-blue);
+    color: var(--holcim-white);
+    box-shadow: 0 2px 8px rgba(var(--holcim-premium-blue-rgb), 0.18);
 
     ion-icon {
       transform: scale(1.05);
@@ -198,7 +198,7 @@
 .tips-section + .tips-section {
   margin-top: 2.25rem;
   padding-top: 1.75rem;
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid var(--holcim-gray-02);
 }
 
 /* Section Title Bar */
@@ -211,20 +211,20 @@
     font-weight: 700;
     letter-spacing: 1.5px;
     text-transform: uppercase;
-    color: var(--holcim-bright-blue, #04bbf1);
+    color: var(--holcim-bright-blue, var(--holcim-bright-blue));
     margin-bottom: 0.25rem;
   }
 
   h2 {
     font-size: 1.25rem;
     font-weight: 700;
-    color: #041739;
+    color: var(--holcim-premium-blue);
     margin: 0 0 0.35rem;
     line-height: 1.3;
   }
 
   .section-desc {
-    color: #64748b;
+    color: var(--holcim-premium-blue);
     font-size: 0.85rem;
     margin: 0;
     line-height: 1.5;
@@ -245,10 +245,10 @@
 }
 
 .tip-card {
-  background: #ffffff;
+  background: var(--holcim-white);
   border-radius: 18px;
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 2px 8px rgba(4, 23, 57, 0.04);
+  border: 1px solid var(--holcim-gray-02);
+  box-shadow: 0 2px 8px rgba(var(--holcim-premium-blue-rgb), 0.04);
   padding: 1.25rem;
   display: flex;
   flex-direction: column;
@@ -256,15 +256,15 @@
 
   &:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 18px rgba(4, 23, 57, 0.08);
+    box-shadow: 0 6px 18px rgba(var(--holcim-premium-blue-rgb), 0.08);
   }
 
   &.featured-border-blue {
-    border-top: 3.5px solid #007fad;
+    border-top: 3.5px solid var(--holcim-medium-blue);
   }
 
   &.featured-border-green {
-    border-top: 3.5px solid #4bb05b;
+    border-top: 3.5px solid var(--holcim-medium-green);
   }
 }
 
@@ -274,7 +274,7 @@
   gap: 0.85rem;
   margin-bottom: 1rem;
   padding-bottom: 0.85rem;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid var(--holcim-gray-01);
 }
 
 .card-icon-avatar {
@@ -288,28 +288,28 @@
   flex-shrink: 0;
 
   &.blue {
-    background: rgba(4, 187, 241, 0.12);
-    color: #007fad;
+    background: rgba(var(--holcim-bright-blue-rgb), 0.12);
+    color: var(--holcim-medium-blue);
   }
 
   &.green {
-    background: rgba(148, 193, 46, 0.16);
-    color: #2e7d32;
+    background: rgba(var(--holcim-bright-green-rgb), 0.16);
+    color: var(--holcim-green);
   }
 
   &.cyan {
-    background: rgba(4, 187, 241, 0.14);
-    color: #0284c7;
+    background: rgba(var(--holcim-bright-blue-rgb), 0.14);
+    color: var(--holcim-medium-blue);
   }
 
   &.orange {
-    background: rgba(245, 158, 11, 0.12);
-    color: #d97706;
+    background: rgba(var(--holcim-orange-rgb), 0.12);
+    color: var(--holcim-orange);
   }
 
   &.red {
-    background: rgba(239, 68, 68, 0.12);
-    color: #dc2626;
+    background: rgba(var(--holcim-bright-red-rgb), 0.12);
+    color: var(--holcim-bright-red);
   }
 }
 
@@ -322,13 +322,13 @@
     font-weight: 700;
     letter-spacing: 1px;
     text-transform: uppercase;
-    color: #94a3b8;
+    color: var(--holcim-gray-04);
   }
 
   h3 {
     font-size: 1.05rem;
     font-weight: 700;
-    color: #041739;
+    color: var(--holcim-premium-blue);
     margin: 0.15rem 0 0;
   }
 }
@@ -349,14 +349,14 @@
   &.highlight-row {
     margin-top: 0.85rem;
     padding-top: 0.85rem;
-    border-top: 1px dashed #e2e8f0;
+    border-top: 1px dashed var(--holcim-gray-02);
   }
 }
 
 .detail-label {
   font-size: 0.825rem;
   font-weight: 600;
-  color: #334155;
+  color: var(--holcim-premium-blue);
 }
 
 .detail-badge {
@@ -367,33 +367,33 @@
   font-weight: 700;
 
   &.smart-casual {
-    background: #f1f5f9;
-    color: #041739;
-    border: 1px solid #cbd5e1;
+    background: var(--holcim-gray-01);
+    color: var(--holcim-premium-blue);
+    border: 1px solid var(--holcim-gray-03);
   }
 
   &.gala-formal {
-    background: #041739;
-    color: #ffffff;
-    box-shadow: 0 1px 4px rgba(4, 23, 57, 0.25);
+    background: var(--holcim-premium-blue);
+    color: var(--holcim-white);
+    box-shadow: 0 1px 4px rgba(var(--holcim-premium-blue-rgb), 0.25);
   }
 }
 
 .currency-highlight {
   font-size: 1.15rem;
   font-weight: 800;
-  color: #2e7d32;
+  color: var(--holcim-green);
 
   small {
     font-size: 0.75rem;
     font-weight: 500;
-    color: #64748b;
+    color: var(--holcim-premium-blue);
   }
 }
 
 .detail-desc {
   font-size: 0.8125rem;
-  color: #64748b;
+  color: var(--holcim-premium-blue);
   line-height: 1.5;
   margin: 0.25rem 0 0.5rem;
 
@@ -408,16 +408,16 @@
   gap: 0.5rem;
   margin-top: 0.75rem;
   padding: 0.65rem 0.85rem;
-  background: rgba(4, 23, 57, 0.03);
-  border-left: 3px solid #007fad;
+  background: rgba(var(--holcim-premium-blue-rgb), 0.03);
+  border-left: 3px solid var(--holcim-medium-blue);
   border-radius: 8px;
   font-size: 0.78rem;
-  color: #334155;
+  color: var(--holcim-premium-blue);
   line-height: 1.45;
 
   ion-icon {
     font-size: 1rem;
-    color: #007fad;
+    color: var(--holcim-medium-blue);
     flex-shrink: 0;
     margin-top: 1px;
   }
@@ -435,22 +435,22 @@
   align-items: flex-start;
   gap: 0.5rem;
   font-size: 0.8rem;
-  color: #475569;
+  color: var(--holcim-premium-blue);
   line-height: 1.45;
 
   ion-icon {
     font-size: 1.05rem;
-    color: #4bb05b;
+    color: var(--holcim-medium-green);
     flex-shrink: 0;
     margin-top: 2px;
   }
 
   strong {
-    color: #041739;
+    color: var(--holcim-premium-blue);
   }
 
   a {
-    color: #007fad;
+    color: var(--holcim-medium-blue);
     font-weight: 600;
     text-decoration: underline;
     text-underline-offset: 2px;
@@ -465,8 +465,8 @@
 }
 
 .spec-box {
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background: var(--holcim-gray-01);
+  border: 1px solid var(--holcim-gray-02);
   border-radius: 12px;
   padding: 0.75rem;
   display: flex;
@@ -476,19 +476,19 @@
     font-size: 0.7rem;
     font-weight: 600;
     text-transform: uppercase;
-    color: #94a3b8;
+    color: var(--holcim-gray-04);
   }
 
   .spec-value {
     font-size: 1.1rem;
     font-weight: 700;
-    color: #041739;
+    color: var(--holcim-premium-blue);
     margin: 0.2rem 0;
   }
 
   .spec-sub {
     font-size: 0.72rem;
-    color: #64748b;
+    color: var(--holcim-premium-blue);
   }
 }
 
@@ -501,8 +501,8 @@
 
 .weather-pill {
   flex: 1;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background: var(--holcim-gray-01);
+  border: 1px solid var(--holcim-gray-02);
   border-radius: 12px;
   padding: 0.65rem 0.75rem;
   display: flex;
@@ -511,18 +511,18 @@
   .temp {
     font-size: 1.05rem;
     font-weight: 700;
-    color: #d97706;
+    color: var(--holcim-orange);
   }
 
   .time {
     font-size: 0.72rem;
-    color: #64748b;
+    color: var(--holcim-premium-blue);
     font-weight: 500;
   }
 
   &.evening {
     .temp {
-      color: #0284c7;
+      color: var(--holcim-medium-blue);
     }
   }
 }
@@ -541,10 +541,10 @@
 }
 
 .experience-card {
-  background: #ffffff;
+  background: var(--holcim-white);
   border-radius: 18px;
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 2px 8px rgba(4, 23, 57, 0.04);
+  border: 1px solid var(--holcim-gray-02);
+  box-shadow: 0 2px 8px rgba(var(--holcim-premium-blue-rgb), 0.04);
   padding: 1.25rem;
   display: flex;
   flex-direction: column;
@@ -552,11 +552,11 @@
 
   &:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 18px rgba(4, 23, 57, 0.08);
+    box-shadow: 0 6px 18px rgba(var(--holcim-premium-blue-rgb), 0.08);
   }
 
   &.highlight-exp {
-    border-top: 3.5px solid #007fad;
+    border-top: 3.5px solid var(--holcim-medium-blue);
   }
 }
 
@@ -572,8 +572,8 @@
   font-weight: 700;
   letter-spacing: 1px;
   text-transform: uppercase;
-  color: #007fad;
-  background: rgba(4, 187, 241, 0.1);
+  color: var(--holcim-medium-blue);
+  background: rgba(var(--holcim-bright-blue-rgb), 0.1);
   padding: 0.25rem 0.6rem;
   border-radius: 9999px;
 }
@@ -583,7 +583,7 @@
   align-items: center;
   gap: 0.25rem;
   font-size: 0.75rem;
-  color: #64748b;
+  color: var(--holcim-premium-blue);
   font-weight: 500;
 
   ion-icon {
@@ -594,14 +594,14 @@
 .exp-title {
   font-size: 1.05rem;
   font-weight: 700;
-  color: #041739;
+  color: var(--holcim-premium-blue);
   line-height: 1.35;
   margin: 0 0 0.5rem;
 }
 
 .exp-desc {
   font-size: 0.8125rem;
-  color: #475569;
+  color: var(--holcim-premium-blue);
   line-height: 1.55;
   margin: 0 0 1rem;
   flex: 1;
@@ -612,14 +612,14 @@
   align-items: flex-start;
   gap: 0.5rem;
   padding-top: 0.75rem;
-  border-top: 1px solid #f1f5f9;
+  border-top: 1px solid var(--holcim-gray-01);
   font-size: 0.78rem;
   line-height: 1.4;
 
   .exp-tag {
     font-weight: 700;
-    color: #041739;
-    background: #f1f5f9;
+    color: var(--holcim-premium-blue);
+    background: var(--holcim-gray-01);
     padding: 0.15rem 0.5rem;
     border-radius: 6px;
     font-size: 0.7rem;
@@ -627,7 +627,7 @@
   }
 
   .exp-hint {
-    color: #64748b;
+    color: var(--holcim-premium-blue);
     font-style: italic;
   }
 }
@@ -641,22 +641,22 @@
   gap: 0.85rem;
   margin-top: 2rem;
   padding: 1rem 1.25rem;
-  background: rgba(4, 23, 57, 0.04);
-  border: 1px solid rgba(4, 23, 57, 0.08);
+  background: rgba(var(--holcim-premium-blue-rgb), 0.04);
+  border: 1px solid rgba(var(--holcim-premium-blue-rgb), 0.08);
   border-radius: 16px;
 
   .support-icon {
     width: 36px;
     height: 36px;
     border-radius: 10px;
-    background: #ffffff;
+    background: var(--holcim-white);
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #007fad;
+    color: var(--holcim-medium-blue);
     font-size: 1.25rem;
     flex-shrink: 0;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+    box-shadow: 0 1px 3px rgba(var(--black-rgb), 0.06);
   }
 
   .support-text {
@@ -666,12 +666,12 @@
 
     strong {
       font-size: 0.875rem;
-      color: #041739;
+      color: var(--holcim-premium-blue);
     }
 
     span {
       font-size: 0.8rem;
-      color: #64748b;
+      color: var(--holcim-premium-blue);
       line-height: 1.45;
     }
   }

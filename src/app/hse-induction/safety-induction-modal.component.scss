@@ -7,7 +7,7 @@
 
 .modal-subtitle {
   margin: 0 2px 12px;
-  color: #5f6d84;
+  color: var(--holcim-premium-blue);
   font-size: 0.86rem;
   line-height: 1.4;
 }
@@ -20,18 +20,18 @@
 
 .site-card {
   padding: 12px;
-  border: 1px solid #dde3ec;
+  border: 1px solid var(--holcim-gray-02);
   border-radius: 12px;
-  background: #fff;
+  background: var(--holcim-white);
   transition: box-shadow 0.2s ease;
 
   &.completed {
-    border-color: #c9d7ea;
-    background: #fbfcfe;
+    border-color: var(--holcim-gray-03);
+    background: var(--holcim-gray-01);
   }
 
   &:hover {
-    box-shadow: 0 2px 10px rgba(28, 45, 78, 0.08);
+    box-shadow: 0 2px 10px rgba(var(--holcim-premium-blue-rgb), 0.08);
   }
 }
 
@@ -42,14 +42,14 @@
   margin-bottom: 10px;
 
   .site-icon {
-    color: #2f7edb;
+    color: var(--holcim-bright-blue);
     font-size: 22px;
   }
 
   h3 {
     flex: 1;
     margin: 0;
-    color: #1f2a44;
+    color: var(--holcim-dark-blue);
     font-size: 1.08rem;
     font-weight: 600;
   }
@@ -58,15 +58,15 @@
 .status-badge {
   padding: 4px 9px;
   border-radius: 20px;
-  background: #eef2f7;
-  color: #6a778c;
+  background: var(--holcim-gray-01);
+  color: var(--holcim-premium-blue);
   font-size: 0.75rem;
   font-weight: 500;
   white-space: nowrap;
 
   &.completed {
-    background: #e7f1ff;
-    color: #2f7edb;
+    background: rgba(var(--holcim-bright-blue-rgb), 0.1);
+    color: var(--holcim-bright-blue);
   }
 }
 
@@ -74,23 +74,23 @@
   width: 100%;
   min-height: 42px;
   padding: 9px 10px;
-  border: 1px solid #2f7edb;
+  border: 1px solid var(--holcim-bright-blue);
   border-radius: 8px;
-  background: #2f7edb;
-  color: #fff;
+  background: var(--holcim-bright-blue);
+  color: var(--holcim-white);
   font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
   transition: background-color 0.2s ease;
 
   &:hover {
-    background: #266dbe;
+    background: var(--holcim-medium-blue);
   }
 
   &.completed {
-    border-color: #d2dae6;
-    background: #f4f7fb;
-    color: #1f2a44;
+    border-color: var(--holcim-gray-02);
+    background: var(--holcim-gray-01);
+    color: var(--holcim-dark-blue);
   }
 }
 
@@ -106,9 +106,9 @@
   }
 
   ion-toolbar {
-    --background: #fff;
-    --color: #1f2a44;
-    border-bottom: 1px solid #e4e9f1;
+    --background: var(--holcim-white);
+    --color: var(--holcim-dark-blue);
+    border-bottom: 1px solid var(--holcim-gray-02);
 
     ion-title {
       font-size: 1.05rem;
@@ -117,7 +117,7 @@
   }
 
   ion-content {
-    --background: #fff;
+    --background: var(--holcim-white);
   }
 
   @media (max-width: 420px) {

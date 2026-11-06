@@ -7,14 +7,14 @@
   display: flex;
   justify-content: center;
   padding: 1.1rem 1.15rem;
-  border: 1.5px solid var(--holcim-bright-blue, #04bbf1);
+  border: 1.5px solid var(--holcim-bright-blue, var(--holcim-bright-blue));
   border-radius: 16px;
-  background: linear-gradient(135deg, #0b2659 0%, var(--holcim-premium-blue) 100%);
+  background: linear-gradient(135deg, var(--holcim-dark-blue) 0%, var(--holcim-premium-blue) 100%);
   color: var(--white);
   box-shadow:
     0 0 0 1px rgba(var(--white-rgb), 0.16),
     0 12px 32px rgba(var(--black-rgb), 0.45),
-    0 0 18px rgba(4, 187, 241, 0.25);
+    0 0 18px rgba(var(--holcim-bright-blue-rgb), 0.25);
 
   .banner-content {
     display: flex;
@@ -196,7 +196,7 @@
     color: var(--white);
 
     &:hover:not(:disabled) {
-      background: #03122c;
+      background: var(--holcim-premium-blue);
     }
   }
 

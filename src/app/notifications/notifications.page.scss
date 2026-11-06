@@ -2,7 +2,7 @@
   display: block;
   height: 100%;
   --notification-ink: var(--holcim-dark-blue);
-  --notification-muted: #64748b;
+  --notification-muted: var(--holcim-premium-blue);
   --notification-border: rgba(var(--black-rgb), 0.08);
   --notification-accent: var(--holcim-bright-blue);
 }
@@ -57,9 +57,9 @@ h1 {
   align-items: center;
   font-size: 0.72rem;
   font-weight: 700;
-  color: #007fad;
-  background: rgba(4, 187, 241, 0.12);
-  border: 1px solid rgba(4, 187, 241, 0.25);
+  color: var(--holcim-medium-blue);
+  background: rgba(var(--holcim-bright-blue-rgb), 0.12);
+  border: 1px solid rgba(var(--holcim-bright-blue-rgb), 0.25);
   padding: 3px 9px;
   border-radius: 999px;
   white-space: nowrap;
@@ -76,7 +76,7 @@ h1 {
   position: relative;
   background: var(--white);
   border: 1px solid var(--notification-border);
-  border-left: 3.5px solid #cbd5e1;
+  border-left: 3.5px solid var(--holcim-gray-03);
   border-radius: 9px;
   padding: 0.65rem 0.9rem;
   cursor: pointer;
@@ -89,7 +89,7 @@ h1 {
   &:hover {
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(var(--holcim-dark-blue-rgb), 0.06);
-    border-color: rgba(4, 187, 241, 0.35);
+    border-color: rgba(var(--holcim-bright-blue-rgb), 0.35);
   }
 
   &:active {
@@ -98,8 +98,8 @@ h1 {
 
   &.unread {
     border-left-color: var(--holcim-bright-blue);
-    background: #ffffff;
-    box-shadow: 0 2px 6px rgba(4, 187, 241, 0.07);
+    background: var(--holcim-white);
+    box-shadow: 0 2px 6px rgba(var(--holcim-bright-blue-rgb), 0.07);
 
     .notification-title {
       color: var(--holcim-dark-blue);
@@ -112,7 +112,7 @@ h1 {
     opacity: 0.9;
 
     .notification-title {
-      color: #334155;
+      color: var(--holcim-premium-blue);
     }
   }
 }
@@ -144,7 +144,7 @@ h1 {
   flex-shrink: 0;
   border-radius: 50%;
   background: var(--holcim-bright-blue);
-  box-shadow: 0 0 6px rgba(4, 187, 241, 0.7);
+  box-shadow: 0 0 6px rgba(var(--holcim-bright-blue-rgb), 0.7);
 }
 
 .notification-title {
@@ -165,7 +165,7 @@ h1 {
   flex-shrink: 0;
   font-size: 0.7rem;
   font-weight: 600;
-  color: #94a3b8;
+  color: var(--holcim-gray-04);
   white-space: nowrap;
   padding-top: 1px;
 }
@@ -173,7 +173,7 @@ h1 {
 .notification-body {
   margin: 0.2rem 0 0;
   font-size: 0.78rem;
-  color: #64748b;
+  color: var(--holcim-premium-blue);
   line-height: 1.38;
   white-space: pre-line;
   display: -webkit-box;
@@ -192,7 +192,7 @@ h1 {
 .skeleton-card {
   background: var(--white);
   border: 1px solid rgba(var(--black-rgb), 0.06);
-  border-left: 3.5px solid #e2e8f0;
+  border-left: 3.5px solid var(--holcim-gray-02);
   border-radius: 9px;
   padding: 0.65rem 0.9rem;
 }
@@ -206,7 +206,7 @@ h1 {
 }
 
 .skeleton-line {
-  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+  background: linear-gradient(90deg, var(--holcim-gray-01) 25%, var(--holcim-gray-02) 50%, var(--holcim-gray-01) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
   border-radius: 4px;
@@ -250,7 +250,7 @@ h1 {
     display: grid;
     place-items: center;
     border-radius: 50%;
-    background: rgba(4, 187, 241, 0.08);
+    background: rgba(var(--holcim-bright-blue-rgb), 0.08);
     color: var(--holcim-bright-blue);
     font-size: 1.5rem;
     margin-bottom: 0.85rem;
@@ -266,16 +266,16 @@ h1 {
   p {
     margin: 0;
     font-size: 0.82rem;
-    color: #64748b;
+    color: var(--holcim-premium-blue);
     max-width: 280px;
     line-height: 1.45;
   }
 }
 
 .list-error {
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  color: #991b1b;
+  background: rgba(var(--holcim-bright-red-rgb), 0.08);
+  border: 1px solid rgba(var(--holcim-bright-red-rgb), 0.2);
+  color: var(--holcim-dark-red);
   border-radius: 10px;
   padding: 0.85rem 1rem;
   margin-top: 1rem;
@@ -292,7 +292,7 @@ h1 {
   button {
     background: transparent;
     border: none;
-    color: #b91c1c;
+    color: var(--holcim-bright-red);
     font-weight: 700;
     text-decoration: underline;
     cursor: pointer;
@@ -317,7 +317,7 @@ h1 {
   font-size: 0.78rem;
   font-weight: 700;
   cursor: pointer;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 1px 3px rgba(var(--black-rgb), 0.04);
   transition: all 0.18s ease;
 
   ion-icon {
@@ -325,8 +325,8 @@ h1 {
   }
 
   &:hover {
-    background: #f8fafc;
-    border-color: rgba(4, 187, 241, 0.3);
+    background: var(--holcim-gray-01);
+    border-color: rgba(var(--holcim-bright-blue-rgb), 0.3);
     color: var(--holcim-bright-blue);
   }
 

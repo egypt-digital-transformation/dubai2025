@@ -241,14 +241,14 @@
   }
 
   &:hover:not(.active) {
-    background: #f1f5f9;
+    background: var(--holcim-gray-01);
     color: var(--holcim-premium-blue);
   }
 
   &.active {
     background: var(--holcim-premium-blue);
     color: var(--white);
-    box-shadow: 0 2px 6px rgba(4, 23, 57, 0.2);
+    box-shadow: 0 2px 6px rgba(var(--holcim-premium-blue-rgb), 0.2);
   }
 
   @media (min-width: 480px) {
@@ -331,14 +331,14 @@
   }
 
   &.completed-group {
-    border-left-color: #4bb05b;
+    border-left-color: var(--holcim-medium-green);
 
     .agenda-label-title {
-      color: #244369;
+      color: var(--holcim-dark-blue);
     }
 
     &:hover {
-      color: #244369;
+      color: var(--holcim-dark-blue);
     }
   }
 
@@ -377,9 +377,9 @@
 .completed-group-pill {
   font-size: 0.68rem;
   font-weight: 600;
-  color: #2e7d32;
-  background: rgba(75, 176, 91, 0.12);
-  border: 1px solid rgba(75, 176, 91, 0.25);
+  color: var(--holcim-green);
+  background: rgba(var(--holcim-medium-green-rgb), 0.12);
+  border: 1px solid rgba(var(--holcim-medium-green-rgb), 0.25);
   padding: 2px 7px;
   border-radius: 999px;
   display: inline-flex;
@@ -396,8 +396,8 @@
 .group-count-badge {
   font-size: 0.72rem;
   font-weight: 600;
-  color: #64748b;
-  background: #f1f5f9;
+  color: var(--holcim-premium-blue);
+  background: var(--holcim-gray-01);
   padding: 2px 7px;
   border-radius: 10px;
 }
@@ -405,7 +405,7 @@
 .agenda-label-chevron {
   flex: 0 0 auto;
   font-size: 1.1rem;
-  color: #64748b;
+  color: var(--holcim-premium-blue);
   transform: rotate(180deg);
   transition: transform 0.2s ease;
 
@@ -428,7 +428,7 @@
   }
 
   .material-icon-wrapper {
-    background: #f1f5f9;
+    background: var(--holcim-gray-01);
   }
 }
 
@@ -440,7 +440,7 @@
   border-radius: 12px;
   margin-bottom: 12px;
   box-shadow: 0 1px 4px rgba(var(--black-rgb), 0.05);
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--holcim-gray-02);
   border-left: 4px solid var(--holcim-medium-blue);
   overflow: hidden;
   transition: box-shadow 0.2s ease, transform 0.2s ease;
@@ -453,11 +453,11 @@
 
 // 1. LIVE NOW (Running session in progress)
 .session-card.session-status-live {
-  border-left: 4px solid #16a34a; // Refined emerald green
-  border-color: #cbd5e1;
-  border-left-color: #16a34a;
+  border-left: 4px solid var(--holcim-medium-green); // Refined emerald green
+  border-color: var(--holcim-gray-03);
+  border-left-color: var(--holcim-medium-green);
   background: var(--white);
-  box-shadow: 0 2px 8px rgba(22, 163, 74, 0.12), 0 1px 3px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 2px 8px rgba(var(--holcim-green-rgb), 0.12), 0 1px 3px rgba(var(--black-rgb), 0.04);
 
   .session-title {
     color: var(--holcim-premium-blue);
@@ -466,8 +466,8 @@
 
 // 2. PAST SESSIONS (Completed)
 .session-card.session-status-past {
-  border-left: 4px solid #94a3b8; // Clean muted slate
-  background: #f8fafc;
+  border-left: 4px solid var(--holcim-gray-04); // Clean muted slate
+  background: var(--holcim-gray-01);
   opacity: 0.9;
 
   &:hover {
@@ -476,7 +476,7 @@
   }
 
   .session-title {
-    color: #475569;
+    color: var(--holcim-premium-blue);
   }
 }
 
@@ -508,12 +508,12 @@
   border-radius: 6px;
   font-size: 0.78rem;
   font-weight: 600;
-  color: #475569;
-  background: #f1f5f9;
+  color: var(--holcim-premium-blue);
+  background: var(--holcim-gray-01);
 
   ion-icon {
     font-size: 0.85rem;
-    color: #64748b;
+    color: var(--holcim-premium-blue);
   }
 }
 
@@ -529,31 +529,31 @@
   border-radius: 6px;
 
   &.live {
-    background: #ecfdf5;
-    color: #047857;
-    border: 1px solid #a7f3d0;
+    background: rgba(var(--holcim-green-rgb), 0.08);
+    color: var(--holcim-green);
+    border: 1px solid rgba(var(--holcim-green-rgb), 0.2);
     font-weight: 700;
   }
 
   &.past {
-    background: #f1f5f9;
-    color: #64748b;
-    border: 1px solid #e2e8f0;
+    background: var(--holcim-gray-01);
+    color: var(--holcim-premium-blue);
+    border: 1px solid var(--holcim-gray-02);
 
     ion-icon {
       font-size: 0.82rem;
-      color: #64748b;
+      color: var(--holcim-premium-blue);
     }
   }
 
   &.upcoming {
-    background: #f0f9ff;
-    color: #0284c7;
-    border: 1px solid #bae6fd;
+    background: rgba(var(--holcim-bright-blue-rgb), 0.08);
+    color: var(--holcim-medium-blue);
+    border: 1px solid rgba(var(--holcim-bright-blue-rgb), 0.25);
 
     ion-icon {
       font-size: 0.82rem;
-      color: #0284c7;
+      color: var(--holcim-medium-blue);
     }
   }
 }
@@ -562,7 +562,7 @@
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #10b981;
+  background: var(--holcim-green);
 }
 
 // Session Content
@@ -1847,13 +1847,13 @@ button.material-card {
   width: 72px;
   height: 38px;
   border-radius: 9999px;
-  background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+  background: linear-gradient(90deg, var(--holcim-gray-02) 25%, var(--holcim-gray-01) 50%, var(--holcim-gray-02) 75%);
   background-size: 200% 100%;
   animation: holcimShimmer 1.5s infinite;
 
   &.active {
     width: 80px;
-    background: linear-gradient(90deg, #cbd5e1 25%, #e2e8f0 50%, #cbd5e1 75%);
+    background: linear-gradient(90deg, var(--holcim-gray-03) 25%, var(--holcim-gray-02) 50%, var(--holcim-gray-03) 75%);
   }
 }
 
@@ -1870,17 +1870,17 @@ button.material-card {
   align-self: flex-start;
   gap: 0.625rem;
   padding: 0.5rem 0.875rem;
-  background: rgba(4, 23, 57, 0.04);
-  border: 1px solid rgba(4, 23, 57, 0.08);
+  background: rgba(var(--holcim-premium-blue-rgb), 0.04);
+  border: 1px solid rgba(var(--holcim-premium-blue-rgb), 0.08);
   border-radius: 9999px;
-  color: var(--holcim-dark-blue, #041739);
+  color: var(--holcim-dark-blue, var(--holcim-premium-blue));
   font-size: 0.8125rem;
   font-weight: 600;
 
   ion-spinner {
     width: 16px;
     height: 16px;
-    --color: var(--holcim-bright-blue, #00A3E0);
+    --color: var(--holcim-bright-blue, var(--holcim-bright-blue));
   }
 }
 
@@ -1914,10 +1914,10 @@ button.material-card {
   flex-direction: column;
   gap: 0.75rem;
   padding: 1rem 1.125rem;
-  background: #ffffff;
+  background: var(--holcim-white);
   border-radius: 14px;
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  border: 1px solid var(--holcim-gray-02);
+  box-shadow: 0 1px 3px rgba(var(--black-rgb), 0.04);
 
   .skeleton-card-top {
     display: flex;
@@ -1963,7 +1963,7 @@ button.material-card {
 }
 
 .skeleton-line {
-  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+  background: linear-gradient(90deg, var(--holcim-gray-01) 25%, var(--holcim-gray-02) 50%, var(--holcim-gray-01) 75%);
   background-size: 200% 100%;
   animation: holcimShimmer 1.5s ease-in-out infinite;
 }

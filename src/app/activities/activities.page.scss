@@ -10,9 +10,9 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: var(--app-surface, #ffffff);
-  border-top: 1px solid var(--app-border, #ececec);
-  color: var(--app-text-muted, #4a5568);
+  background: var(--app-surface, var(--holcim-white));
+  border-top: 1px solid var(--app-border, var(--holcim-gray-02));
+  color: var(--app-text-muted, var(--holcim-premium-blue));
   font-family: var(--ion-font-family, 'Holcim', sans-serif);
   font-size: 0.6rem;
   font-weight: 500;
@@ -31,8 +31,8 @@
 }
 
 .activities-content {
-  --background: #f8fafc;
-  background-color: #f8fafc;
+  --background: var(--holcim-gray-01);
+  background-color: var(--holcim-gray-01);
   font-family: var(--ion-font-family, 'Holcim', sans-serif);
 }
 
@@ -42,14 +42,14 @@
 .header-gradient {
   background: linear-gradient(
     135deg,
-    #041739 0%,
-    #07265c 50%,
-    #03112a 100%
+    var(--holcim-premium-blue) 0%,
+    var(--holcim-premium-blue) 50%,
+    var(--holcim-premium-blue) 100%
   );
   padding: clamp(3rem, 7vh, 4.5rem) 1.25rem 2rem;
   position: relative;
   overflow: hidden;
-  box-shadow: 0 4px 20px rgba(4, 23, 57, 0.2);
+  box-shadow: 0 4px 20px rgba(var(--holcim-premium-blue-rgb), 0.2);
 }
 
 .header-nav {
@@ -65,11 +65,11 @@
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(var(--white-rgb), 0.12);
+  border: 1px solid rgba(var(--white-rgb), 0.22);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  color: #ffffff;
+  color: var(--holcim-white);
   padding: 0.45rem 0.85rem;
   border-radius: 9999px;
   font-size: 0.825rem;
@@ -82,7 +82,7 @@
   }
 
   &:hover {
-    background: rgba(255, 255, 255, 0.22);
+    background: rgba(var(--white-rgb), 0.22);
     transform: translateX(-2px);
   }
 
@@ -96,11 +96,11 @@
   font-weight: 700;
   letter-spacing: 1.2px;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.75);
-  background: rgba(255, 255, 255, 0.08);
+  color: rgba(var(--white-rgb), 0.75);
+  background: rgba(var(--white-rgb), 0.08);
   padding: 0.35rem 0.75rem;
   border-radius: 9999px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(var(--white-rgb), 0.12);
 }
 
 .header-text-block {
@@ -110,7 +110,7 @@
 }
 
 .header-title {
-  color: #ffffff;
+  color: var(--holcim-white);
   font-size: clamp(1.65rem, 4vw, 2.25rem);
   font-weight: 800;
   line-height: 1.2;
@@ -119,7 +119,7 @@
 }
 
 .header-subtitle {
-  color: rgba(255, 255, 255, 0.8);
+  color: rgba(var(--white-rgb), 0.8);
   font-size: 0.875rem;
   line-height: 1.5;
   margin: 0;
@@ -173,7 +173,7 @@
   }
 
   &.is-submitted {
-    background: #fcfdfe;
+    background: var(--holcim-gray-01);
   }
 }
 
@@ -219,9 +219,9 @@
   font-weight: 700;
   padding: 0.26rem 0.65rem;
   border-radius: 999px;
-  background: rgba(4, 23, 57, 0.06);
+  background: rgba(var(--holcim-premium-blue-rgb), 0.06);
   color: var(--holcim-dark-blue);
-  border: 1px solid rgba(4, 23, 57, 0.12);
+  border: 1px solid rgba(var(--holcim-premium-blue-rgb), 0.12);
   max-width: 220px;
   white-space: nowrap;
   overflow: hidden;
@@ -260,9 +260,9 @@
   }
 
   &.locked {
-    background: #fff7ed;
-    color: #c2410c;
-    border: 1px solid #fed7aa;
+    background: rgba(var(--holcim-orange-rgb), 0.08);
+    color: var(--holcim-orange);
+    border: 1px solid rgba(var(--holcim-orange-rgb), 0.25);
   }
 
   &.timed-out {
@@ -357,8 +357,8 @@
   &:disabled {
     opacity: 0.58;
     cursor: not-allowed;
-    background: #f8fafc;
-    border-color: #e2e8f0;
+    background: var(--holcim-gray-01);
+    border-color: var(--holcim-gray-02);
   }
 
   &.selected {

@@ -14,7 +14,7 @@ ion-content {
 // HEADER SECTION  (mobile-first)
 // ============================================
 .header-gradient {
-  background: linear-gradient(135deg, var(--holcim-premium-blue) 0%, #031027 65%, var(--holcim-dark-blue) 100%);
+  background: linear-gradient(135deg, var(--holcim-premium-blue) 0%, var(--holcim-premium-blue) 65%, var(--holcim-dark-blue) 100%);
   padding: 4.5rem 1.25rem 3rem;  // ⬆️ more vertical padding on mobile
   position: relative;
   overflow: hidden;
@@ -355,13 +355,13 @@ ion-content {
   /* 🟢 LIVE CARD */
   &.live-card,
   &.live {
-    border-left: 4px solid #2e7d32;
-    background: linear-gradient(180deg, rgba(75, 176, 91, 0.04) 0%, #ffffff 50%);
-    border-color: rgba(75, 176, 91, 0.32);
+    border-left: 4px solid var(--holcim-green);
+    background: linear-gradient(180deg, rgba(var(--holcim-medium-green-rgb), 0.04) 0%, var(--holcim-white) 50%);
+    border-color: rgba(var(--holcim-medium-green-rgb), 0.32);
 
     &:hover {
-      border-color: rgba(75, 176, 91, 0.5);
-      box-shadow: 0 8px 18px -4px rgba(46, 125, 50, 0.1),
+      border-color: rgba(var(--holcim-medium-green-rgb), 0.5);
+      box-shadow: 0 8px 18px -4px rgba(var(--holcim-green-rgb), 0.1),
                   0 2px 6px -2px rgba(var(--black-rgb), 0.04);
     }
   }
@@ -370,8 +370,8 @@ ion-content {
   &.next-card,
   &.next-session {
     border-left: 4px solid var(--holcim-bright-blue);
-    background: linear-gradient(180deg, rgba(4, 187, 241, 0.03) 0%, #ffffff 50%);
-    border-color: rgba(4, 187, 241, 0.22);
+    background: linear-gradient(180deg, rgba(var(--holcim-bright-blue-rgb), 0.03) 0%, var(--holcim-white) 50%);
+    border-color: rgba(var(--holcim-bright-blue-rgb), 0.22);
 
     &.secondary-card,
     &.secondary {
@@ -379,8 +379,8 @@ ion-content {
     }
 
     &:hover {
-      border-color: rgba(4, 187, 241, 0.4);
-      box-shadow: 0 8px 18px -4px rgba(4, 187, 241, 0.1),
+      border-color: rgba(var(--holcim-bright-blue-rgb), 0.4);
+      box-shadow: 0 8px 18px -4px rgba(var(--holcim-bright-blue-rgb), 0.1),
                   0 2px 6px -2px rgba(var(--black-rgb), 0.04);
     }
   }
@@ -422,7 +422,7 @@ ion-content {
     .skeleton-pill {
       height: 1.35rem;
       border-radius: 999px;
-      background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+      background: linear-gradient(90deg, var(--holcim-gray-01) 25%, var(--holcim-gray-02) 50%, var(--holcim-gray-01) 75%);
       background-size: 200% 100%;
       animation: sessionCardShimmer 1.5s infinite;
 
@@ -432,7 +432,7 @@ ion-content {
 
     .skeleton-line {
       border-radius: 0.3rem;
-      background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+      background: linear-gradient(90deg, var(--holcim-gray-01) 25%, var(--holcim-gray-02) 50%, var(--holcim-gray-01) 75%);
       background-size: 200% 100%;
       animation: sessionCardShimmer 1.5s infinite;
 
@@ -459,7 +459,7 @@ ion-content {
       height: 1.85rem;
       border-radius: 50%;
       flex-shrink: 0;
-      background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+      background: linear-gradient(90deg, var(--holcim-gray-01) 25%, var(--holcim-gray-02) 50%, var(--holcim-gray-01) 75%);
       background-size: 200% 100%;
       animation: sessionCardShimmer 1.5s infinite;
     }
@@ -481,7 +481,7 @@ ion-content {
   .time-countdown-pill {
     font-size: 0.72rem;
     font-weight: 600;
-    color: #475569;
+    color: var(--holcim-premium-blue);
     background: rgba(var(--holcim-dark-blue-rgb), 0.04);
     padding: 0.18rem 0.55rem;
     border-radius: 999px;
@@ -492,22 +492,22 @@ ion-content {
 
     ion-icon {
       font-size: 0.8rem;
-      color: #64748b;
+      color: var(--holcim-premium-blue);
     }
 
     &.live {
-      background: rgba(75, 176, 91, 0.12);
-      color: #1b5e20;
+      background: rgba(var(--holcim-medium-green-rgb), 0.12);
+      color: var(--holcim-green);
 
       ion-icon {
-        color: #2e7d32;
+        color: var(--holcim-green);
       }
     }
   }
 
   .card-chevron {
     font-size: 0.95rem;
-    color: #94a3b8;
+    color: var(--holcim-gray-04);
     transition: transform 0.2s ease, color 0.2s ease;
   }
 }
@@ -545,9 +545,9 @@ ion-content {
     }
 
     &.time-pill {
-      background: rgba(4, 187, 241, 0.08);
+      background: rgba(var(--holcim-bright-blue-rgb), 0.08);
       color: var(--holcim-dark-blue);
-      border: 1px solid rgba(4, 187, 241, 0.18);
+      border: 1px solid rgba(var(--holcim-bright-blue-rgb), 0.18);
 
       ion-icon {
         color: var(--holcim-medium-blue);
@@ -591,13 +591,13 @@ ion-content {
     font-weight: 700;
     font-size: 0.72rem;
     letter-spacing: 0.02em;
-    border: 1.5px solid #ffffff;
+    border: 1.5px solid var(--holcim-white);
     box-shadow: 0 1px 4px rgba(var(--holcim-dark-blue-rgb), 0.12);
   }
 
   .avatar-img {
     object-fit: cover;
-    border: 1.5px solid #ffffff;
+    border: 1.5px solid var(--holcim-white);
     box-shadow: 0 1px 4px rgba(var(--holcim-dark-blue-rgb), 0.12);
   }
 
@@ -614,7 +614,7 @@ ion-content {
     }
 
     .speaker-role {
-      color: #64748b;
+      color: var(--holcim-premium-blue);
       font-size: 0.72rem;
       font-weight: 500;
       line-height: 1.3;
@@ -732,24 +732,24 @@ ion-content {
   }
 
   &.gala-card {
-    border-color: rgba(217, 119, 6, 0.25);
-    background: linear-gradient(170deg, rgba(217, 119, 6, 0.04) 0%, var(--white) 65%);
+    border-color: rgba(var(--holcim-orange-rgb), 0.25);
+    background: linear-gradient(170deg, rgba(var(--holcim-orange-rgb), 0.04) 0%, var(--white) 65%);
 
     &::before {
-      background: linear-gradient(90deg, #B45309 0%, #F59E0B 100%);
+      background: linear-gradient(90deg, var(--holcim-orange) 0%, var(--holcim-orange) 100%);
     }
 
     .seating-badge {
-      background: rgba(217, 119, 6, 0.12);
-      color: #92400E;
+      background: rgba(var(--holcim-orange-rgb), 0.12);
+      color: var(--holcim-orange);
     }
 
     .table-val {
-      color: #78350F;
+      color: var(--holcim-orange);
     }
 
     .seating-venue-row {
-      color: #92400E;
+      color: var(--holcim-orange);
     }
   }
 
@@ -900,14 +900,14 @@ ion-content {
       justify-content: center;
       margin-bottom: 0.45rem;
       flex-shrink: 0;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+      box-shadow: 0 2px 6px rgba(var(--black-rgb), 0.08);
 
       .activity-badge {
         position: absolute;
         top: -5px;
         right: -6px;
-        background: #e11d48;
-        color: #ffffff;
+        background: var(--holcim-bright-red);
+        color: var(--holcim-white);
         font-size: 0.58rem;
         font-weight: 800;
         min-width: 1.1rem;
@@ -918,32 +918,32 @@ ion-content {
         align-items: center;
         justify-content: center;
         border: 2px solid var(--white);
-        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+        box-shadow: 0 2px 6px rgba(var(--black-rgb), 0.25);
         z-index: 2;
       }
 
       &.qr {
-        background: linear-gradient(135deg, #00C389 0%, #009C6D 100%);
+        background: linear-gradient(135deg, var(--holcim-green) 0%, var(--holcim-green) 100%);
       }
 
       &.journey {
-        background: linear-gradient(135deg, #00A3E0 0%, #0077A8 100%);
+        background: linear-gradient(135deg, var(--holcim-bright-blue) 0%, var(--holcim-medium-blue) 100%);
       }
 
       &.seating {
-        background: linear-gradient(135deg, #002F6C 0%, #B45309 100%);
+        background: linear-gradient(135deg, var(--holcim-dark-blue) 0%, var(--holcim-orange) 100%);
       }
 
       &.venue {
-        background: linear-gradient(135deg, #78BE20 0%, #5C9614 100%);
+        background: linear-gradient(135deg, var(--holcim-bright-green) 0%, var(--holcim-medium-green) 100%);
       }
 
       &.networking {
-        background: linear-gradient(135deg, var(--holcim-dark-blue) 0%, #172D54 100%);
+        background: linear-gradient(135deg, var(--holcim-dark-blue) 0%, var(--holcim-dark-blue) 100%);
       }
 
       &.moments {
-        background: linear-gradient(135deg, var(--holcim-bright-blue) 0%, #005FA5 100%);
+        background: linear-gradient(135deg, var(--holcim-bright-blue) 0%, var(--holcim-medium-blue) 100%);
       }
 
       &.polls {
@@ -951,7 +951,7 @@ ion-content {
       }
 
       &.hse {
-        background: linear-gradient(135deg, #00965E 0%, #007046 100%);
+        background: linear-gradient(135deg, var(--holcim-green) 0%, var(--holcim-green) 100%);
       }
 
       &.hse img {
@@ -998,7 +998,7 @@ ion-content {
       overflow-wrap: break-word;
 
       .unseen-badge-text {
-        color: #e11d48;
+        color: var(--holcim-bright-red);
         font-weight: 700;
       }
     }

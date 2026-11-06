@@ -808,14 +808,14 @@ export class AgendaPage implements OnInit, OnDestroy {
 
   getGroupColor(group: AgendaSessionGroup, index = 0): string {
     const palette = [
-      '#04bbf1', // Holcim Bright Blue
-      '#94c12e', // Holcim Bright Green
-      '#007fad', // Holcim Medium Blue
-      '#4bb05b', // Holcim Medium Green
-      '#ffd100', // Holcim Warm Yellow
-      '#ff7a00', // Holcim Warm Orange
-      '#00a499', // Holcim Turquoise
-      '#1d4370', // Holcim Dark Blue
+      'var(--holcim-bright-blue)', // Holcim Bright Blue
+      'var(--holcim-bright-green)', // Holcim Bright Green
+      'var(--holcim-medium-blue)', // Holcim Medium Blue
+      'var(--holcim-medium-green)', // Holcim Medium Green
+      'var(--holcim-yellow)', // Holcim Warm Yellow
+      'var(--holcim-orange)', // Holcim Warm Orange
+      'var(--holcim-bright-turquoise)', // Holcim Turquoise
+      'var(--holcim-dark-blue)', // Holcim Dark Blue
     ];
     const sessionWithColor = group.sessions.find(
       (s) => s.color && s.color !== 'var(--holcim-dark-turquoise)'
