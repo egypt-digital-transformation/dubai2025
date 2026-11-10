@@ -25,6 +25,7 @@ import {
   DocumentData,
   doc as firebaseDoc,
   getDoc as firebaseGetDoc,
+  getDocFromCache as firebaseGetDocFromCache,
   getFirestore,
   onSnapshot,
   Unsubscribe,
@@ -98,6 +99,7 @@ import { mapAgendaDaySessions, parseAgendaDate } from '../shared/agenda-day';
 import { ActivitiesService } from '../services/activities.service';
 import { EventArchiveService } from '../services/event-archive.service';
 import { AdminService, ReceivedNotification } from '../services/admin.service';
+import { getHseFirestore } from '../services/hse-firestore';
 import {
   SafetyInductionModalComponent,
   SafetyInductionSite,
@@ -147,7 +149,7 @@ export class HomePage implements OnInit, OnDestroy {
     getApps().find((app) => app.name === 'HSEApp') ??
     initializeApp(environment.hsefirebaseConfig, 'HSEApp');
   private readonly hseAuth = getAuth(this.hseApp);
-  private readonly hseFirestore = getFirestore(this.hseApp);
+  private readonly hseFirestore = getHseFirestore(this.hseApp);
   public primarySession: Session | null = null;
   public secondarySession: Session | null = null;
   public isLoadingSessions = true;
@@ -1055,9 +1057,21 @@ export class HomePage implements OnInit, OnDestroy {
     generation: number
   ): Promise<void> {
     try {
-      const progress = await firebaseGetDoc(
-        firebaseDoc(this.hseFirestore, 'userProgress', user.uid)
-      );
+      const progressRef = firebaseDoc(this.hseFirestore, 'userProgress', user.uid);
+      let progress;
+      try {
+        progress = typeof navigator !== 'undefined' && !navigator.onLine
+          ? await firebaseGetDocFromCache(progressRef)
+          : await firebaseGetDoc(progressRef);
+      } catch (error) {
+        if (
+          (typeof navigator === 'undefined' || navigator.onLine) &&
+          !this.isNetworkFailure(error)
+        ) {
+          throw error;
+        }
+        progress = await firebaseGetDocFromCache(progressRef);
+      }
       if (
         this.viewGeneration !== generation ||
         this.hseAuth.currentUser?.uid !== user.uid ||
@@ -1103,6 +1117,13 @@ export class HomePage implements OnInit, OnDestroy {
   private isSameEmail(first: string | null, second: string | null): boolean {
     return !!first && !!second &&
       first.trim().toLowerCase() === second.trim().toLowerCase();
+  }
+
+  private isNetworkFailure(error: unknown): boolean {
+    if (!error || typeof error !== 'object' || !('code' in error)) return false;
+    return ['unavailable', 'deadline-exceeded', 'network-request-failed'].includes(
+      String(error.code)
+    );
   }
 
   private handleSafetyInductionReadError(

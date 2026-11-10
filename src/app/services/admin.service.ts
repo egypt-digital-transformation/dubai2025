@@ -22,7 +22,6 @@ import {
   doc as firestoreDoc,
   getDoc as firebaseGetDoc,
   getDocs,
-  getFirestore,
   query,
   serverTimestamp,
   setDoc,
@@ -30,6 +29,7 @@ import {
   where,
 } from 'firebase/firestore';
 import { getApp, getApps, initializeApp } from 'firebase/app';
+import { Preferences } from '@capacitor/preferences';
 import {
   GoogleAuthProvider,
   getAuth,
@@ -49,6 +49,7 @@ import { environment } from '../../environments/environment';
 import { IconicProject, HolcimProduct, ProjectStats } from '../iconic-projects/models/project.model';
 import { PreviewUser } from './admin-preview.service';
 import { FirebaseInjectionContext } from './firebase-injection-context.service';
+import { getHseFirestore } from './hse-firestore';
 import { mapAgendaDaySessions } from '../shared/agenda-day';
 
 export interface AdminAttendee {
@@ -917,11 +918,10 @@ export class AdminService {
     return from(this.findUserDocumentId(email)).pipe(
       switchMap((userId) => {
         if (!userId) return of(emptyDetails);
-        const userPath = ['users', userId];
         return this.firebaseContext.run(() =>
           combineLatest({
             flightDetails: docData(
-              doc(this.firestore, ...userPath, 'flightDetails', 'flightInfo')
+              firestoreDoc(this.firestore, 'users', userId, 'flightDetails', 'flightInfo')
             ).pipe(
               map((data) =>
                 data
@@ -930,7 +930,7 @@ export class AdminService {
               )
             ),
             accommodationDetails: docData(
-              doc(this.firestore, ...userPath, 'accommodation', 'details')
+              firestoreDoc(this.firestore, 'users', userId, 'accommodation', 'details')
             ).pipe(
               map((data) =>
                 data
@@ -939,7 +939,7 @@ export class AdminService {
               )
             ),
             carDetails: docData(
-              doc(this.firestore, ...userPath, 'cardata', 'details')
+              firestoreDoc(this.firestore, 'users', userId, 'cardata', 'details')
             ).pipe(
               map((data) =>
                 data
@@ -948,9 +948,10 @@ export class AdminService {
               )
             ),
             meetAndGreetRepresentative: docData(
-              doc(
+              firestoreDoc(
                 this.firestore,
-                ...userPath,
+                'users',
+                userId,
                 'meet&greetrepresentative',
                 'details'
               )
@@ -971,31 +972,53 @@ export class AdminService {
     const normalizedEmail = email.trim().toLowerCase();
     if (!normalizedEmail) return null;
 
-    let userDocument: QueryDocumentSnapshot<DocumentData> | undefined;
-    if (await this.isAdmin()) {
-      const usersSnapshot = await this.loadUsersSnapshot();
-      userDocument = usersSnapshot.docs.find((candidate) => {
-        const data = candidate.data() as { emailAddress?: unknown; email?: unknown };
-        return String(data.emailAddress ?? data.email ?? candidate.id)
-          .trim()
-          .toLowerCase() === normalizedEmail;
-      });
-    } else {
-      const users = collection(this.firestore, 'users');
-      let userSnapshot = await getDocs(query(users, where('emailAddress', '==', normalizedEmail)));
-      if (userSnapshot.empty) {
-        userSnapshot = await getDocs(query(users, where('email', '==', normalizedEmail)));
+    const cacheKey = `journey-user-id:${normalizedEmail}`;
+    try {
+      let userDocument: QueryDocumentSnapshot<DocumentData> | undefined;
+      if (await this.isAdmin()) {
+        const usersSnapshot = await this.loadUsersSnapshot();
+        userDocument = usersSnapshot.docs.find((candidate) => {
+          const data = candidate.data() as { emailAddress?: unknown; email?: unknown };
+          return String(data.emailAddress ?? data.email ?? candidate.id)
+            .trim()
+            .toLowerCase() === normalizedEmail;
+        });
+      } else {
+        const users = collection(this.firestore, 'users');
+        let userSnapshot = await getDocs(query(users, where('emailAddress', '==', normalizedEmail)));
+        if (userSnapshot.empty) {
+          userSnapshot = await getDocs(query(users, where('email', '==', normalizedEmail)));
+        }
+        if (userSnapshot.empty && email.trim() !== normalizedEmail) {
+          userSnapshot = await getDocs(query(users, where('emailAddress', '==', email.trim())));
+        }
+        if (userSnapshot.empty && email.trim() !== normalizedEmail) {
+          userSnapshot = await getDocs(query(users, where('email', '==', email.trim())));
+        }
+        userDocument = userSnapshot.docs[0];
       }
-      if (userSnapshot.empty && email.trim() !== normalizedEmail) {
-        userSnapshot = await getDocs(query(users, where('emailAddress', '==', email.trim())));
-      }
-      if (userSnapshot.empty && email.trim() !== normalizedEmail) {
-        userSnapshot = await getDocs(query(users, where('email', '==', email.trim())));
-      }
-      userDocument = userSnapshot.docs[0];
-    }
 
-    return userDocument?.id ?? null;
+      const userId = userDocument?.id ?? null;
+      if (userId) {
+        try {
+          await Preferences.set({ key: cacheKey, value: userId });
+        } catch (error) {
+          console.error('[AdminService] Could not save the journey profile for offline use:', error);
+        }
+      }
+      return userId;
+    } catch (error) {
+      let cachedUserId: string | null;
+      try {
+        ({ value: cachedUserId } = await Preferences.get({ key: cacheKey }));
+      } catch (cacheError) {
+        console.error('[AdminService] Could not read the saved journey profile:', cacheError);
+        throw error;
+      }
+      if (!cachedUserId) throw error;
+      console.warn('[AdminService] Using the saved journey profile while offline:', error);
+      return cachedUserId;
+    }
   }
 
   async saveProject(project: ProjectInput): Promise<IconicProject> {
@@ -1426,7 +1449,7 @@ export class AdminService {
       throw new Error('Connect to HSE using your Ahlan administrator account first.');
     }
 
-    const hseFirestore = getFirestore(hseApp);
+    const hseFirestore = getHseFirestore(hseApp);
     const snapshot = await this.firebaseContext.run(() =>
       getDocs(collection(hseFirestore, 'userProgress'))
     );

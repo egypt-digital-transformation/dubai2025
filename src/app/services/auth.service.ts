@@ -13,8 +13,10 @@ import {
   query,
   where,
   getDocs,
+  getDocsFromServer,
   doc,
   getDoc,
+  getDocFromServer,
   updateDoc,
 } from '@angular/fire/firestore';
 import { getFunctions, httpsCallable } from 'firebase/functions';
@@ -32,6 +34,8 @@ export class AuthService {
   public user$ = this._user.asObservable();
 
   private authInitialized = false;
+  private legacyAuthorizedUid: string | null = null;
+  private legacyAuthorizedEmail: string | null = null;
   private initPromise: Promise<void>;
 
   constructor(private auth: Auth) {
@@ -43,6 +47,24 @@ export class AuthService {
     return new Promise((resolve) => {
       this.firebaseContext.run(() =>
         onAuthStateChanged(this.auth, async (user) => {
+          if (!this.authInitialized && user) {
+            const { value: savedUser } = await Preferences.get({ key: 'user' });
+            if (savedUser) {
+              try {
+                const cachedUser = JSON.parse(savedUser) as { uid?: string; email?: string };
+                if (
+                  cachedUser.uid === user.uid &&
+                  cachedUser.email?.trim().toLowerCase() === user.email?.trim().toLowerCase()
+                ) {
+                  this.legacyAuthorizedUid = user.uid;
+                  this.legacyAuthorizedEmail = user.email?.trim().toLowerCase() ?? null;
+                }
+              } catch (error) {
+                console.warn('[AuthService] Saved user session is invalid:', error);
+              }
+            }
+          }
+
           this._user.next(user);
 
           if (user) {
@@ -57,7 +79,12 @@ export class AuthService {
               }),
             });
           } else {
-            await Preferences.remove({ key: 'user' });
+            this.legacyAuthorizedUid = null;
+            this.legacyAuthorizedEmail = null;
+            await Promise.all([
+              Preferences.remove({ key: 'user' }),
+              Preferences.remove({ key: 'authorized-user' }),
+            ]);
           }
 
           if (!this.authInitialized) {
@@ -92,15 +119,25 @@ export class AuthService {
     if (!email) return false;
     const normalizedEmail = email.trim().toLowerCase();
 
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      return this.hasCachedAuthorization(normalizedEmail);
+    }
+
     // 1. Try server-side Cloud Function verifyUserAccess first
     try {
       const functions = getFunctions(undefined, 'europe-west1');
       const verifyFn = httpsCallable<object, { allowed: boolean; role: string | null }>(
         functions,
-        'verifyUserAccess'
+        'verifyUserAccess',
+        { timeout: 8000 }
       );
       const res = await verifyFn({});
       if (res?.data && typeof res.data.allowed === 'boolean') {
+        if (res.data.allowed) {
+          await this.cacheAuthorization(normalizedEmail);
+        } else {
+          await this.clearAuthorizationCache();
+        }
         return res.data.allowed;
       }
     } catch (cfError) {
@@ -111,53 +148,115 @@ export class AuthService {
     try {
       // Check admin status
       const adminDoc = await this.firebaseContext.run(() =>
-        getDoc(doc(this.firestore, 'admins', normalizedEmail))
+        getDocFromServer(doc(this.firestore, 'admins', normalizedEmail))
       );
       if (adminDoc.exists() && adminDoc.data()?.['active'] === true) {
+        await this.cacheAuthorization(normalizedEmail);
         return true;
       }
 
       // Check users collection by document ID
       const userDocById = await this.firebaseContext.run(() =>
-        getDoc(doc(this.firestore, 'users', normalizedEmail))
+        getDocFromServer(doc(this.firestore, 'users', normalizedEmail))
       );
       if (userDocById.exists()) {
+        await this.cacheAuthorization(normalizedEmail);
         return true;
       }
 
       // Check users collection by email / emailAddress fields
       const usersRef = collection(this.firestore, 'users');
-      const [emailQuery, emailAddressQuery] = await Promise.all([
+      const emailQueries = [
         this.firebaseContext.run(() =>
-          getDocs(query(usersRef, where('email', '==', normalizedEmail)))
-        ).catch(() => null),
+          getDocsFromServer(query(usersRef, where('email', '==', normalizedEmail)))
+        ),
         this.firebaseContext.run(() =>
-          getDocs(query(usersRef, where('emailAddress', '==', normalizedEmail)))
-        ).catch(() => null),
-      ]);
-
-      if ((emailQuery && !emailQuery.empty) || (emailAddressQuery && !emailAddressQuery.empty)) {
-        return true;
-      }
+          getDocsFromServer(query(usersRef, where('emailAddress', '==', normalizedEmail)))
+        ),
+      ];
 
       if (email.trim() !== normalizedEmail) {
-        const [rawEmailQuery, rawEmailAddressQuery] = await Promise.all([
+        emailQueries.push(
           this.firebaseContext.run(() =>
-            getDocs(query(usersRef, where('email', '==', email.trim())))
-          ).catch(() => null),
+            getDocsFromServer(query(usersRef, where('email', '==', email.trim())))
+          ),
           this.firebaseContext.run(() =>
-            getDocs(query(usersRef, where('emailAddress', '==', email.trim())))
-          ).catch(() => null),
-        ]);
-        if ((rawEmailQuery && !rawEmailQuery.empty) || (rawEmailAddressQuery && !rawEmailAddressQuery.empty)) {
+            getDocsFromServer(query(usersRef, where('emailAddress', '==', email.trim())))
+          )
+        );
+      }
+
+      const matchingUser = (await Promise.all(emailQueries)).some((result) => !result.empty);
+      if (matchingUser) {
+        await this.cacheAuthorization(normalizedEmail);
+        return true;
+      }
+    } catch (firestoreError) {
+      if (this.isConnectivityError(firestoreError)) {
+        console.warn('[AuthService] Firestore is unreachable; checking the saved session:', firestoreError);
+        return this.hasCachedAuthorization(normalizedEmail);
+      }
+
+      console.error('[AuthService] Firestore access verification was denied or failed:', firestoreError);
+      return false;
+    }
+
+    await this.clearAuthorizationCache();
+    return false;
+  }
+
+  private async clearAuthorizationCache(): Promise<void> {
+    try {
+      await Preferences.remove({ key: 'authorized-user' });
+    } catch (error) {
+      console.error('[AuthService] Could not clear offline authorization:', error);
+    }
+  }
+
+  private isConnectivityError(error: unknown): boolean {
+    if (!error || typeof error !== 'object' || !('code' in error)) return false;
+
+    const code = String(error.code);
+    return [
+      'unavailable',
+      'deadline-exceeded',
+      'network-request-failed',
+      'functions/unavailable',
+      'functions/deadline-exceeded',
+    ].includes(code);
+  }
+
+  private async cacheAuthorization(email: string): Promise<void> {
+    const user = this.auth.currentUser ?? this.currentUser;
+    if (!user) return;
+
+    try {
+      await Preferences.set({
+        key: 'authorized-user',
+        value: JSON.stringify({ uid: user.uid, email }),
+      });
+    } catch (error) {
+      console.error('[AuthService] Could not save offline authorization:', error);
+    }
+  }
+
+  private async hasCachedAuthorization(email: string): Promise<boolean> {
+    const user = this.auth.currentUser ?? this.currentUser;
+    if (!user) return false;
+
+    try {
+      const { value: savedAuthorization } = await Preferences.get({ key: 'authorized-user' });
+      if (savedAuthorization) {
+        const authorization = JSON.parse(savedAuthorization) as { uid?: string; email?: string };
+        if (authorization.uid === user.uid && authorization.email === email) {
           return true;
         }
       }
-    } catch (firestoreError) {
-      console.error('[AuthService] Firestore verification error:', firestoreError);
+    } catch (error) {
+      console.error('[AuthService] Could not read offline authorization:', error);
     }
 
-    return false;
+    return this.legacyAuthorizedUid === user.uid && this.legacyAuthorizedEmail === email;
   }
 
   /** Google Sign-In with pre-registered users allowlist check */
@@ -190,7 +289,10 @@ export class AuthService {
   async logout(): Promise<void> {
     try {
       await this.firebaseContext.run(() => signOut(this.auth));
-      await Preferences.remove({ key: 'user' });
+      await Promise.all([
+        Preferences.remove({ key: 'user' }),
+        Preferences.remove({ key: 'authorized-user' }),
+      ]);
       this._user.next(null);
     } catch (error) {
       console.error('[AuthService] Logout Error:', error);

@@ -61,8 +61,8 @@
       </section>
 
       <section class="home-section essentials-section" aria-labelledby="essentials-heading">
-        <div class="home-section-heading">
-          <div>
+        <div class="home-section-heading essentials-heading">
+          <div class="essentials-heading-copy">
             <p class="section-eyebrow">
               {{ messageType === 'over' ? 'REVISIT THE MOMENTS' : 'HERE WHEN YOU NEED THEM' }}
             </p>
@@ -70,6 +70,14 @@
               {{ messageType === 'over' ? 'Explore the event archive' : 'Your Event Essentials' }}
             </h2>
           </div>
+          <span
+            *ngIf="userGroupLabel"
+            class="user-group-chip"
+            [attr.aria-label]="'Your group: ' + userGroupLabel"
+          >
+            <ion-icon name="people-outline" aria-hidden="true"></ion-icon>
+            <span>{{ userGroupLabel }}</span>
+          </span>
         </div>
         <div class="quick-actions">
           <button type="button" class="action-card" (click)="openQRCode()" [disabled]="isPreviewingUser">
@@ -636,7 +644,7 @@
           </div>
 
           <h1 class="welcome-heading">
-            Welcome to the Land of Pharaohs, <span class="highlight-name">{{ flightWelcomeFirstName }}</span>!
+            Welcome to the Land of the Pharaohs, <span class="highlight-name">{{ flightWelcomeFirstName }}</span>!
           </h1>
 
           <p class="welcome-lead">

@@ -2518,6 +2518,59 @@ ion-modal::part(content) {
   }
 }
 
+.essentials-heading {
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+
+  .essentials-heading-copy {
+    flex: 1 1 auto;
+    min-width: 0;
+
+    h2 {
+      overflow-wrap: anywhere;
+    }
+  }
+}
+
+.user-group-chip {
+  align-items: center;
+  background: rgba(var(--holcim-bright-blue-rgb), 0.1);
+  border: 1px solid rgba(var(--holcim-bright-blue-rgb), 0.22);
+  border-radius: 999px;
+  color: var(--holcim-dark-blue);
+  display: inline-flex;
+  flex: 0 1 auto;
+  font-size: 0.68rem;
+  font-weight: 700;
+  gap: 0.3rem;
+  line-height: 1.2;
+  max-width: 48%;
+  min-width: 0;
+  padding: 0.38rem 0.55rem;
+  white-space: normal;
+
+  ion-icon {
+    color: var(--holcim-bright-blue);
+    flex: 0 0 auto;
+    font-size: 0.9rem;
+  }
+
+  span {
+    overflow-wrap: anywhere;
+  }
+}
+
+@media (max-width: 360px) {
+  .essentials-heading {
+    align-items: flex-start;
+  }
+
+  .user-group-chip {
+    max-width: 48%;
+  }
+}
+
 .day-chip {
   background: var(--background-color);
   border-radius: 999px;
@@ -2648,7 +2701,8 @@ ion-modal.flight-welcome-modal {
   --width: 92%;
   --max-width: 440px;
   --height: auto;
-  --max-height: 90vh;
+  --max-height: calc(100vh - 2rem);
+  --max-height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 2rem);
   --border-radius: 1.5rem;
   --box-shadow: 0 25px 50px -12px rgba(4, 23, 57, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.12);
 
@@ -2665,11 +2719,14 @@ ion-modal.flight-welcome-modal {
   background: #ffffff;
   border-radius: 1.5rem;
   overflow: hidden;
+  max-height: calc(100vh - 2rem);
+  max-height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 2rem);
 }
 
 .flight-welcome-hero {
   position: relative;
   height: 140px;
+  flex-shrink: 0;
   background: linear-gradient(135deg, #041739 0%, #0d346b 60%, #154c9c 100%);
   display: flex;
   align-items: flex-start;
@@ -2782,6 +2839,19 @@ ion-modal.flight-welcome-modal {
   display: flex;
   flex-direction: column;
   align-items: center;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+
+  .welcome-heading,
+  .welcome-lead,
+  .welcome-desc {
+    width: 100%;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
 
   .flight-arrival-chip {
     display: inline-flex;
@@ -2841,12 +2911,13 @@ ion-modal.flight-welcome-modal {
 
   .welcome-quick-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.65rem;
     width: 100%;
     margin-bottom: 1.25rem;
 
     .quick-pill {
+      min-width: 0;
       background: #f8fafc;
       border: 1px solid #e2e8f0;
       border-radius: 0.85rem;
@@ -2890,7 +2961,7 @@ ion-modal.flight-welcome-modal {
       .pill-text {
         display: flex;
         flex-direction: column;
-        overflow: hidden;
+        min-width: 0;
 
         strong {
           font-size: 0.82rem;
@@ -2902,9 +2973,9 @@ ion-modal.flight-welcome-modal {
         small {
           font-size: 0.68rem;
           color: #64748b;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
+          line-height: 1.25;
+          white-space: normal;
+          overflow-wrap: anywhere;
         }
       }
     }

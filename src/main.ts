@@ -4,14 +4,19 @@ import './theme/variables.scss';
 import { bootstrapApplication } from '@angular/platform-browser';
 import { RouteReuseStrategy } from '@angular/router';
 import { IonicRouteStrategy, provideIonicAngular } from '@ionic/angular/standalone';
-import { provideFirebaseApp, initializeApp } from '@angular/fire/app';
+import { FirebaseApp, provideFirebaseApp, initializeApp } from '@angular/fire/app';
 import { provideAuth, getAuth } from '@angular/fire/auth';
-import { provideFirestore, getFirestore } from '@angular/fire/firestore';
+import {
+  initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager,
+  provideFirestore,
+} from '@angular/fire/firestore';
 import { provideStorage, getStorage } from '@angular/fire/storage'; // ✅ Add this
 import { AppComponent } from './app/app.component';
 import { routes } from './app/app.routes';
 import { environment } from './environments/environment';
-import { enableProdMode, isDevMode, APP_INITIALIZER } from '@angular/core';
+import { enableProdMode, isDevMode, APP_INITIALIZER, inject } from '@angular/core';
 import { provideServiceWorker } from '@angular/service-worker';
 import { defineCustomElements } from '@ionic/pwa-elements/loader';
 import { provideRouter } from '@angular/router';
@@ -53,7 +58,13 @@ bootstrapApplication(AppComponent, {
     provideIonicAngular(),
     provideRouter(routes),
     provideFirebaseApp(() => initializeApp(environment.firebaseConfig)),
-    provideFirestore(() => getFirestore()),
+    provideFirestore(() =>
+      initializeFirestore(inject(FirebaseApp), {
+        localCache: persistentLocalCache({
+          tabManager: persistentMultipleTabManager(),
+        }),
+      })
+    ),
     provideAuth(() => getAuth()),
     provideStorage(() => getStorage()), 
 

@@ -60,10 +60,10 @@
         "https://firebasestorage.googleapis.com/**"
       ],
       "cacheConfig": {
-        "strategy": "performance",
-        "maxSize": 60,
-        "maxAge": "7d",
-        "timeout": "10s"
+        "strategy": "freshness",
+        "maxSize": 300,
+        "maxAge": "30d",
+        "timeout": "3s"
       }
     }
   ]
