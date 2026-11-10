@@ -1,0 +1,391 @@
+<ion-content class="module-page photos-page">
+  <main class="module-shell">
+    <header class="module-hero skyline-hero">
+      <img src="assets/skyline.webp" alt="" class="skyline-hero-image" aria-hidden="true" />
+      <p class="eyebrow">MOMENTS FROM AMEA 2026</p>
+      <h1>Timeline</h1>
+      <p>Share a moment from the event and see what everyone is up to.</p>
+    </header>
+
+    <div class="feed-actions">
+      <button
+        class="photo-add-button"
+        type="button"
+        aria-label="Share a photo"
+        (click)="openComposerModal()"
+      >
+        <ion-icon name="add-outline" aria-hidden="true"></ion-icon>
+        <span>
+          <strong>Share a photo</strong>
+          <small>Capture a moment from the event</small>
+        </span>
+      </button>
+      <button
+        class="refresh-button"
+        type="button"
+        aria-label="Refresh photos"
+        [disabled]="isLoading"
+        (click)="loadFeed(true)"
+      >
+        <ion-icon name="refresh-outline" aria-hidden="true"></ion-icon>
+      </button>
+    </div>
+
+    <section class="feed-section" aria-label="Shared event photos">
+      <p class="feed-message" *ngIf="isLoading" role="status">Loading photos…</p>
+      <div class="feed-error" *ngIf="!isLoading && errorMessage" role="alert">
+        <p>{{ errorMessage }}</p>
+        <button type="button" (click)="loadFeed(true)">Try again</button>
+      </div>
+      <p class="empty-feed" *ngIf="!isLoading && !errorMessage && !posts.length">
+        No photos yet. Share the first moment from the event!
+      </p>
+
+      <article class="photo-post" *ngFor="let post of posts">
+        <header class="post-author">
+          <span class="post-avatar post-avatar-fallback" aria-hidden="true">
+            {{ post.userName?.charAt(0) || 'A' }}
+          </span>
+          <img
+            *ngIf="post.userPhoto"
+            class="post-avatar"
+            [src]="post.userPhoto"
+            alt=""
+            referrerpolicy="no-referrer"
+          />
+          <span class="post-author-name">{{ post.userName || 'Attendee' }}</span>
+          <button
+            *ngIf="post.userId === currentUserId"
+            class="delete-post-button"
+            type="button"
+            [disabled]="deletingPostId === post.id"
+            [attr.aria-label]="deletingPostId === post.id ? 'Deleting photo' : 'Delete your photo'"
+            (click)="confirmDeletePost(post)"
+          >
+            <ion-icon name="trash-outline" aria-hidden="true"></ion-icon>
+            <span class="visually-hidden">{{ deletingPostId === post.id ? 'Deleting…' : 'Delete' }}</span>
+          </button>
+          <time *ngIf="postDate(post) as postedAt" [attr.datetime]="postedAt.toISOString()">
+            <span class="post-date-wide">{{ postedAt | date: 'MMM d, h:mm a' }}</span>
+            <span class="post-date-compact">{{ postedAt | date: 'M/d, h:mm a' }}</span>
+          </time>
+        </header>
+        <p class="post-caption" *ngIf="post.caption">{{ post.caption }}</p>
+        <img
+          *ngIf="post.photoURL"
+          class="post-photo"
+          [src]="post.photoURL"
+          alt="Photo shared by {{ post.userName || 'an attendee' }}"
+          loading="lazy"
+        />
+
+        <!-- Likes and comments engagement bar -->
+        <footer class="post-engagement">
+          <div class="engagement-action like-action">
+            <button
+              type="button"
+              class="engagement-icon-btn like-icon-btn"
+              [class.liked]="isPostLikedByMe(post)"
+              [disabled]="togglingLikePostId === post.id"
+              (click)="toggleLike(post)"
+              [attr.aria-label]="isPostLikedByMe(post) ? 'Unlike this photo' : 'Like this photo'"
+            >
+              <ion-icon [name]="isPostLikedByMe(post) ? 'heart' : 'heart-outline'"></ion-icon>
+            </button>
+            <button
+              type="button"
+              class="engagement-label-btn likes-count-btn"
+              (click)="openLikesModal(post)"
+              [attr.aria-label]="'View ' + (post.likes?.length || 0) + ' people who liked this photo'"
+            >
+              <span class="count-value">{{ post.likes?.length || 0 }}</span>
+              <span class="count-text">{{ (post.likes?.length === 1) ? 'like' : 'likes' }}</span>
+            </button>
+          </div>
+
+          <div class="engagement-action comment-action">
+            <button
+              type="button"
+              class="engagement-icon-btn comment-icon-btn"
+              (click)="openCommentsModal(post)"
+              aria-label="View and write comments"
+            >
+              <ion-icon name="chatbubble-outline"></ion-icon>
+            </button>
+            <button
+              type="button"
+              class="engagement-label-btn comments-count-btn"
+              (click)="openCommentsModal(post)"
+              [attr.aria-label]="'View ' + (post.comments?.length || 0) + ' comments'"
+            >
+              <span class="count-value">{{ post.comments?.length || 0 }}</span>
+              <span class="count-text">{{ (post.comments?.length === 1) ? 'comment' : 'comments' }}</span>
+            </button>
+          </div>
+        </footer>
+      </article>
+
+      <button
+        class="load-more-button"
+        type="button"
+        *ngIf="!isLoading && !errorMessage && hasMore"
+        [disabled]="isLoadingMore"
+        (click)="loadFeed()"
+      >
+        {{ isLoadingMore ? 'Loading…' : 'Load more photos' }}
+      </button>
+    </section>
+  </main>
+
+  <ion-modal
+    [isOpen]="showComposerModal"
+    [backdropDismiss]="!isPosting"
+    (didDismiss)="closeComposerModal()"
+    class="photo-composer-modal"
+  >
+    <ng-template>
+      <div class="photo-composer-content">
+        <header class="photo-composer-header">
+          <div>
+            <p class="card-eyebrow">YOUR MOMENT</p>
+            <h2 id="share-photo-title">Share a photo</h2>
+          </div>
+          <button
+            type="button"
+            class="close-composer-button"
+            aria-label="Close share photo dialog"
+            [disabled]="isPosting"
+            (click)="closeComposerModal()"
+          >
+            <ion-icon name="close-outline" aria-hidden="true"></ion-icon>
+          </button>
+        </header>
+
+        <p class="sharing-guidance">
+          Share appropriate event photos only. Please respect people’s privacy:
+          don’t post photos of anyone who doesn’t want to be shared.
+        </p>
+
+        <form (ngSubmit)="createPost()">
+          <label class="caption-label" for="photo-caption">Caption <span>(optional)</span></label>
+          <textarea
+            id="photo-caption"
+            name="caption"
+            [(ngModel)]="caption"
+            maxlength="500"
+            rows="3"
+            placeholder="Add a caption to your photo…"
+            [disabled]="isPosting"
+          ></textarea>
+
+          <input
+            #photoInput
+            class="photo-file-input"
+            type="file"
+            accept="image/*"
+            aria-label="Choose a photo"
+            (change)="onPhotoSelected($event)"
+          />
+          <button
+            class="photo-picker-button"
+            type="button"
+            [disabled]="isPosting"
+            (click)="photoInput.click()"
+          >
+            <ion-icon name="images-outline" aria-hidden="true"></ion-icon>
+            <span>{{ selectedPhoto ? 'Choose a different photo' : 'Choose a photo' }}</span>
+          </button>
+
+          <div class="photo-preview" *ngIf="selectedPhoto">
+            <img [src]="selectedPhoto" alt="Preview of the photo you selected" />
+            <button type="button" class="remove-photo-button" (click)="clearSelectedPhoto()">
+              Remove photo
+            </button>
+          </div>
+
+          <label class="guidance-confirmation">
+            <input
+              type="checkbox"
+              name="hasAgreedToGuidance"
+              [(ngModel)]="hasAgreedToGuidance"
+              [disabled]="isPosting"
+            />
+            <span>I have permission to share this photo and it follows the guidance above.</span>
+          </label>
+
+          <p class="form-error" *ngIf="uploadError" role="alert">{{ uploadError }}</p>
+          <ion-button
+            expand="block"
+            type="submit"
+            [disabled]="!selectedPhoto || !hasAgreedToGuidance || isPosting"
+          >
+            <ion-icon slot="start" name="images-outline"></ion-icon>
+            {{ isPosting ? 'Sharing photo…' : 'Share photo' }}
+          </ion-button>
+        </form>
+      </div>
+    </ng-template>
+  </ion-modal>
+
+  <!-- Who liked this post modal -->
+  <ion-modal
+    [isOpen]="showLikesModal"
+    (didDismiss)="closeLikesModal()"
+    class="timeline-sheet-modal likes-modal"
+  >
+    <ng-template>
+      <div class="timeline-sheet-content likes-sheet-content">
+        <header class="sheet-header">
+          <div>
+            <p class="sheet-eyebrow">PHOTO LIKES</p>
+            <h2 id="likes-modal-title">
+              {{ activeLikesPost?.likes?.length || 0 }} {{ (activeLikesPost?.likes?.length === 1) ? 'person' : 'people' }} liked this
+            </h2>
+          </div>
+          <button
+            type="button"
+            class="close-sheet-button"
+            aria-label="Close likes list"
+            (click)="closeLikesModal()"
+          >
+            <ion-icon name="close-outline" aria-hidden="true"></ion-icon>
+          </button>
+        </header>
+
+        <div class="likes-list-container">
+          <div *ngIf="isLoadingLikesUsers" class="sheet-loading">
+            <ion-spinner name="crescent"></ion-spinner>
+            <span>Loading people…</span>
+          </div>
+
+          <div
+            *ngIf="!isLoadingLikesUsers && (!activeLikesPost?.likes?.length || !resolvedLikesUsers.length)"
+            class="sheet-empty"
+          >
+            <p>No likes yet.</p>
+          </div>
+
+          <ul class="likes-user-list" *ngIf="!isLoadingLikesUsers && resolvedLikesUsers.length">
+            <li class="likes-user-item" *ngFor="let user of resolvedLikesUsers">
+              <div class="user-avatar-wrap">
+                <span class="user-avatar user-avatar-fallback">{{ user.name.charAt(0) || 'A' }}</span>
+                <img
+                  *ngIf="user.photoURL"
+                  class="user-avatar"
+                  [src]="user.photoURL"
+                  alt=""
+                  referrerpolicy="no-referrer"
+                />
+              </div>
+              <div class="user-info">
+                <strong class="user-name">{{ user.name }}</strong>
+                <span class="user-badge-me" *ngIf="user.isMe">You</span>
+              </div>
+              <span class="like-indicator">
+                <ion-icon name="heart"></ion-icon>
+              </span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </ng-template>
+  </ion-modal>
+
+  <!-- Comments modal -->
+  <ion-modal
+    [isOpen]="showCommentsModal"
+    (didDismiss)="closeCommentsModal()"
+    class="timeline-sheet-modal comments-modal"
+  >
+    <ng-template>
+      <div class="timeline-sheet-content comments-sheet-content">
+        <header class="sheet-header">
+          <div>
+            <p class="sheet-eyebrow">PHOTO COMMENTS</p>
+            <h2 id="comments-modal-title">
+              {{ activeCommentsPost?.comments?.length || 0 }} {{ (activeCommentsPost?.comments?.length === 1) ? 'Comment' : 'Comments' }}
+            </h2>
+          </div>
+          <button
+            type="button"
+            class="close-sheet-button"
+            aria-label="Close comments dialog"
+            (click)="closeCommentsModal()"
+          >
+            <ion-icon name="close-outline" aria-hidden="true"></ion-icon>
+          </button>
+        </header>
+
+        <div class="comments-scroll-area" #commentsScrollArea>
+          <div *ngIf="!activeCommentsPost?.comments?.length" class="sheet-empty comments-empty">
+            <ion-icon name="chatbubble-outline" class="empty-icon"></ion-icon>
+            <p>No comments yet.</p>
+            <small>Be the first to share your thoughts!</small>
+          </div>
+
+          <div class="comments-list" *ngIf="activeCommentsPost?.comments?.length">
+            <article class="comment-item" *ngFor="let comment of activeCommentsPost?.comments">
+              <div class="comment-avatar-wrap">
+                <span class="comment-avatar comment-avatar-fallback">
+                  {{ comment.userName?.charAt(0) || 'A' }}
+                </span>
+                <img
+                  *ngIf="comment.userPhoto"
+                  class="comment-avatar"
+                  [src]="comment.userPhoto"
+                  alt=""
+                  referrerpolicy="no-referrer"
+                />
+              </div>
+              <div class="comment-bubble">
+                <header class="comment-bubble-header">
+                  <span class="comment-author-name">{{ comment.userName || 'Attendee' }}</span>
+                  <time class="comment-time" *ngIf="commentDate(comment) as cDate">
+                    {{ cDate | date: 'MMM d, h:mm a' }}
+                  </time>
+                </header>
+                <p class="comment-body">{{ comment.text }}</p>
+              </div>
+            </article>
+          </div>
+        </div>
+
+        <footer class="comment-input-bar">
+          <p class="comment-error" *ngIf="commentError" role="alert">{{ commentError }}</p>
+          <form class="comment-form" (ngSubmit)="submitComment()">
+            <div class="comment-avatar-wrap my-avatar-wrap" *ngIf="currentUser">
+              <span class="comment-avatar comment-avatar-fallback">
+                {{ (currentUser.displayName || currentUser.email)?.charAt(0) || 'U' }}
+              </span>
+              <img
+                *ngIf="currentUser.photoURL"
+                class="comment-avatar"
+                [src]="currentUser.photoURL"
+                alt=""
+                referrerpolicy="no-referrer"
+              />
+            </div>
+            <textarea
+              class="comment-textarea"
+              name="newComment"
+              [(ngModel)]="newCommentText"
+              rows="1"
+              maxlength="2000"
+              placeholder="Write a comment…"
+              [disabled]="isSubmittingComment"
+              (keydown)="onCommentKeyDown($event)"
+            ></textarea>
+            <button
+              type="submit"
+              class="comment-submit-btn"
+              [disabled]="!newCommentText.trim() || isSubmittingComment"
+              aria-label="Post comment"
+            >
+              <ion-icon [name]="isSubmittingComment ? 'refresh-outline' : 'send'"></ion-icon>
+            </button>
+          </form>
+        </footer>
+      </div>
+    </ng-template>
+  </ion-modal>
+</ion-content>

@@ -1,11 +1,33 @@
 import { Injectable } from '@angular/core';
-import { Storage, ref, uploadBytes, getDownloadURL, deleteObject } from '@angular/fire/storage';
+import {
+  GoogleAuthProvider,
+  getAuth,
+  signInWithPopup,
+  signOut,
+} from '@angular/fire/auth';
+import {
+  Storage,
+  deleteObject,
+  getDownloadURL,
+  getStorage,
+  ref,
+  uploadBytes,
+} from '@angular/fire/storage';
+import { getApps, initializeApp } from 'firebase/app';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ImageUploadService {
-  constructor(private storage: Storage) {}
+  private readonly hseApp =
+    getApps().find((app) => app.name === 'HSEApp') ??
+    initializeApp(environment.hsefirebaseConfig, 'HSEApp');
+  private readonly hseAuth = getAuth(this.hseApp);
+  private readonly storage: Storage = getStorage(
+    this.hseApp,
+    `gs://${environment.hsefirebaseConfig.storageBucket}`
+  );
 
   /**
    * Pick image from device (web-based file input)
@@ -119,12 +141,17 @@ export class ImageUploadService {
   /**
    * Upload image to Firebase Storage
    * @param dataUrl Base64 data URL from file input
-   * @param userId User ID for organizing files
+   * @param userEmail Ahlan email used to authenticate with the HSE project
    * @returns Download URL of uploaded image
    */
-  async uploadPostImage(dataUrl: string, userId: string): Promise<string> {
+  async preparePostUpload(userEmail: string): Promise<void> {
+    await this.authenticateHseUser(userEmail);
+  }
+
+  async uploadPostImage(dataUrl: string, userEmail: string): Promise<string> {
     try {
-      console.log('[uploadPostImage] Starting upload for user:', userId);
+      const hseUser = await this.authenticateHseUser(userEmail);
+      console.log('[uploadPostImage] Starting upload for HSE user:', hseUser.uid);
       
       // Convert data URL to blob
       const blob = this.dataUrlToBlob(dataUrl);
@@ -132,7 +159,7 @@ export class ImageUploadService {
       
       // Create unique filename with timestamp
       const timestamp = Date.now();
-      const fileName = `posts/${userId}/${timestamp}.jpg`;
+      const fileName = `posts/${hseUser.uid}/${timestamp}.jpg`;
       
       // Create storage reference
       const storageRef = ref(this.storage, fileName);
@@ -176,6 +203,47 @@ export class ImageUploadService {
       console.error('[deleteImage] Error:', error);
       throw error;
     }
+  }
+
+  async deletePostImage(imageUrl: string, userEmail: string): Promise<void> {
+    const hseUser = await this.authenticateHseUser(userEmail);
+    const path = this.getPathFromUrl(imageUrl);
+    if (!path) {
+      throw new Error('Could not identify the photo in HSE Storage.');
+    }
+
+    const [collectionName, ownerId] = path.split('/');
+    if (collectionName !== 'posts' || ownerId !== hseUser.uid) {
+      throw new Error('You can only delete photos you uploaded.');
+    }
+
+    await deleteObject(ref(this.storage, path));
+  }
+
+  private async authenticateHseUser(userEmail: string) {
+    const expectedEmail = userEmail.trim().toLowerCase();
+    if (!expectedEmail) {
+      throw new Error('Sign in to Ahlan before sharing a photo.');
+    }
+
+    const currentUser = this.hseAuth.currentUser;
+    if (currentUser?.email?.trim().toLowerCase() === expectedEmail) {
+      return currentUser;
+    }
+
+    const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({
+      prompt: 'select_account',
+      login_hint: expectedEmail,
+    });
+
+    const credential = await signInWithPopup(this.hseAuth, provider);
+    if (credential.user.email?.trim().toLowerCase() !== expectedEmail) {
+      await signOut(this.hseAuth);
+      throw new Error('Sign in to HSE with the same Google account you use for Ahlan.');
+    }
+
+    return credential.user;
   }
 
   /**

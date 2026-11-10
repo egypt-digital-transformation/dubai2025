@@ -55,6 +55,11 @@ export const routes: Routes = [
           import('../networking/networking.page').then((m) => m.NetworkingPage),
       },
       {
+        path: 'photos',
+        loadComponent: () =>
+          import('../photos/photos.page').then((m) => m.PhotosPage),
+      },
+      {
         path: 'activities',
         loadComponent: () =>
           import('../activities/activities.page').then((m) => m.ActivitiesPage),

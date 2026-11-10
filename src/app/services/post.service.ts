@@ -12,14 +12,21 @@ import {
   arrayRemove,
   serverTimestamp,
   Timestamp,
+  DocumentData,
+  QueryDocumentSnapshot,
+  getDocs,
+  limit,
+  startAfter,
+  deleteDoc,
 } from '@angular/fire/firestore';
 import { Observable } from 'rxjs';
 
 export interface Comment {
+  userId?: string;
   userName: string;
   userPhoto?: string;
   text: string;
-  timestamp: Timestamp;
+  timestamp?: Timestamp | any;
 }
 
 export interface Post {
@@ -32,6 +39,12 @@ export interface Post {
   likes: string[]; // Array of user IDs who liked
   comments: Comment[];
   timestamp: Timestamp;
+}
+
+export interface PostPage {
+  posts: Post[];
+  cursor?: QueryDocumentSnapshot<DocumentData>;
+  hasMore: boolean;
 }
 
 @Injectable({
@@ -90,6 +103,63 @@ export class PostService {
     });
   }
 
+  async getPostsPage(
+    cursor?: QueryDocumentSnapshot<DocumentData>,
+    pageSize = 10
+  ): Promise<PostPage> {
+    const postsCollection = collection(this.firestore, 'posts');
+    const constraints = [
+      orderBy('timestamp', 'desc'),
+      ...(cursor ? [startAfter(cursor)] : []),
+      limit(pageSize),
+    ];
+    const snapshot = await getDocs(query(postsCollection, ...constraints));
+    const posts = snapshot.docs.map((postDoc) => {
+      const data = postDoc.data() as Omit<Post, 'id'>;
+      return {
+        id: postDoc.id,
+        ...data,
+        likes: Array.isArray(data.likes) ? data.likes : [],
+        comments: Array.isArray(data.comments) ? data.comments : [],
+      };
+    });
+
+    return {
+      posts,
+      cursor: snapshot.docs[snapshot.docs.length - 1],
+      hasMore: snapshot.docs.length === pageSize,
+    };
+  }
+
+  watchPost(postId: string): Observable<Post | null> {
+    return new Observable((observer) => {
+      const postRef = doc(this.firestore, 'posts', postId);
+      const unsubscribe = onSnapshot(
+        postRef,
+        (snapshot) => {
+          if (!snapshot.exists()) {
+            observer.next(null);
+            return;
+          }
+          const data = snapshot.data() as Omit<Post, 'id'>;
+          observer.next({
+            id: snapshot.id,
+            ...data,
+            likes: Array.isArray(data.likes) ? data.likes : [],
+            comments: Array.isArray(data.comments) ? data.comments : [],
+          });
+        },
+        (error) => observer.error(error)
+      );
+
+      return () => unsubscribe();
+    });
+  }
+
+  async deletePost(postId: string): Promise<void> {
+    await deleteDoc(doc(this.firestore, 'posts', postId));
+  }
+
   /**
    * Toggle like on a post
    */
@@ -112,17 +182,20 @@ export class PostService {
       userPhoto?: string;
       text: string;
     }
-  ): Promise<void> {
+  ): Promise<Comment> {
     const postRef = doc(this.firestore, 'posts', postId);
+    const newComment: Comment = {
+      userId: comment.userId,
+      userName: comment.userName,
+      userPhoto: comment.userPhoto || '',
+      text: comment.text.trim(),
+      timestamp: Timestamp.now(),
+    };
     
     await updateDoc(postRef, {
-      comments: arrayUnion({
-        userId: comment.userId,
-        userName: comment.userName,
-        userPhoto: comment.userPhoto || '',
-        text: comment.text,
-        timestamp: serverTimestamp(),
-      }),
+      comments: arrayUnion(newComment),
     });
+
+    return newComment;
   }
 }
