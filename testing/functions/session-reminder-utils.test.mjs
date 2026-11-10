@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 import {
   getAgendaReminderMessage,
   getDueAgendaLabels,
+  shouldSendAgendaReminder,
 } from "../../functions/reminders/session-reminder-utils.js";
 
 describe("getDueAgendaLabels", () => {
@@ -178,38 +179,98 @@ describe("getDueAgendaLabels", () => {
 });
 
 describe("getAgendaReminderMessage", () => {
-  it("returns customized engaging messages for all known event labels", () => {
-    const allLabels = [
-      "Welcome Cocktail Dinner",
-      "Welcome & Strategic Alignment",
+  it("includes the jacket, name tags, and meeting floor in the reminder", () => {
+    const message = getAgendaReminderMessage("ONE AMEA ONE DIRECTION");
+
+    assert.equal(message.title, "Kickoff: ONE AMEA ONE DIRECTION");
+    assert.match(message.body, /Holcim jackets and name tags/i);
+    assert.doesNotMatch(message.body, /bring it/i);
+    assert.match(message.body, /4th floor/i);
+  });
+
+  it("uses the requested notification copy for the updated agenda labels", () => {
+    const welcome = getAgendaReminderMessage("Welcome Cocktail");
+    assert.equal(welcome.title, "Welcome to Cairo!");
+    assert.match(welcome.body, /7 pm/);
+    assert.match(welcome.body, /Blue Bar on the 4th floor/);
+
+    const workshop = getAgendaReminderMessage(
+      "WORKSHOPS: From Strategy to Execution- Driving Growth Across AMEA"
+    );
+    assert.match(workshop.body, /group number/i);
+    assert.match(workshop.body, /The Foyer - Outside Versailles/);
+    assert.match(workshop.body, /bring your insights/i);
+
+    const plantDeparture = getAgendaReminderMessage(
+      "Move from Four Seasons to SOK Plant"
+    );
+    assert.match(plantDeparture.body, /8:20 AM/);
+
+    const rebrandingDeparture = getAgendaReminderMessage(
+      "Move from Four Seasons to the Grand Egyptian Museum (GEM)"
+    );
+    assert.equal(rebrandingDeparture.title, "A New Era of Excellence Begins!");
+    assert.match(rebrandingDeparture.body, /lobby at 7 for departure/i);
+
+    assert.equal(shouldSendAgendaReminder("Coffee & Networking Break"), false);
+    assert.equal(
+      shouldSendAgendaReminder(
+        "Start of A New Era of Excellence (Holcim Egypt Rebranding Event)"
+      ),
+      false
+    );
+    assert.equal(
+      getAgendaReminderMessage("Coffee & Networking Break").title,
+      "Coffee & Networking Break"
+    );
+  });
+
+  it("does not send reminders for labels the event team excluded", () => {
+    const suppressedLabels = [
       "HEALTH & SAFETY: Challenge the Green and Embrace the Red",
-      "Growth in Attractive Markets: Unlocking AMEA’s Growth Potential",
-      "Break",
-      "Beyond Cement: Expanding AMEA’s Building Solutions",
-      "Group Photo",
-      "Lunch Break",
-      "WORKSHOPS: From Strategy to Execution- Driving Growth Across AMEA",
+      "Growth in Attractive Markets: Unlocking AMEA's Growth Potential",
       "PEOPLE PANEL",
       "OUR GROWTH AGENDA",
       "AMEA FINANCE",
       "Ask the Group Leadership Team",
       "Leadership Dialogue: Strategic Priorities to Deliver Growth Across AMEA",
       "Closing Remarks and Wrap up",
-      "Gala Dinner",
-      "Move from Four Seasons to SOK Plant",
       "Lounge",
       "Sokhna Plant Line 5 Inauguration",
+      "Break",
+      "Group Photo",
       "Lunch",
-      "Leadership Team will depart SOK Plant to the Hotel",
+      "Coffee & Networking Break",
+      "GEM Experience",
+      "Touring Great Pyramids of Giza",
+    ];
+
+    for (const label of suppressedLabels) {
+      assert.equal(shouldSendAgendaReminder(label), false, label);
+    }
+    assert.equal(shouldSendAgendaReminder("Lunch Break"), true);
+  });
+
+  it("returns customized engaging messages for all known event labels", () => {
+    const allLabels = [
+      "Welcome Cocktail",
+      "Welcome Cocktail Dinner",
+      "ONE AMEA ONE DIRECTION",
+      "Welcome & Strategic Alignment",
+      "Beyond Cement: Expanding AMEA’s Building Solutions",
+      "Group Photo",
+      "Lunch Break",
+      "Coffee & Networking Break",
+      "WORKSHOPS: From Strategy to Execution- Driving Growth Across AMEA",
+      "Gala Dinner",
+      "Move from Four Seasons to SOK Plant",
+      "Leadership Team will depart SOK Plant to Hotel",
       " Sokhna Plant Tour",
       "Depart from Sokhna Plant to Four Seasons Hotel",
       "Move from Hotel to Grand Egyptian Museum (GEM)",
-      "GEM Experience",
       "Leave GEM to the Great Pyramids of Giza",
-      "Touring Great Pyramids of Giza",
       "Arrive at Laduree by the Pyramids for Lunch with a Historic View",
       "Move from Four Seasons to the Grand Egyptian Museum (GEM)",
-      "Start of A New Era of Excellence (Holcim Egypt Rebranding Event)",
       "Leave GEM to Four Seasons",
     ];
 

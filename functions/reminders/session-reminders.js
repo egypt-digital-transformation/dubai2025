@@ -15,6 +15,7 @@ import {
   getAgendaReminderMessage,
   getDueAgendaLabels,
   MAX_REMINDER_LEAD_MS,
+  shouldSendAgendaReminder,
 } from "./session-reminder-utils.js";
 
 const CLAIM_TIMEOUT_MS = 10 * 60 * 1000;
@@ -167,6 +168,10 @@ async function sendReminderForLabel(
   dayDoc,
   dueLabel
 ) {
+  if (!shouldSendAgendaReminder(dueLabel.label)) {
+    return false;
+  }
+
   const eligibleRecipients = recipients.filter(
     (recipient) =>
       !recipient.registeredAt || recipient.registeredAt <= dueLabel.startAt

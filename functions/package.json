@@ -5,6 +5,7 @@
   "scripts": {
     "lint": "eslint .",
     "test": "node --test ../testing/functions",
+    "cleanup:notification-campaigns": "node scripts/delete-old-notification-campaigns.js",
     "serve": "firebase emulators:start --only functions",
     "shell": "firebase functions:shell",
     "start": "npm run shell",

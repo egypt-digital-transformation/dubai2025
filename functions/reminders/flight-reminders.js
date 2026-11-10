@@ -210,7 +210,7 @@ export async function processFlightArrivalReminders() {
     }
 
     const firstName = getAttendeeFirstName(data);
-    const title = `Welcome to the Land of Pharaohs, ${firstName}!`;
+    const title = `Welcome to the Land of the Pharaohs, ${firstName}!`;
     const body =
       "We are excited to have you join us for the AMEA Management Meeting 2026.\n" +
       "Your Ahlan app is your personal companion for the event - check it out to connect with fellow leaders and stay updated on every session!";
